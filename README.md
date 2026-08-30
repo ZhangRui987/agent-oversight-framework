@@ -180,7 +180,7 @@ graph TD
 
 见 [`CITATION.cff`](CITATION.cff)。
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v1.0.0). https://github.com/ZhangRui987/agent-oversight-framework （仓库 URL 以建仓后实际地址为准）
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v1.0.0). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## 质量保障（自指验证）
 
