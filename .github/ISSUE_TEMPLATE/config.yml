@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安全与证据问题
+    url: ../../SECURITY.md
+    about: 证据错误或受限内容泄露请先阅读 SECURITY.md
+  - name: 讨论区
+    url: ../../discussions
+    about: 一般性讨论

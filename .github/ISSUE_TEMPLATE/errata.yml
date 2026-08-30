@@ -1,0 +1,17 @@
+name: 术语/编号勘误
+description: 术语定义、编号规则或交叉引用错误
+labels: [errata]
+body:
+  - type: input
+    id: location
+    attributes:
+      label: 出错位置
+    validations:
+      required: true
+  - type: textarea
+    id: desc
+    attributes:
+      label: 勘误内容
+      description: 现状 → 应为
+    validations:
+      required: true

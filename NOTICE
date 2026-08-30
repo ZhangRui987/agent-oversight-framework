@@ -1,0 +1,17 @@
+AI 执行与监察体系（Agent Oversight Framework）
+Copyright 2026 本项目的贡献者
+
+本仓库引用了以下第三方材料（事实引用与复述，非全文转载）：
+
+- OpenAI：Hugging Face 事件官方博客（2026-07-21）与 38 页技术报告（2026-08-26）
+- Hugging Face：安全事件披露（2026-07-16）与技术时间线（2026-08）
+- METR & Redwood Research：独立调查报告（2026-08-26）
+- Anthropic：Claude Mythos Preview 红队博客与 Project Glasswing 公告（2026-04-07）
+- arXiv 论文：AIprint（2607.14434）、Sandlock（2605.26298）、SandboxEscapeBench（2603.02277）、
+  Off-Support（2608.11243）、MultiAgent4Collusion（2507.14660）、AgentAbstain（2607.10059）等
+- 期刊论文：Teichmann（Law Innovation and Technology, DOI 10.1080/17579961.2026.2718578）等
+- 政策文件：《网络安全法》（2026-01-01 施行修订版）、《人工智能生成合成内容标识办法》（2025-09-01 生效）等
+
+完整引用清单见 [REFERENCES.md](./REFERENCES.md)。
+
+本仓库中「一号 / 二号 / 三号」「L0–L4」「G0–G4」「S0–S3」等术语均为本框架自创的描述性术语，不构成对任何第三方商标的使用。

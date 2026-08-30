@@ -1,0 +1,12 @@
+#!/bin/sh
+# pre-commit 钩子：发布一致性校验。
+# 启用（仓库根目录执行一次）：
+#   git config core.hooksPath .githooks
+# 校验失败时提交被拦截，输出问题清单。
+cd "$(dirname "$0")/.." || exit 1
+PY=$(command -v python || command -v python3)
+if [ -z "$PY" ]; then
+    echo "✗ 未找到 python，跳过一致性校验" >&2
+    exit 1
+fi
+"$PY" scripts/verify_consistency.py

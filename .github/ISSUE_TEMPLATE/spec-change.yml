@@ -1,0 +1,24 @@
+name: 规范变更提议
+description: 提议新增或修改框架机制
+labels: [spec-change]
+body:
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 提议内容
+      description: 你要新增或修改的机制是什么？
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 证据与来源
+      description: 证据等级（A/B/C/D）+ 来源（arXiv/DOI/URL）。D 级不得单独支撑 P0。
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: 回灌检查
+      options:
+        - label: 已知会影响哪些章节/表格/未解清单

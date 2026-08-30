@@ -1,0 +1,11 @@
+{
+  "version": "0.2",
+  "language": "en,zh",
+  "words": [
+    "ExploitGym", "Artifactory", "eBPF", "kprobe", "Landlock", "seccomp",
+    "TOCTOU", "Merkle", "mTLS", "Ed25519", "sandbox", "AgentAbstain",
+    "AbstentionBench", "MultiAgent4Collusion", "PHASEONE", "AuraSpark",
+    "Teichmann", "Hugging", "Redwood", "METR", "OASIS", "preprint",
+    "Mythos", "Glasswing", "OpenBSD", "FFmpeg", "HDF5", "Jinja2"
+  ]
+}

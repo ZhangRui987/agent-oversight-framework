@@ -1,0 +1,8 @@
+# 文档 lint 配置
+MD013:
+  line_length: 200
+MD024:
+  siblings_only: true
+MD033:
+  allowed_elements: [table, br]
+MD041: false
