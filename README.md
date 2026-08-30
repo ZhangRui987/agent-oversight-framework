@@ -7,7 +7,7 @@
 
 **一份分层治理规范：面向 AI Agent 监察——证据分级、自校正、边界诚实。**
 
-> **English**: A layered governance specification for AI agent oversight — evidence-graded, self-correcting, and boundary-honest. Covers swarm-level emergent behavior, evidence integrity (kernel-level collection), and a voluntary-abstention incentive mechanism. (Full translation tracker: Issue #1, to be opened after first release.)
+> **English**: A layered governance specification for AI agent oversight — evidence-graded, self-correcting, and boundary-honest. Covers swarm-level emergent behavior, evidence integrity (kernel-level collection), and a voluntary-abstention incentive mechanism. (Translation tracker: [`i18n/TRANSLATION.md`](i18n/TRANSLATION.md) — see Issue #1.)
 
 本仓库是一份面向 AI Agent 部署方、标准组织与研究者的**治理架构设计规范**——不是沙箱工具，不是观测平台，不是规则引擎，而是「为什么治理、怎么治理、边界在哪」的完整设计文档。
 
