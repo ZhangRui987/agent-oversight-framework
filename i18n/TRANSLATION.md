@@ -20,7 +20,8 @@ But the substance is language-independent: evidence grading (A/B/C/D), swarm gov
 | 5 | `spec/08-evidence-integrity.md`（证据完整性子系统 E1–E5） | P1 | ✅ Done（2026-08-31） |
 | 6 | `spec/13-boundaries.md`（诚实边界 + 回灌检查清单） | P2 | ✅ Done（2026-08-31） |
 | 7 | 其余 `spec/*.md`（02/04/05/06/09/10/11/12） | P2 | ✅ Done（2026-08-31） |
-| 8 | 治理文件（`CONTRIBUTING.md`、`GOVERNANCE.md` 等） | P3 | ☐ Open |
+| 8 | 治理文件（`CONTRIBUTING.md`、`GOVERNANCE.md` 等 12 个） | P3 | ✅ Done（2026-08-31） |
+| 9 | 不在译文范围：`STYLE.md`（中文写作规范）、`CHANGELOG.md`（动态变更日志）、`REFERENCES.md`（引注唯一真相源）、`NOTICE`（法律文件） | — | 有意不译（见「Scope & Priority」注） |
 
 ## Translation principles
 
@@ -46,5 +47,7 @@ But the substance is language-independent: evidence grading (A/B/C/D), swarm gov
 1. 在 Issue #1 下方认领文件（一次一个，先到先得）；
 2. 提交标题带 `[i18n]` 前缀的 PR；
 3. 在 PR 描述中链接本文件与 Issue #1。
+
+> **不在译文范围**：`STYLE.md` 是面向中文写作的规范（术语表、编号规则），翻译会失去其作为「中文文档风格基准」的用途；`CHANGELOG.md` 为动态变更日志，翻译后必然失同步；`REFERENCES.md` 是引注唯一真相源（中英条目混合、含 URL），翻译会引入双源漂移风险；`NOTICE` 为法律性版权声明，保持原样。
 
 译者将列入 `CHANGELOG.md` 与发布说明致谢。
