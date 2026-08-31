@@ -16,7 +16,7 @@ Every mechanism in this framework derives from the following six principles. If 
 
 **Principle 6: The integrity of the evidence layer outranks the richness of records.** Record richness may be sacrificed; the unforgeability of collection points may not — a detailed log that can be forged does more harm than a crude log that is forcibly externalized at the kernel side.
 
-## Nine Core Judgments
+## Ten Core Judgments
 
 The following judgments distill real incident lessons, academic evidence, and sandbox-technology analysis into shared conclusions. If any mechanism design conflicts with one of them, the mechanism should be fixed first.
 
