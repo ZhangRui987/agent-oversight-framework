@@ -13,7 +13,7 @@ But the substance is language-independent: evidence grading (A/B/C/D), swarm gov
 
 | # | Target | Priority | Status |
 |---|---|---|---|
-| 1 | `README.md` → `README.en.md` | **P0** | ☐ Open |
+| 1 | `README.md` → `README.en.md` | **P0** | ✅ Done（v1.1.0 基线，2026-08-31） |
 | 2 | `spec/01-principles.md`（六条总纲 + 十个核心判断） | P1 | ☐ Open |
 | 3 | `spec/03-grading.md`（G×S 二维分级） | P1 | ☐ Open |
 | 4 | `spec/07-swarm-governance.md`（蜂群治理） | P1 | ☐ Open |
