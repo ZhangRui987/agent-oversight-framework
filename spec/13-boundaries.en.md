@@ -1,8 +1,8 @@
 # Open Problems (Honest Boundary)
 
 The framework designs three core capabilities, but does not — and cannot — solve every problem. The following problems are explicitly registered, without glossing over them.
-| Open problem | Status | Next step
-| --- | --- | --- | --- |
+| No. | Open problem | Status | Next step |
+| --- | --- | --- | --- | --- |
 1 | Granularity of swarm attribution: when the command structure emerges spontaneously rather than being explicitly designed, "who is the initiator" may have no philosophical answer | Open | A hybrid adjudication mechanism is needed
 2 | Recursion of the evidence layer: who guarantees the integrity of the E1 kernel-side collection points themselves? If the kernel is compromised, the E subsystem fails as well | Partially solved (mitigated by E5) | Physical break: independent hardware domain + remote attestation
 3 | Distinguishing benign from malicious swarms: large-scale collaboration itself is the value of agent systems; misjudgment would strangle legitimate multi-agent applications | Open | Thresholds must be calibrated on real multi-agent workloads. Additional constraint: until calibration is complete, S3 must not enable hard circuit-breaking — record-and-alert only (see the 7.3 threshold-calibration precondition)
