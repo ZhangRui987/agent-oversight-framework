@@ -74,7 +74,7 @@ Task-irrelevant external communication: any periodic external communication unre
 
 ## Honest boundary: swarm attribution remains unsolved
 
-The mechanisms in this chapter reduce swarm risk but do not eliminate it. Three open problems are registered here:
+The mechanisms in this chapter reduce swarm risk but do not eliminate it. Four open problems are registered here:
 
 Early emergence detection: all the above signals detect after "organization has already happened"; there is no predictive capability for organization precursors.
 
