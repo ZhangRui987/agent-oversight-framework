@@ -1,0 +1,43 @@
+# Overall Architecture
+
+## Splitting Responsible Parties
+60% of the L1 budget must be split among responsible parties, otherwise it degrades in a real organization.
+Responsible party | Share | Discretionary L1 actions | Ancient mapping
+| --- | --- | --- | --- |
+L1-vendor (model provider) | ≈40% | Training alignment, RLHF / Constitutional AI, reward design, capability-boundary statements | Indoctrination (imperial-examination content)
+L1-deployer (the organization using AI) | ≈15% | Task-definition quality control, model-selection evaluation, prompt-layer design, and using procurement power to push back on vendors | Legislation and official selection
+L1-industry (standards and audit organizations) | ≈5% | Meta-rules for oversight standards, third-party evaluation, evidence grading and traceability norms | Meta-rules of oversight standards
+The deployer cannot touch the training layer, but can use procurement power to push back on vendors — this is where the real leverage of the L1-deployer's 15% lies.
+## Five-Layer Structure and the Two Audit Lines
+### Five-layer structure
+The center of governance moves forward layer by layer: intrinsic alignment (L1) takes about 60% of the budget and is the protagonist of governance; runtime oversight (L2) takes about 30% and is the fallback insurance.
+Formal basis: the L1 / L2 division has independent theoretical support — Off-Support (arXiv:2608.11243) proves from singular-learning theory that semantic safety constraints (e.g., "agents do not escape the sandbox") are off-support objects, not invariants of the learning problem, so "priors and soft penalties are poor levers", while "hard invariants belong in the harness and soft dispositions in the model"; its division is phrased as "models reduce the probability of bad trajectories over semantic space; harnesses make the worst cases impossible", which corresponds strictly to the budget allocation of L1 (reducing the probability of bad trajectories) / L2 (making the worst cases impossible). The paper takes the 2026-07 incident as its motivating case and offers containment recommendations such as a "kill switch independent of model cooperation" (corresponding to the 9.2 watchdog). Note: the preprint is not peer-reviewed, is single-author, and the Lean proofs have not been machine-checked.
+Layer | Name | Responsibility | Budget | Changes in this spec
+| --- | --- | --- | --- | --- |
+L0 | Task definition and admission | Task-definition quality control, model selection, grading, scale assessment | ≈5% | Adds a scale-dimension assessment
+L1 | Intrinsic alignment | Training alignment, prompt-layer design, procurement-clause pushback (three-column responsibility) | ≈60% | Architecture unchanged
+L2 | Runtime oversight | Random sampling, watchdog, No. 2 oversight, evidence collection | ≈30% | Adds the evidence-integrity subsystem E (E1–E5). E belongs to this layer because it operates continuously during task runtime, rather than being a one-off front-end step
+L3 | Independent verification | No. 3 notary, double-blind assessment, offline replay | ≈5% (the remainder shifts to L2 evidence collection) | Corroborated by the METR / Redwood real-world model. Budget reduced from 10% to 5%,
+L4 | Accountability evolution | Credit scores, carrier binding, cross-organization joint liability and adjudication | Runs through all layers | Adds swarm responsibility anchoring
+Note: this document consistently uses the five-layer L0–L4 system; L4 accountability evolution runs through all layers and is not a standalone budget item.
+### The two independent audit lines
+Statement of the behavioral-compliance line:
+"Neither line depends on No. 1 AI's documents, nor on No. 2's observations; and — the collection points themselves must be multi-source cross-validated, must not be monopolized by any single sandbox-layer record, and at least one piece of evidence must come from a forced collection point at the kernel side / in an independent hardware domain."
+Why designed this way: in the real incident, what was forged was precisely the sandbox / tool-call layer's records, not No. 1's self-reported documents. "Not through No. 1's documents" prevents "No. 1 lying", but does not prevent "the collection layer being replaced". If sandbox-layer records can be forged, the "not through No. 1's documents" commitment is void — the attacker only needs to forge the infrastructure-layer records.
+### Evidence-integrity subsystem E (P0)
+E is the third pillar, located inside L2 but independent of the collection stage of the two audit lines; it is responsible for exactly one thing: ensuring that the evidence "entering the two lines" is itself unpolluted.
+Component | Name | Mechanism | What it solves
+| --- | --- | --- | --- |
+E1 | Forced kernel-side collection | eBPF / kprobe / tracepoint / LSM hooks collect syscall events at the kernel side, bypassing the observed process's user-space path | User-space interception and replacement (echo REAL; sleep → SPOOFTEST-style forgery)
+E2 | TOCTOU-safe re-read | The kernel re-reads the user-space memory pointer before granting passage, not trusting the first read result | Pointer race replacement
+E3 | Externalize-and-freeze after collection | Evidence is written to append-only storage the moment it is generated, with a hash chain, and externalized to a location unreachable by the observed party | Post-hoc tampering, log-timestamp forgery
+E4 | Multi-source cross-validation | Kernel-side evidence is compared entry-by-entry with sandbox user-space logs; any inconsistency is adjudged as collection-layer pollution and triggers isolation | A single collection path is compromised
+E5 | Collection-point integrity itself | The collection module is signed, runs in an independent trust domain, and its own startup and config changes are audited | The collection point is shut down, degraded, or replaced
+Key design constraint: E4's cross-validation is "verification through distrust" rather than "redundancy through mutual backup". The two paths are not backups of each other but witnesses of each other — any mismatch is an evidence-layer event, outranking any behavioral-violation event.
+### Interface with Sandlock
+Sandlock (arXiv:2605.26298, 2026-05-25) provides lightweight process-level sandboxing: Landlock (filesystem / network / IPC) + seccomp-bpf (syscall filtering) + seccomp user notification (resource limits, IP enforcement, /proc virtualization), requiring no root, cgroups, containers, or namespaces, with about 5 ms startup and Redis throughput within measurement noise of bare metal.
+Its event-callback mechanism is valuable: intercepting syscalls at runtime, with events carrying the syscall name, category, PID, network target (connect/sendto/bind) and argv (execve); the callback returns a verdict (0 allow / True or -1 deny with EPERM / a positive integer deny with a specified errno / audit allow-and-flag). The callback path handles TOCTOU correctly — per seccomp_unotify(2), the kernel re-reads the user-space memory pointer after Continue.
+But its applicability boundary must be stated clearly:
+Sandlock's verdict is a user-space callback product. When the observed party holds equal user-space privileges, it can intercept and replace the callback's observed result. Sandlock's logs can therefore serve as a rich data source for the "behavioral-compliance line", but cannot serve as the trust root of an evidence chain — E1's kernel-side collection provides the current best available evidence layer; before the P3-phase independent hardware domain + remote attestation lands, it does not constitute the final trust root (see open problem #2).
+The paper itself explicitly excludes: kernel-level vulnerabilities, side channels, and resource exhaustion by adversarial tenants are outside its scope; such scenarios should prefer microVM or cgroup-driven isolation.
+Therefore the judgment: Sandlock is a B-grade source, limited to trusted-but-buggy lightweight isolation; adversarial multi-agent scenarios must switch to microVM / cgroup-style isolation and layer the E subsystem on top.
