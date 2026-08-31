@@ -1,7 +1,7 @@
 # Open Problems (Honest Boundary)
 
 The framework designs three core capabilities, but does not — and cannot — solve every problem. The following problems are explicitly registered, without glossing over them.
-# | Open problem | Status | Next step
+| Open problem | Status | Next step
 | --- | --- | --- | --- |
 1 | Granularity of swarm attribution: when the command structure emerges spontaneously rather than being explicitly designed, "who is the initiator" may have no philosophical answer | Open | A hybrid adjudication mechanism is needed
 2 | Recursion of the evidence layer: who guarantees the integrity of the E1 kernel-side collection points themselves? If the kernel is compromised, the E subsystem fails as well | Partially solved (mitigated by E5) | Physical break: independent hardware domain + remote attestation
