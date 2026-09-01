@@ -4,11 +4,12 @@
 校验项：
   1. 全仓库无 [TABLE START/END] 伪标记
   2. 所有 Markdown 表格（≥2 行的 | 块）表头后都有分隔行
-  3. 证据分级数量一致：REFERENCES 表格实测 A/B/C/D 条数 == 各处声明（25 总 / 22 B）
+  3. 证据分级数量一致：REFERENCES 表格实测 A/B/C/D 条数 == 各处声明（54 总 / 44 B）
   4. 事故数字口径一致（1,200 留言板 / 700 参与攻击）
   5. ANTITRUST 章节号（第十二章，非第十三章）
   6. STYLE 术语口径（允许 P0 优先级、禁 P0-x 审阅编号）
   7. spec/ 无 14-references.md（唯一真相源 = 根 REFERENCES.md）
+  8. 引用红线：禁止引用的数字（如 GAIE 的「84–97%」）不得出现在正文
 
 用法：
   python scripts/verify_consistency.py [仓库根目录，默认脚本所在目录的上级]
@@ -85,22 +86,22 @@ b = len(re.findall(r"^B \|", refs, re.M))
 c = len(re.findall(r"^C（", refs, re.M))
 d = len(re.findall(r"^D（", refs, re.M))
 check("REFERENCES 实测 A:1", a == 1, f"实测 A={a}")
-check("REFERENCES 实测 B:23", b == 23, f"实测 B={b}")
-check("REFERENCES 实测 C:1", c == 1, f"实测 C={c}")
+check("REFERENCES 实测 B:44", b == 44, f"实测 B={b}")
+check("REFERENCES 实测 C:8", c == 8, f"实测 C={c}")
 check("REFERENCES 实测 D:1", d == 1, f"实测 D={d}")
 total = a + b + c + d
-check("REFERENCES 合计 26 条", total == 26, f"实测合计={total}")
+check("REFERENCES 合计 54 条", total == 54, f"实测合计={total}")
 
 readme = read(os.path.join(ROOT, "README.md"))
 chg = read(os.path.join(ROOT, "CHANGELOG.md"))
-check("README 声明「26 条来源，其中 B 级 23 条」",
-      "26 条来源，其中 B 级 23 条" in readme)
-check("README 分布「A:1 / B:23 / C:1 / D:1」（含 A 级来源标注）",
-      "A:1" in readme and "B:23 / C:1 / D:1" in readme)
-check("CHANGELOG 声明「26 条参考文献（其中 B 级 23 条）」",
-      "26 条参考文献（其中 B 级 23 条）" in chg)
-check("REFERENCES 注脚「23 条 B 级、1 条 C 级、1 条 D 级（合计 26 条来源）」",
-      "23 条 B 级、1 条 C 级、1 条 D 级（合计 26 条来源）" in refs)
+check("README 声明「54 条来源，其中 B 级 44 条」",
+      "54 条来源，其中 B 级 44 条" in readme)
+check("README 分布「A:1 / B:44 / C:8 / D:1」（含 A 级来源标注）",
+      "A:1" in readme and "B:44 / C:8 / D:1" in readme)
+check("CHANGELOG 声明「54 条参考文献（其中 B 级 44 条）」",
+      "54 条参考文献（其中 B 级 44 条）" in chg)
+check("REFERENCES 注脚「44 条 B 级、8 条 C 级、1 条 D 级（合计 54 条来源）」",
+      "44 条 B 级、8 条 C 级、1 条 D 级（合计 54 条来源）" in refs)
 
 # ── 4. 事故数字口径 ──────────────────────────
 check("README 事故数字（1,200 留言板）",
@@ -124,6 +125,23 @@ check("STYLE 允许 P0 优先级标记",
 dup = os.path.join(ROOT, "spec", "14-references.md")
 check("spec/ 无 14-references.md（唯一真相源 = 根 REFERENCES.md）",
       not os.path.exists(dup))
+
+# ── 8. 引用红线 ────────────────────────────
+# 已登记为「禁止引用」的数字。当前一条：GAIE（arXiv:2606.22484）的 84–97%
+# 系由 18 个自设参数算出的解析估计，论文自陈无实测（见 REFERENCES.md 该条目）。
+# REFERENCES.md 自身豁免——那里是禁令的说明文字，不是引用。
+FORBIDDEN_NUMBERS = ["84–97%", "84-97%", "84～97%"]
+red_line_hits = []
+for fp in md_files():
+    rel = os.path.relpath(fp, ROOT).replace("\\", "/")
+    if rel in ("REFERENCES.md", "REFERENCES.en.md"):
+        continue
+    content = read(fp)
+    for pat in FORBIDDEN_NUMBERS:
+        if pat in content:
+            red_line_hits.append(f"{rel} 出现禁止引用的数字 {pat}")
+check("引用红线：正文无禁止引用的数字（GAIE 84–97%）",
+      not red_line_hits, "; ".join(red_line_hits[:5]))
 
 # ── 汇总 ─────────────────────────────────────
 print()
