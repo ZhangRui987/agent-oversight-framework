@@ -6,13 +6,18 @@
   2. 所有 Markdown 表格（≥2 行的 | 块）表头后都有分隔行；且每行列数与分隔行一致
      —— 两种表头风格都覆盖：带首竖线（| 表头 | ... |）与不带首竖线（表头 | ...）
         （后者曾长期未被校验，导致 11-traceability 出现「6 列 vs 表头 5 列」而漏检）
-  3. 证据分级数量一致：REFERENCES 表格实测 A/B/C/D 条数 == 各处声明（55 总 / 45 B）
+  3. 证据分级数量一致：REFERENCES 表格实测 A/B/C/D 条数 == 各处声明（56 总 / 46 B）
   4. 事故数字口径一致（1,200 留言板 / 700 参与攻击）
   5. ANTITRUST 章节号（第十二章，非第十三章）
   6. STYLE 术语口径（允许 P0 优先级、禁 P0-x 审阅编号）
   7. spec/ 无 14-references.md（唯一真相源 = 根 REFERENCES.md）
   8. 引用红线：禁止引用的数字（如 GAIE 的「84–97%」）不得出现在正文
   9. 未解问题条数一致：13-boundaries 实测条数 == README / README.en 各处声明
+ 10. REFERENCES 无悬空引用：含 arXiv 号的条目，须在 spec/ 正文出现该号；
+     若确系有意登记而未回灌，须在落点列显式标注【登记备用】
+     —— 备用清单逐条打印公示，无法静默堆积
+ 11. 反向悬空：spec/ 正文引用的每个 arXiv 号，均须在 REFERENCES 有条目登记
+     —— 与第 10 项对称，双向都查才闭合
 
 用法：
   python scripts/verify_consistency.py [仓库根目录，默认脚本所在目录的上级]
@@ -214,6 +219,76 @@ check(f"README 声明「{open_n} 条未解问题」",
 check(f"README.en 声明「{open_n} open problems」",
       f"{open_n} open problems" in readme_en,
       f"README.en.md 未找到「{open_n} open problems」")
+
+# ── 10. REFERENCES 无悬空引用 ────────────────
+# 教训（已复发两例）：v1.6.0 之前，REFERENCES 登记了 HarnessRisk 的「配置权即攻击面」，
+# 落点列写着它支撑哪一章，但 spec/ 正文对该文献零命中 —— 概念只活在 REFERENCES 里，
+# 读者会误以为该论断有文献支撑；v1.7.0 的 Janssen 是第二例。这是**隐性过度宣称**，
+# 与证据完整性章自己写的「错觉比缺失更危险」是同一类问题。
+#
+# 检查口径：以 arXiv 号为登记键（机制溯源表即以 arXiv 号为键），含 arXiv 号的条目
+# 须在 spec/ 正文出现该号；确系有意登记而未回灌者，须在落点列显式标注【登记备用】。
+#
+# ⚠️ 「显式豁免」不是后门：① 标记是固定词元、可 grep、可计数；② 下方逐条打印备用
+# 清单，每次跑门禁都会在输出里公示，无法静默堆积；③ 标记只豁免「正文未引用」这一项，
+# 不豁免该条目的等级、限定的准确性。
+#
+# 未覆盖：17 条无 arXiv 号的条目（官方博客 / 技术报告 / 期刊论文）无法按号比对，
+# 仍须人工复查。
+STANDBY_MARK = "【登记备用】"
+_spec_dir = os.path.join(ROOT, "spec")
+SPEC_ALL = "\n".join(
+    read(os.path.join(_spec_dir, _fn))
+    for _fn in sorted(os.listdir(_spec_dir))
+    if _fn.endswith(".md")
+)
+ARX_RE = re.compile(r"arXiv:(\d{4}\.\d{4,5})")
+_dangling = []
+_standby = []
+for _line in refs.splitlines():
+    if not GRADE_RE.match(_line):
+        continue
+    _parts = _line.split(" | ")
+    if len(_parts) < 3:
+        continue
+    _lit = _parts[1]
+    _land = " | ".join(_parts[2:])
+    _ids = ARX_RE.findall(_lit)
+    if not _ids:
+        continue
+    if any(i in SPEC_ALL for i in _ids):
+        continue
+    _tag = _ids[0] + " — " + _lit[:38]
+    if STANDBY_MARK in _land:
+        _standby.append(_tag)
+    else:
+        _dangling.append(_tag)
+check(
+    f"REFERENCES 无悬空引用（未命中 spec/ 者须在落点列标注{STANDBY_MARK}）",
+    not _dangling,
+    "; ".join(_dangling[:5]),
+)
+print(f"       ↳ 显式登记备用（正文未引用，逐条公示）: {len(_standby)} 条")
+for _t in _standby:
+    print(f"         · {_t}")
+
+# ── 11. 反向悬空：spec/ 引用的号必须已登记 ────
+# 与第 10 项对称。教训：机制溯源表长期写着 AIprint 的 arXiv:2607.14434v1，
+# 而 REFERENCES 的 AIprint 条目漏写该号 —— 只查单向，这个洞一直开着。
+# 只有双向都查，REFERENCES 与正文的引用关系才真正闭合。
+_ref_ids = set(ARX_RE.findall(refs))
+_spec_ids = {}
+for _fn in sorted(os.listdir(_spec_dir)):
+    if not _fn.endswith(".md"):
+        continue
+    for _m in ARX_RE.finditer(read(os.path.join(_spec_dir, _fn))):
+        _spec_ids.setdefault(_m.group(1), set()).add(_fn)
+_unregistered = {k: sorted(v) for k, v in _spec_ids.items() if k not in _ref_ids}
+check(
+    "spec/ 引用的 arXiv 号均已在 REFERENCES 登记（反向悬空）",
+    not _unregistered,
+    "; ".join(f"arXiv:{k} → {v[0]}" for k, v in sorted(_unregistered.items())[:5]),
+)
 
 # ── 汇总 ─────────────────────────────────────
 print()
