@@ -10,6 +10,7 @@
   6. STYLE 术语口径（允许 P0 优先级、禁 P0-x 审阅编号）
   7. spec/ 无 14-references.md（唯一真相源 = 根 REFERENCES.md）
   8. 引用红线：禁止引用的数字（如 GAIE 的「84–97%」）不得出现在正文
+  9. 未解问题条数一致：13-boundaries 实测条数 == README / README.en 各处声明
 
 用法：
   python scripts/verify_consistency.py [仓库根目录，默认脚本所在目录的上级]
@@ -142,6 +143,33 @@ for fp in md_files():
             red_line_hits.append(f"{rel} 出现禁止引用的数字 {pat}")
 check("引用红线：正文无禁止引用的数字（GAIE 84–97%）",
       not red_line_hits, "; ".join(red_line_hits[:5]))
+
+# ── 9. 未解问题条数一致 ──────────────────────
+# 教训：v1.2.0 在 13-boundaries 新增 #16 / #17 后，README 中英双语共 7 处
+# 仍写「15 条未解问题」，门禁无此检查因而漏网，直到人工复查才发现。
+# 取数方式：从文件开头收集第一列为连续自然数（1,2,3...）的表格行，
+# 序列一旦中断即停止——避免把后续 harness 披露卡表格的 1..11 误计入。
+b13 = read(os.path.join(ROOT, "spec", "13-boundaries.md"))
+_seq, _started = [], False
+for _line in b13.split("\n"):
+    _m = re.match(r"^\|\s*(\d+)\s*\|", _line)
+    if _m:
+        if int(_m.group(1)) == len(_seq) + 1:
+            _seq.append(int(_m.group(1)))
+            _started = True
+        elif _started:
+            break
+    elif _started:
+        break
+open_n = len(_seq)
+readme_en = read(os.path.join(ROOT, "README.en.md"))
+check(f"13-boundaries 实测未解问题条数 = {open_n}",
+      open_n >= 15, f"实测 {open_n} 条，少于 15 条疑似解析失败")
+check(f"README 声明「{open_n} 条未解问题」",
+      f"{open_n} 条未解问题" in readme, f"README.md 未找到「{open_n} 条未解问题」")
+check(f"README.en 声明「{open_n} open problems」",
+      f"{open_n} open problems" in readme_en,
+      f"README.en.md 未找到「{open_n} open problems」")
 
 # ── 汇总 ─────────────────────────────────────
 print()
