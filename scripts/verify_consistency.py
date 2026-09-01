@@ -3,8 +3,10 @@
 
 校验项：
   1. 全仓库无 [TABLE START/END] 伪标记
-  2. 所有 Markdown 表格（≥2 行的 | 块）表头后都有分隔行
-  3. 证据分级数量一致：REFERENCES 表格实测 A/B/C/D 条数 == 各处声明（54 总 / 44 B）
+  2. 所有 Markdown 表格（≥2 行的 | 块）表头后都有分隔行；且每行列数与分隔行一致
+     —— 两种表头风格都覆盖：带首竖线（| 表头 | ... |）与不带首竖线（表头 | ...）
+        （后者曾长期未被校验，导致 11-traceability 出现「6 列 vs 表头 5 列」而漏检）
+  3. 证据分级数量一致：REFERENCES 表格实测 A/B/C/D 条数 == 各处声明（55 总 / 45 B）
   4. 事故数字口径一致（1,200 留言板 / 700 参与攻击）
   5. ANTITRUST 章节号（第十二章，非第十三章）
   6. STYLE 术语口径（允许 P0 优先级、禁 P0-x 审阅编号）
@@ -59,50 +61,92 @@ for fp in md_files():
         pseudo.append(os.path.relpath(fp, ROOT))
 check("无 [TABLE START/END] 伪标记", not pseudo, "; ".join(pseudo))
 
-# ── 2. 表格分隔行 ────────────────────────────
+# ── 2. 表格分隔行 + 列数一致 ─────────────────
 SEP_RE = re.compile(r"^\s*\|?[\s:\-|]+\|?\s*$")
+CELL_SPLIT_RE = re.compile(r"(?<!\\)\|")  # 忽略被转义的 \|
+
+
+def _looks_row(line):
+    """是否像一行表格行。
+
+    覆盖两种风格：
+      A. 表头 / 数据行都不带首尾竖线，只有分隔行带（02-architecture、REFERENCES 等）
+      B. 全部行都带首尾竖线（13-boundaries 等）
+    """
+    s = line.strip()
+    if not s or "|" not in s:
+        return False
+    return s.startswith("|") or " | " in s
+
+
+def _ncols(line):
+    """该行的单元格数（按分隔行的口径：不计首尾空串）。"""
+    s = line.strip()
+    n = len(CELL_SPLIT_RE.split(s))
+    return n - 2 if s.startswith("|") else n
+
+
 bad_tables = []
+bad_cols = []
 for fp in md_files():
     lines = read(fp).splitlines()
     i = 0
     while i < len(lines):
-        if lines[i].lstrip().startswith("|") and "|" in lines[i]:
-            # 块开始：连续 | 行
+        if _looks_row(lines[i]):
             j = i
-            while j + 1 < len(lines) and lines[j + 1].lstrip().startswith("|"):
+            while j + 1 < len(lines) and _looks_row(lines[j + 1]):
                 j += 1
-            n_rows = j - i + 1
-            if n_rows >= 2 and not SEP_RE.match(lines[i + 1]):
-                bad_tables.append(f"{os.path.relpath(fp, ROOT)} L{i+1}: 表头后缺分隔行")
+            rel = os.path.relpath(fp, ROOT)
+            if (j - i + 1) >= 2:
+                if not SEP_RE.match(lines[i + 1]):
+                    bad_tables.append(f"{rel} L{i+1}: 表头后缺分隔行")
+                else:
+                    ncol = _ncols(lines[i + 1])
+                    for k in range(i, j + 1):
+                        if k == i + 1:
+                            continue
+                        c = _ncols(lines[k])
+                        if c != ncol:
+                            bad_cols.append(
+                                f"{rel} L{k+1}: 列数 {c} != 分隔行 {ncol}"
+                            )
             i = j + 1
         else:
             i += 1
 check("所有表格表头后都有 |---| 分隔行", not bad_tables, "; ".join(bad_tables[:5]))
+check(
+    "表格每行列数与分隔行一致",
+    not bad_cols,
+    "; ".join(bad_cols[:5]),
+)
 
 # ── 3. 证据分级数量 ──────────────────────────
 refs = read(os.path.join(ROOT, "REFERENCES.md"))
-# 数表格行：A | B | C（ C（ D（
-a = len(re.findall(r"^A \|", refs, re.M))
-b = len(re.findall(r"^B \|", refs, re.M))
-c = len(re.findall(r"^C（", refs, re.M))
-d = len(re.findall(r"^D（", refs, re.M))
+# 数表格行：等级格允许带括号说明（如 C（域迁移缺口）/ B（可核查预印本；…））。
+# 旧实现用 ^A \| / ^B \| / ^C（ / ^D（ 四个不一致的正则，导致「带括号的 B 级行」被漏计。
+GRADE_RE = re.compile(r"^(A|B|C|D)(（[^）]*）)?\s*\|", re.M)
+grades = GRADE_RE.findall(refs)
+a = sum(1 for g, _ in grades if g == "A")
+b = sum(1 for g, _ in grades if g == "B")
+c = sum(1 for g, _ in grades if g == "C")
+d = sum(1 for g, _ in grades if g == "D")
 check("REFERENCES 实测 A:1", a == 1, f"实测 A={a}")
-check("REFERENCES 实测 B:44", b == 44, f"实测 B={b}")
+check("REFERENCES 实测 B:45", b == 45, f"实测 B={b}")
 check("REFERENCES 实测 C:8", c == 8, f"实测 C={c}")
 check("REFERENCES 实测 D:1", d == 1, f"实测 D={d}")
 total = a + b + c + d
-check("REFERENCES 合计 54 条", total == 54, f"实测合计={total}")
+check("REFERENCES 合计 55 条", total == 55, f"实测合计={total}")
 
 readme = read(os.path.join(ROOT, "README.md"))
 chg = read(os.path.join(ROOT, "CHANGELOG.md"))
-check("README 声明「54 条来源，其中 B 级 44 条」",
-      "54 条来源，其中 B 级 44 条" in readme)
-check("README 分布「A:1 / B:44 / C:8 / D:1」（含 A 级来源标注）",
-      "A:1" in readme and "B:44 / C:8 / D:1" in readme)
+check("README 声明「55 条来源，其中 B 级 45 条」",
+      "55 条来源，其中 B 级 45 条" in readme)
+check("README 分布「A:1 / B:45 / C:8 / D:1」（含 A 级来源标注）",
+      "A:1" in readme and "B:45 / C:8 / D:1" in readme)
 check("CHANGELOG 声明「54 条参考文献（其中 B 级 44 条）」",
       "54 条参考文献（其中 B 级 44 条）" in chg)
-check("REFERENCES 注脚「44 条 B 级、8 条 C 级、1 条 D 级（合计 54 条来源）」",
-      "44 条 B 级、8 条 C 级、1 条 D 级（合计 54 条来源）" in refs)
+check("REFERENCES 注脚「45 条 B 级、8 条 C 级、1 条 D 级（合计 55 条来源）」",
+      "45 条 B 级、8 条 C 级、1 条 D 级（合计 55 条来源）" in refs)
 
 # ── 4. 事故数字口径 ──────────────────────────
 check("README 事故数字（1,200 留言板）",
