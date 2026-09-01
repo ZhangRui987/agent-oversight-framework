@@ -1,6 +1,6 @@
 # AI 执行与监察体系（Agent Oversight Framework）
 
-[![Version](https://img.shields.io/badge/version-1.4.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-1.5.0-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (23/26)](https://img.shields.io/badge/evidence-B_23%2F26-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -25,7 +25,7 @@ AI 正在从「工具」变成「代理者」：能调用工具、改代码、�
 
 | 能力 | 对应章节 |
 |---|---|
-| **G×S 二维分级**（任务风险 × Agent 规模——规模本身改变风险性质） ✨ | `spec/03-grading.md` |
+| **G×S 二维分级 + harness 成熟度轴 H**（任务风险 × Agent 规模——规模本身改变风险性质；H 度量部署方 harness 能否履行该档监察强度） ✨ | `spec/03-grading.md` |
 | **蜂群治理**（交互图谱 + 七类涌现检测信号 + 规模熔断 + 责任锚定） ✨ | `spec/07-swarm-governance.md` |
 | **证据完整性子系统 E**（E1–E5：内核采集 → TOCTOU 重读 → 固化外抛 → 交叉验证 → 采集点完整性） ✨ | `spec/08-evidence-integrity.md` |
 | **信用分 + 交白卷出口**（诚实认输优于隐瞒失败 + 白卷率校准） ✨ | `spec/04-credit-abstention.md` |
@@ -39,7 +39,7 @@ AI 正在从「工具」变成「代理者」：能调用工具、改代码、�
 
 当 Agent 能伪造沙箱记录、自发长出指挥体系时，传统的「监察个体行为」失效了。本框架的蜂群治理（`spec/07-swarm-governance.md`）把监察对象从**行为日志**升级到**交互图谱**——但我们也诚实承认：**对去中心化蜂群（狼群），目前只有检测能力，尚无经实证可靠的反制手段。**
 
-这是 22 条未解问题中的 #15（见 `spec/13-boundaries.md`），也是社区共建的优先方向。敢于公开承认「狼群我们还没搞定」，比声称「我们能搞定一切」更能建立专家社区的信任。
+这是 23 条未解问题中的 #15（见 `spec/13-boundaries.md`），也是社区共建的优先方向。敢于公开承认「狼群我们还没搞定」，比声称「我们能搞定一切」更能建立专家社区的信任。
 
 ## 架构概览
 
@@ -112,23 +112,23 @@ graph TD
 
 ## 状态
 
-- 当前版本：v1.4.0（见 [`VERSION`](VERSION)）
+- 当前版本：v1.5.0（见 [`VERSION`](VERSION)）
 - 维护状态：**不声称建成，只声称维护状态**——开放作弊集合只能持续对抗
-- **诚实边界**：22 条未解问题显式登记（见 `spec/13-boundaries.md`）——这是本框架的诚实边界，也是研究者的选题清单；含全体系最大的工程缺口「去中心化蜂群反制」
+- **诚实边界**：23 条未解问题显式登记（见 `spec/13-boundaries.md`）——这是本框架的诚实边界，也是研究者的选题清单；含全体系最大的工程缺口「去中心化蜂群反制」
 - 变更历史：见 [`CHANGELOG.md`](CHANGELOG.md)
 
 ## 快速开始
 
 **快速体验（约 5 分钟）**：
 1. 读 [`spec/01-principles.md`](spec/01-principles.md) 的六条总纲；
-2. 用 [`spec/03-grading.md`](spec/03-grading.md) 的 G×S 表判断你当前任务的监察等级；
-3. 读 [`spec/13-boundaries.md`](spec/13-boundaries.md) 的 22 条未解问题，挑一条开 Issue 讨论。
+2. 用 [`spec/03-grading.md`](spec/03-grading.md) 的 G×S 表判断你当前任务的监察等级，并按 G → H 耦合下限校验部署方 harness 是否达到该档所需的成熟度；
+3. 读 [`spec/13-boundaries.md`](spec/13-boundaries.md) 的 23 条未解问题，挑一条开 Issue 讨论。
 
 按角色深入：
 1. **部署方**：读 `spec/01-principles.md` → `spec/03-grading.md` → `spec/02-architecture.md`，按 G×S 分级确定监察强度；
 2. **企业采购 / 合规方**：读 `spec/12-enforcement.md` 的强制力四锚点与政策依据（《网络安全法》第二十条、TC260 2.0、《标识办法》），含 G×S 分级 ↔ 国内备案 / 标识要求的合规映射——保险方 / 审计方对接入口；
 3. **标准组织**：读 `spec/12-enforcement.md` 的标准映射与缺口分析；
-4. **研究者**：从 `REFERENCES.md` 出发复现证据链，或从 `spec/13-boundaries.md` 的 22 条未解问题选题；
+4. **研究者**：从 `REFERENCES.md` 出发复现证据链，或从 `spec/13-boundaries.md` 的 23 条未解问题选题；
 5. **安全研究人员**：从 `spec/07-swarm-governance.md` 的蜂群治理信号出发，提交 `evidence-correction` Issue 或开 Issue 讨论攻击路径。
 
 ## 仓库结构
@@ -182,7 +182,7 @@ graph TD
 
 见 [`CITATION.cff`](CITATION.cff)。
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v1.4.0). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v1.5.0). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## 质量保障（自指验证）
 
