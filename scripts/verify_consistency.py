@@ -13,11 +13,14 @@
   7. spec/ 无 14-references.md（唯一真相源 = 根 REFERENCES.md）
   8. 引用红线：禁止引用的数字（如 GAIE 的「84–97%」）不得出现在正文
   9. 未解问题条数一致：13-boundaries 实测条数 == README / README.en 各处声明
- 10. REFERENCES 无悬空引用：含 arXiv 号的条目，须在 spec/ 正文出现该号；
+ 10. REFERENCES 无悬空引用：条目的登记键须在 spec/ 正文出现；
      若确系有意登记而未回灌，须在落点列显式标注【登记备用】
      —— 备用清单逐条打印公示，无法静默堆积
  11. 反向悬空：spec/ 正文引用的每个 arXiv 号，均须在 REFERENCES 有条目登记
      —— 与第 10 项对称，双向都查才闭合
+ 12. 引用键的声明与质量：无 arXiv 号的条目须在文献列显式声明【键: XXX】；
+     键须全局唯一；键不得为通用词（黑名单 + 最短长度）
+     —— 让第 10 项的覆盖从「有号条目」扩展到全部条目
 
 用法：
   python scripts/verify_consistency.py [仓库根目录，默认脚本所在目录的上级]
@@ -226,15 +229,18 @@ check(f"README.en 声明「{open_n} open problems」",
 # 读者会误以为该论断有文献支撑；v1.7.0 的 Janssen 是第二例。这是**隐性过度宣称**，
 # 与证据完整性章自己写的「错觉比缺失更危险」是同一类问题。
 #
-# 检查口径：以 arXiv 号为登记键（机制溯源表即以 arXiv 号为键），含 arXiv 号的条目
-# 须在 spec/ 正文出现该号；确系有意登记而未回灌者，须在落点列显式标注【登记备用】。
+# 登记键：有 arXiv 号者以号为键；无号者须在文献列显式声明【键: XXX】。
+# 键须在 spec/ 正文出现；确系有意登记而未回灌者，须在落点列显式标注【登记备用】。
+#
+# ⚠️ 键不可用自由关键词推断：v1.8.0 摸底时以「EU AI Act」「Hugging Face」等关键词
+# 判定命中，两次都是误报——正文里这些串指向的是**别的**文献（Janssen / Nannini），
+# 以及把 HF 当作事故当事方提起、而非引用其技术时间线。键必须由人在 REFERENCES 显式声明。
 #
 # ⚠️ 「显式豁免」不是后门：① 标记是固定词元、可 grep、可计数；② 下方逐条打印备用
 # 清单，每次跑门禁都会在输出里公示，无法静默堆积；③ 标记只豁免「正文未引用」这一项，
 # 不豁免该条目的等级、限定的准确性。
 #
-# 未覆盖：17 条无 arXiv 号的条目（官方博客 / 技术报告 / 期刊论文）无法按号比对，
-# 仍须人工复查。
+# 覆盖范围：v1.9.0 起，全部条目（含无 arXiv 号者）均须有键，故本项已无盲区。
 STANDBY_MARK = "【登记备用】"
 _spec_dir = os.path.join(ROOT, "spec")
 SPEC_ALL = "\n".join(
@@ -243,8 +249,10 @@ SPEC_ALL = "\n".join(
     if _fn.endswith(".md")
 )
 ARX_RE = re.compile(r"arXiv:(\d{4}\.\d{4,5})")
-_dangling = []
-_standby = []
+KEY_RE = re.compile(r"【键:\s*([^】]+?)\s*】")
+
+# 统一解析：每条条目 = (键列表, 是否有 arXiv 号, 文献列, 落点列, 显示标签)
+_entries = []
 for _line in refs.splitlines():
     if not GRADE_RE.match(_line):
         continue
@@ -254,23 +262,29 @@ for _line in refs.splitlines():
     _lit = _parts[1]
     _land = " | ".join(_parts[2:])
     _ids = ARX_RE.findall(_lit)
-    if not _ids:
+    _keys = list(_ids) + KEY_RE.findall(_lit)
+    _head = _ids[0] if _ids else (_keys[0] if _keys else "(无键)")
+    _entries.append((_keys, bool(_ids), _lit, _land, _head + " — " + _lit[:34]))
+
+_dangling = []
+_standby = []
+for _keys, _has_arx, _lit, _land, _tag in _entries:
+    if not _keys or any(k in SPEC_ALL for k in _keys):
         continue
-    if any(i in SPEC_ALL for i in _ids):
-        continue
-    _tag = _ids[0] + " — " + _lit[:38]
     if STANDBY_MARK in _land:
         _standby.append(_tag)
     else:
         _dangling.append(_tag)
 check(
-    f"REFERENCES 无悬空引用（未命中 spec/ 者须在落点列标注{STANDBY_MARK}）",
+    f"REFERENCES 无悬空引用（键未命中 spec/ 者须在落点列标注{STANDBY_MARK}）",
     not _dangling,
     "; ".join(_dangling[:5]),
 )
 print(f"       ↳ 显式登记备用（正文未引用，逐条公示）: {len(_standby)} 条")
 for _t in _standby:
     print(f"         · {_t}")
+print(f"       ↳ 已声明引用键: "
+      f"{sum(1 for e in _entries if e[0])} / {len(_entries)} 条")
 
 # ── 11. 反向悬空：spec/ 引用的号必须已登记 ────
 # 与第 10 项对称。教训：机制溯源表长期写着 AIprint 的 arXiv:2607.14434v1，
@@ -289,6 +303,63 @@ check(
     not _unregistered,
     "; ".join(f"arXiv:{k} → {v[0]}" for k, v in sorted(_unregistered.items())[:5]),
 )
+
+# ── 12. 引用键的声明与质量 ───────────────────
+# 第 10 项此前只能覆盖有 arXiv 号的条目，16 条无号条目（官方博客 / 技术报告 /
+# 期刊论文）是盲区。本项把覆盖补齐：无号条目必须由人显式声明键，随后并入第 10 项
+# 的同一规则。
+#
+# ⚠️ 为什么键不能由脚本推断：见第 10 项注释——「EU AI Act」「Hugging Face」两次
+# 关键词判定都是误报。键是**人对引用关系的声明**，脚本只负责校验声明本身的质量。
+#
+# 三条子规则：
+#   (a) 完备 —— 无号条目必须声明键，否则该条目永远进不了第 10 项的比对，盲区复现。
+#   (b) 唯一 —— 键撞车则命中无法归因到具体条目，等价于没有键。
+#   (c) 非通用 —— 通用词必然在正文大量出现，但这些命中指向**别的**文献，键形同虚设。
+#       黑名单收录的是已复现的误报词与同类高危词；最短长度挡住过短的缩写。
+KEY_MIN_LEN = 4
+GENERIC_KEYS = {
+    # 已复现的两次误报（第 10 项注释有完整经过）
+    "EU AI Act", "Hugging Face",
+    # 同类高危：机构 / 通用概念名，正文里既指文献也指当事方或泛指
+    "OpenAI", "Anthropic", "METR / Redwood", "Google", "DeepMind", "Microsoft",
+    "sandbox", "Sandbox", "沙箱", "监管", "监管沙盒", "合规",
+    "Agent", "agent", "AI", "LLM", "模型", "对齐", "审计", "溯源", "证据",
+}
+
+_nokey = []
+_key_dup = {}
+_key_generic = []
+for _keys, _has_arx, _lit, _land, _tag in _entries:
+    if _has_arx:
+        continue
+    if not _keys:
+        _nokey.append(_tag)
+        continue
+    for _k in _keys:
+        _key_dup.setdefault(_k, []).append(_tag)
+        if _k in GENERIC_KEYS or len(_k) < KEY_MIN_LEN:
+            _key_generic.append(f"{_k}（{_tag}）")
+
+check(
+    "无 arXiv 号的条目均已在文献列声明【键: XXX】",
+    not _nokey,
+    "; ".join(_nokey[:5]),
+)
+_dups = {k: v for k, v in _key_dup.items() if len(v) > 1}
+check(
+    "引用键全局唯一（不同条目不得共用同一键）",
+    not _dups,
+    "; ".join(f"{k} → {len(v)} 条" for k, v in list(_dups.items())[:5]),
+)
+check(
+    f"引用键非通用词（不在黑名单且长度 ≥ {KEY_MIN_LEN}）",
+    not _key_generic,
+    "; ".join(_key_generic[:5]),
+)
+print(f"       ↳ 无号条目 {sum(1 for e in _entries if not e[1])} 条，"
+      f"其中已声明键 "
+      f"{sum(1 for e in _entries if not e[1] and e[0])} 条")
 
 # ── 汇总 ─────────────────────────────────────
 print()
