@@ -1,6 +1,6 @@
 # 许可证
 
-本仓库当前为**纯文档仓库**，根许可证为 **Creative Commons Attribution-ShareAlike 4.0 International**（CC BY-SA 4.0，适用于全部文档）。**Apache License 2.0** 保留于 `LICENSE-CODE`，供未来纳入代码实现时使用。
+本仓库以**文档为主体**，根许可证为 **Creative Commons Attribution-ShareAlike 4.0 International**（CC BY-SA 4.0，适用于全部文档）。**Apache License 2.0** 备置于 `LICENSE-CODE`：自 v2.1.0 起，`reference/` 下的可运行参照实现启用该许可证（此前保留供未来纳入代码实现时使用）。
 
 ## 路径 ↔ 许可证映射
 
@@ -10,9 +10,10 @@
 | `REFERENCES.md` | CC BY-SA 4.0 | `CC-BY-SA-4.0` |
 | `CLASSIFICATION.md` | CC BY-SA 4.0 | `CC-BY-SA-4.0` |
 | `README.md`、`CONTRIBUTING.md`、`CODE_OF_CONDUCT.md`、`LICENSING.md`、`STYLE.md` 等文档 | CC BY-SA 4.0 | `CC-BY-SA-4.0` |
+| `reference/runtimes/**`（`*.ts` 等代码文件；该目录下的 `.md` 文档仍为 CC BY-SA 4.0） | Apache License 2.0 | `Apache-2.0` |
 | 文档内嵌的代码示例（如有） | Apache License 2.0 | `Apache-2.0` |
 
-全文见 [`LICENSE`](./LICENSE)（CC BY-SA 4.0，根许可证）与 [`LICENSE-CODE`](./LICENSE-CODE)（Apache-2.0，备用）。归属细节见 [`NOTICE`](./NOTICE)。
+全文见 [`LICENSE`](./LICENSE)（CC BY-SA 4.0，根许可证）与 [`LICENSE-CODE`](./LICENSE-CODE)（Apache-2.0，代码路径适用）。归属细节见 [`NOTICE`](./NOTICE)。
 
 ## 为什么拆分
 
