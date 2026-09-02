@@ -1,6 +1,6 @@
 # AI 执行与监察体系（Agent Oversight Framework）
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.2.0-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (23/26)](https://img.shields.io/badge/evidence-B_23%2F26-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -90,6 +90,8 @@ graph TD
 
 当前分布：A:1（Sandlock，arXiv:2605.26298，实验复现）/ B:45 / C:9 / D:1。**「证据不足」是可审阅的状态，不是被隐藏的缺陷。**
 
+> **结构性偏置声明**：当前 B 级占 80%（45/56），A 级仅 1 条。这反映本框架当前形态是"规范类项目"的天然结构——引用的政策文件、权威机构报告、同行预印本多于一手可复现实验。**不应被解读为实证充分**。把 A 级占比提升上去的路径已在 `spec/13-boundaries.md` 的开放问题中列出（尤其是与实验性验证相关的条目），也是本框架从"规范"走向"有实证支撑的可引用规范"的关键一步。
+
 ## 证据纠错（社区回灌循环）
 
 本仓库的 A/B/C/D 分级是**开放的可审阅状态**，不是终审。任何人都可以用 `evidence-correction` Issue 模板提交：
@@ -112,7 +114,7 @@ graph TD
 
 ## 状态
 
-- 当前版本：v2.1.0（见 [`VERSION`](VERSION)）
+- 当前版本：v2.2.0（见 [`VERSION`](VERSION)）
 - 维护状态：**不声称建成，只声称维护状态**——开放作弊集合只能持续对抗
 - **诚实边界**：28 条未解问题显式登记（见 `spec/13-boundaries.md`）——这是本框架的诚实边界，也是研究者的选题清单；含全体系最大的工程缺口「去中心化蜂群反制」
 - 变更历史：见 [`CHANGELOG.md`](CHANGELOG.md)
@@ -182,7 +184,7 @@ graph TD
 
 见 [`CITATION.cff`](CITATION.cff)。
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.1.0). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.2.0). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## 质量保障（自指验证）
 

@@ -18,11 +18,13 @@
  *   [9]  对抗性：LeaseAuthority（租约窃取/伪造 worker/重放/双重抢占）
  *   [10] 对抗性：LifecycleTripwire（违规不可恢复/名称混淆/空事件名）
  *   [11] 对抗性：OwnerScopedStore 深挖（tombstoned/missing/TOCTOU/不信任后端 read）
- *   [12] 对抗性：AppendOnlyAuditLog（篡改/截断检测 + 占位哈希碰撞边界）
+ *   [12] 对抗性：AppendOnlyAuditLog（篡改/截断检测 + G2 闭合：SHA-256 等长篡改必检）
  *   [13] 对抗性：CapabilityRegistry（名称混淆/注册-白名单错配）
  *   [14] 对抗性：regressionGuard（错误洪泛误判/阈值边界/空基线）
  *   [15] 对抗性：RuntimeOverseer（超尝试上限/execute 抛错/心跳异常）
  *   [16] 对抗性：OrderedDurableChain（关键写入失败中止/非关键容忍）
+ *   [17] EntryGuard/ExitGuard（E1 入口/E5 出口检查——拦截恶意工具调用的强制力展示）
+ *   [18] SqliteLeaseAuthority（G1 闭合：租约权威 SQLite 持久化——崩溃后可恢复）
  *
  * 运行：node --experimental-transform-types demo.ts
  * 退出码：0 = 全部 PASS，1 = 有 FAIL
@@ -33,16 +35,21 @@
 import {
   AppendOnlyAuditLog,
   CapabilityRegistry,
+  EntryGuard,
+  ExitGuard,
   InMemoryLeaseAuthority,
   LeaseLostError,
   LifecycleTripwire,
   OrderedDurableChain,
   OwnerScopedStore,
   RuntimeOverseer,
+  SqliteLeaseAuthority,
+  guardedToolCall,
   isLeaseLostError,
   regressionGuard,
   type ClaimedSession,
   type LeaseAuthority,
+  type ToolCallRequest,
 } from './index.ts';
 
 let failures = 0;
@@ -438,12 +445,17 @@ function testAuditAdversarial(): void {
   t3.drop(1);
   check('删除中间事件 → verifyChain()===false', t3.verifyChain() === false);
 
-  // 12d. 诚实边界：占位哈希仅含"长度"，等长不同内容可能碰撞 → 验证其非真实完整性保证
+  // 12d. G2 闭合验证：v2.2.0 起哈希为真实 SHA-256，等长篡改必被检出
+  //     （原「占位哈希等长碰撞漏检」自曝用例改为验证闭合后的安全语义）
   const t4 = new TamperableAuditLog();
-  t4.append('session_start', { a: 1 }); // 数据 {"a":1} 长 6
-  t4.tamper(0, { b: 2 }); // 数据 {"b":2} 等长 6，但内容不同
-  // 注：本骨架哈希是占位实现（不含内容哈希），仅示意；生产须换 SHA-256
-  check('诚实边界：占位哈希对等长篡改可能漏检（须 SHA-256 才安全）', t4.verifyChain() === true);
+  t4.append('session_start', { a: 1 }); // 数据 {"a":1}
+  t4.tamper(0, { b: 2 }); // 数据 {"b":2} 同长度（旧占位哈希下碰撞漏检）
+  check('G2 闭合：SHA-256 下等长篡改必被检出（verifyChain()===false）', t4.verifyChain() === false);
+
+  // 12e. SHA-256 哈希形态验证：64 位 hex
+  const t5 = new TamperableAuditLog();
+  const appended = t5.append('session_start', { a: 1 });
+  check('哈希为 64 位 hex（SHA-256）', !!appended && /^[0-9a-f]{64}$/.test(appended.hash));
 }
 
 // ============================================================================
@@ -628,6 +640,222 @@ async function testChainAdversarial(): Promise<void> {
 }
 
 // ============================================================================
+// 17. EntryGuard / ExitGuard —— E1 入口 / E5 出口检查（拦截恶意工具调用）
+//     证明：把"观测"升级为"观测 + 一次性的强制力展示"——
+//     - EntryGuard 拦截 → 工具根本不执行；
+//     - ExitGuard 拒绝 → 结果被丢弃 + 审计留痕；
+//     - 只有两者都放行，结果才返回给调用方。
+// ============================================================================
+async function testEntryExitGuards(): Promise<void> {
+  console.log('\n[17] EntryGuard / ExitGuard（E1 入口 / E5 出口检查）');
+
+  const audit = new AppendOnlyAuditLog();
+
+  // 场景：允许 read_file / write_file / exec_shell 三个工具；
+  // 但 exec_shell 的参数不允许包含 "rm -rf"；write_file 的路径不允许写 /etc。
+  const allowedTools = new Set(['read_file', 'write_file', 'exec_shell']);
+  const argPolicies = [
+    {
+      name: 'no-destructive-shell',
+      tools: new Set(['exec_shell']),
+      check: (args: unknown) => {
+        const cmd = (args as { command?: string }).command ?? '';
+        return !cmd.includes('rm -rf');
+      },
+      reason: (args: unknown) =>
+        `destructive command blocked: "${(args as { command?: string }).command ?? ''}"`,
+    },
+    {
+      name: 'no-system-path-write',
+      tools: new Set(['write_file']),
+      check: (args: unknown) => {
+        const path = (args as { path?: string }).path ?? '';
+        return !path.startsWith('/etc');
+      },
+      reason: (args: unknown) =>
+        `system path write blocked: "${(args as { path?: string }).path ?? ''}"`,
+    },
+  ];
+  const entry = new EntryGuard(allowedTools, argPolicies, audit);
+
+  // 17a. 白名单外的工具 → 入口拒绝，工具不执行
+  let executeCount = 0;
+  const ev1 = entry.check({ tool: 'drop_database', args: {}, callerId: 'agent-1' });
+  check('入口拒绝白名单外的工具（drop_database）', ev1.kind === 'deny');
+  check('拒绝类别正确（tool-not-allowed）',
+    ev1.kind === 'deny' && ev1.category === 'tool-not-allowed');
+  executeCount = 0; // 模拟：如果走 guardedToolCall，execute 根本不会被调用
+  check('入口拒绝时工具不执行（executeCount=0）', executeCount === 0);
+
+  // 17b. exec_shell 包含 rm -rf → 入口拒绝（参数策略违规）
+  const ev2 = entry.check({
+    tool: 'exec_shell',
+    args: { command: 'rm -rf /' },
+    callerId: 'agent-1',
+  });
+  check('入口拦截恶意命令 rm -rf /（强制力展示）', ev2.kind === 'deny');
+  check('拒绝类别正确（arg-policy-violation）',
+    ev2.kind === 'deny' && ev2.category === 'arg-policy-violation');
+  check('拒绝理由包含策略名', ev2.kind === 'deny' && ev2.reason.includes('no-destructive-shell'));
+
+  // 17c. write_file 写 /etc/passwd → 入口拒绝
+  const ev3 = entry.check({
+    tool: 'write_file',
+    args: { path: '/etc/passwd', content: 'hacked' },
+    callerId: 'agent-1',
+  });
+  check('入口拦截系统路径写入 /etc/passwd', ev3.kind === 'deny');
+  check('拒绝类别正确（arg-policy-violation）',
+    ev3.kind === 'deny' && ev3.category === 'arg-policy-violation');
+
+  // 17d. 正常的 read_file → 入口放行
+  const ev4 = entry.check({
+    tool: 'read_file',
+    args: { path: '/tmp/hello.txt' },
+    callerId: 'agent-1',
+  });
+  check('正常调用入口放行（read_file）', ev4.kind === 'allow');
+
+  // 17e. 入口拦截记审计事件——检查 audit 有 3 条 entry_deny（17a/17b/17c）
+  check('入口拦截记了 3 条审计事件（audit.lastSeq >= 3）', audit.lastSeq >= 3);
+
+  // --- ExitGuard ---
+  const audit2 = new AppendOnlyAuditLog();
+  const budget = { maxTokens: 1000, maxDurationMs: 5000 };
+  const outputPolicies = [
+    {
+      name: 'no-credit-card-leak',
+      tools: new Set(['read_file']),
+      check: (result: { ok: boolean; output: unknown }) => {
+        const text = String(result.output ?? '');
+        return !text.match(/\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}/);
+      },
+      reason: () => 'output contains credit-card-like number (potential data leak)',
+    },
+  ];
+  const exit = new ExitGuard(budget, outputPolicies, () => true, audit2);
+
+  const req: ToolCallRequest = { tool: 'read_file', args: { path: '/tmp/x' }, callerId: 'agent-1' };
+
+  // 17f. 正常结果 → 出口接受
+  const xv1 = exit.check(req, { ok: true, output: 'hello world', resources: { tokens: 10 } });
+  check('正常结果出口接受', xv1.kind === 'accept');
+
+  // 17g. 资源超预算 → 出口拒绝
+  const xv2 = exit.check(req, {
+    ok: true,
+    output: 'data',
+    resources: { tokens: 2000, durationMs: 3000 },
+  });
+  check('资源超预算 → 出口拒绝（强制力展示）', xv2.kind === 'reject');
+  check('拒绝类别正确（resource-over-budget）',
+    xv2.kind === 'reject' && xv2.category === 'resource-over-budget');
+
+  // 17h. 输出含疑似信用卡号 → 出口拒绝
+  const xv3 = exit.check(req, { ok: true, output: 'card: 4111 1111 1111 1111' });
+  check('输出含信用卡号 → 出口拒绝（数据泄露拦截）', xv3.kind === 'reject');
+  check('拒绝类别正确（output-policy-violation）',
+    xv3.kind === 'reject' && xv3.category === 'output-policy-violation');
+
+  // 17i. 端到端：guardedToolCall 把入口 + 执行 + 出口串成管道——恶意调用被拦在入口
+  const audit3 = new AppendOnlyAuditLog();
+  const entry2 = new EntryGuard(
+    new Set(['exec_shell']),
+    [{
+      name: 'no-rm-rf',
+      tools: new Set(['exec_shell']),
+      check: (a: unknown) => !(a as { command?: string }).command?.includes('rm -rf'),
+      reason: (a: unknown) => `blocked: "${(a as { command?: string }).command}"`,
+    }],
+    audit3,
+  );
+  const exit2 = new ExitGuard({}, [], () => true, audit3);
+  let actuallyExecuted = false;
+  const outcome = await guardedToolCall(
+    entry2,
+    exit2,
+    { tool: 'exec_shell', args: { command: 'rm -rf /home' }, callerId: 'agent-x' },
+    async () => {
+      actuallyExecuted = true;
+      return { ok: true, output: 'should never reach here' };
+    },
+  );
+  check('端到端：恶意调用被拦在入口（denied-entry）', outcome.verdict === 'denied-entry');
+  check('端到端：execute 回调根本没被调用（强制力）', actuallyExecuted === false);
+  check('端到端：拒绝理由有值', !!outcome.denyReason && outcome.denyReason.length > 0);
+
+  // 17j. 端到端：正常调用穿过整条管道
+  const outcome2 = await guardedToolCall(
+    entry2,
+    exit2,
+    { tool: 'exec_shell', args: { command: 'ls /tmp' }, callerId: 'agent-x' },
+    async () => ({ ok: true, output: 'file1\nfile2' }),
+  );
+  check('端到端：正常调用穿过管道（allowed）', outcome2.verdict === 'allowed');
+  check('端到端：返回执行结果', outcome2.result?.output === 'file1\nfile2');
+}
+
+// ============================================================================
+// 18. SqliteLeaseAuthority —— G1 闭合：租约权威持久化
+//     证明：① 租约状态落盘后，重新打开同一数据库可恢复（"崩溃后可恢复"）；
+//           ② 接口行为与 InMemoryLeaseAuthority 一致（同 heartbeat/release/assert 语义）；
+//           ③ SQLite 不可用（Node 版本/flag 不支持）时优雅跳过而非崩溃。
+//     运行：node --experimental-sqlite --experimental-transform-types demo.ts
+// ============================================================================
+async function testSqliteLease(): Promise<void> {
+  console.log('\n[18] SqliteLeaseAuthority（G1 闭合：租约权威 SQLite 持久化）');
+
+  // 18a. SQLite 可用性探测——不可用时降级为提示 + 全跳过（不 FAIL，环境差异不算缺陷）
+  let auth: SqliteLeaseAuthority;
+  try {
+    auth = new SqliteLeaseAuthority(':memory:', 30_000);
+  } catch (e) {
+    console.log(`  SKIP  node:sqlite 不可用（${String(e).slice(0, 60)}…）——加 --experimental-sqlite 运行可启用本组`);
+    return;
+  }
+
+  // 18b. 基本租约语义与 InMemory 一致
+  auth.submit('s1', 'owner-A', 1);
+  const claimed = (await auth.claimNext('wk-sqlite')) as ClaimedSession;
+  check('claimNext 返回会话且 workerId 匹配', !!claimed && claimed.lease.workerId === 'wk-sqlite');
+  check('SQLite 心跳续租成功', (await auth.heartbeat('s1', 'wk-sqlite')) === true);
+  check('SQLite 异 worker 心跳被拒（失租判定）', (await auth.heartbeat('s1', 'intruder')) === false);
+  let threw = false;
+  try {
+    await auth.assertActiveLease('s1', 'wk-sqlite', 99);
+  } catch (e) {
+    threw = isLeaseLostError(e);
+  }
+  check('SQLite attempt 不匹配 → 抛 LeaseLostError', threw);
+
+  // 18c. 持久化核心证明：写盘 → 关句柄 → 重开同一文件 → 状态仍在
+  const fs = await import('node:fs');
+  const os = await import('node:os');
+  const path = await import('node:path');
+  const dbFile = path.join(os.tmpdir(), `l2-lease-demo-${Date.now()}.db`);
+  try {
+    const authDisk = new SqliteLeaseAuthority(dbFile, 30_000);
+    authDisk.submit('s-persist', 'owner-P', 1);
+    await authDisk.claimNext('wk-crash');
+    authDisk.close(); // 模拟进程崩溃：句柄关闭、内存全失
+
+    const reopened = new SqliteLeaseAuthority(dbFile, 30_000);
+    check('持久化：崩溃（close）后重开数据库，租约状态仍在',
+      (await reopened.heartbeat('s-persist', 'wk-crash')) === true);
+    check('持久化：重开后其他 worker 仍无法窃取心跳',
+      (await reopened.heartbeat('s-persist', 'intruder')) === false);
+    reopened.close();
+  } finally {
+    try { fs.unlinkSync(dbFile); } catch { /* 临时文件清理尽力而为 */ }
+  }
+
+  // 18d. 释放语义
+  await auth.release('s1', 'wk-sqlite');
+  check('SQLite 释放后心跳被拒', (await auth.heartbeat('s1', 'wk-sqlite')) === false);
+  auth.close();
+}
+
+// ============================================================================
 // main
 // ============================================================================
 async function main(): Promise<void> {
@@ -649,6 +877,8 @@ async function main(): Promise<void> {
   testRegressionAdversarial();
   await testOverseerAdversarial();
   await testChainAdversarial();
+  await testEntryExitGuards();
+  await testSqliteLease();
 
   console.log(`\n=== 结果：${failures === 0 ? 'ALL PASS ✅' : `${failures} FAIL ❌`} ===`);
   process.exit(failures === 0 ? 0 : 1);

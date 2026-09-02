@@ -10,13 +10,17 @@
  *   - 判定全部是确定性硬规则（租约/心跳/事件序/白名单），不依赖任何 AI 判断——
  *     这是 spec/09「看门狗不可被 AI 关闭」的直接落地。
  *
- * 诚实边界（呼应 spec/13 的诚实传统，生产前必须补齐，逐项见同目录 README）：
- *   - 租约权威为内存占位（InMemoryLeaseAuthority）；生产应换 PostgreSQL 或独立信任域存储。
- *   - 审计链是 append-only + 哈希链，但哈希为占位实现（等长篡改可漏检，见 demo [12d]）；
- *     未做 E1 内核侧采集（spec/02）/ E5 独立信任域固化，对抗性多 Agent 场景（P3）下
+ * 诚实边界（呼应 spec/13 的诚实传统，**逐项详解见同目录 PRODUCTION-GAPS.md**）：
+ *   - 租约权威：内存 InMemoryLeaseAuthority（纯内存场景）或 SqliteLeaseAuthority（G1 演示级闭合，
+ *     Node 22+ 内置 node:sqlite，崩溃后可恢复）；生产应换 PostgreSQL 或独立信任域存储。
+ *   - 审计链为 append-only + SHA-256 哈希链（G2 演示级闭合，node:crypto）；
+ *     未做 E1 内核侧采集（spec/02）/ E5 独立信任域固化，对抗性多 Agent 场景（P3）下               ← G3 / G4
  *     不能单独用作信任根。
- *   - 无资源账本（预算比/影子比/记忆写入审计，spec/10）、无三号公证机（spec/09 要求
- *     独立硬件信任域 + 三号甲/乙拆分）、无信用分与信用回避（spec/04）、无群治理（spec/07）。
+ *   - 无资源账本（预算比/影子比/记忆写入审计，spec/10）、无三号公证机（spec/09 要求                ← G5 / G6
+ *     独立硬件信任域 + 三号甲/乙拆分）、无信用分与信用回避（spec/04）、无群治理（spec/07）。        ← G7 / G8
+ *
+ * G1、G2 已演示级闭合（SQLite 持久化 + SHA-256）；G3–G8 需外部系统配合。
+ * 完整说明见同目录 PRODUCTION-GAPS.md。
  *
  * 许可证：Apache License 2.0（代码路径，见 LICENSING.md 的路径 ↔ 许可证映射）。
  * 无外部依赖，纯 TypeScript 接口 + 内存参考实现，Node 22+ 可直接运行。
@@ -148,6 +152,113 @@ export class InMemoryLeaseAuthority implements LeaseAuthority {
 }
 
 // ============================================================================
+// 1b. SqliteLeaseAuthority —— LeaseAuthority 的 SQLite 持久化实现
+//     覆盖 G1（租约权威存储从内存升级到磁盘持久化）：
+//       - 进程崩溃后租约状态可恢复（关键差距闭合）；
+//       - 同接口形态——替换后端不改任何监察逻辑。
+//     使用 Node 22+ 内置的 node:sqlite（实验性 API，零外部依赖）。
+//     生产环境应换 PostgreSQL（独立进程 / 独立信任域）——本实现是演示级持久化。
+//
+//     ⚠️ node:sqlite 在 Node 22 中为实验性 API，运行时需要：
+//        node --experimental-sqlite demo.ts
+//     若 Node 版本不支持或未启用该 flag，本类构造会抛错——
+//     调用方应 fallback 到 InMemoryLeaseAuthority 或 PostgresLeaseAuthority。
+// ============================================================================
+
+import { DatabaseSync } from 'node:sqlite';
+
+export class SqliteLeaseAuthority implements LeaseAuthority {
+  private readonly db: DatabaseSync;
+  private gen = 0;
+
+  /**
+   * @param dbPath SQLite 数据库文件路径。传 ':memory:' 即纯内存（同 InMemory 但走 SQLite 引擎）。
+   * @param ttlMs 租约 TTL（与 InMemoryLeaseAuthority 一致）。
+   */
+  constructor(
+    dbPath: string,
+    private readonly ttlMs: number,
+  ) {
+    this.db = new DatabaseSync(dbPath);
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id TEXT PRIMARY KEY,
+        ownerId TEXT NOT NULL,
+        attempt INTEGER NOT NULL,
+        claimSeq INTEGER NOT NULL,
+        workerId TEXT NOT NULL,
+        generation INTEGER NOT NULL,
+        expiresAt INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'leased'
+      );
+      CREATE TABLE IF NOT EXISTS pending (
+        id TEXT PRIMARY KEY,
+        ownerId TEXT NOT NULL,
+        attempt INTEGER NOT NULL,
+        claimSeq INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS meta (
+        key TEXT PRIMARY KEY,
+        value INTEGER NOT NULL
+      );
+      INSERT OR IGNORE INTO meta(key, value) VALUES('gen', 0);
+    `);
+  }
+
+  /** Demo/test 辅助：入队一个待抢占会话（真实实现里由扫描循环提交）。 */
+  submit(id: string, ownerId: string, attempt = 1): void {
+    const claimSeq = (this.db.prepare('SELECT COUNT(*) AS n FROM pending').get() as { n: number }).n + 1;
+    this.db.prepare('INSERT OR REPLACE INTO pending(id, ownerId, attempt, claimSeq) VALUES(?,?,?,?)')
+      .run(id, ownerId, attempt, claimSeq);
+  }
+
+  async claimNext(workerId: string): Promise<ClaimedSession | null> {
+    const next = this.db.prepare('SELECT * FROM pending ORDER BY claimSeq ASC LIMIT 1').get() as
+      | { id: string; ownerId: string; attempt: number; claimSeq: number }
+      | undefined;
+    if (!next) return null;
+    this.gen = (this.db.prepare("SELECT value FROM meta WHERE key='gen'").get() as { value: number }).value + 1;
+    this.db.prepare("UPDATE meta SET value=? WHERE key='gen'").run(this.gen);
+    const expiresAt = Date.now() + this.ttlMs;
+    this.db.prepare('INSERT OR REPLACE INTO sessions(id, ownerId, attempt, claimSeq, workerId, generation, expiresAt, status) VALUES(?,?,?,?,?,?,?,?)')
+      .run(next.id, next.ownerId, next.attempt, next.claimSeq, workerId, this.gen, expiresAt, 'leased');
+    this.db.prepare('DELETE FROM pending WHERE id=?').run(next.id);
+    return {
+      id: next.id,
+      ownerId: next.ownerId,
+      attempt: next.attempt,
+      claimSeq: next.claimSeq,
+      lease: { workerId, generation: this.gen, expiresAt },
+    };
+  }
+
+  async heartbeat(id: string, workerId: string): Promise<boolean> {
+    const row = this.db.prepare('SELECT workerId FROM sessions WHERE id=? AND status=?')
+      .get(id, 'leased') as { workerId: string } | undefined;
+    if (!row || row.workerId !== workerId) return false;
+    this.db.prepare('UPDATE sessions SET expiresAt=? WHERE id=?').run(Date.now() + this.ttlMs, id);
+    return true;
+  }
+
+  async release(id: string, workerId: string): Promise<void> {
+    this.db.prepare("UPDATE sessions SET status='released' WHERE id=? AND workerId=?").run(id, workerId);
+  }
+
+  async assertActiveLease(id: string, workerId: string, attempt: number): Promise<void> {
+    const row = this.db.prepare('SELECT workerId, attempt FROM sessions WHERE id=? AND status=?')
+      .get(id, 'leased') as { workerId: string; attempt: number } | undefined;
+    if (!row || row.workerId !== workerId || row.attempt !== attempt) {
+      throw new LeaseLostError(id, workerId, attempt);
+    }
+  }
+
+  /** 关闭数据库句柄（demo 结束时调用，避免文件锁遗留）。 */
+  close(): void {
+    this.db.close();
+  }
+}
+
+// ============================================================================
 // 2. OrderedDurableChain —— 对应「有序写入链 + 关键写入」
 //    OpenMAIC runner.ts: enqueue() 把事件/入口树追加串到一条有序链；
 //    关键写入失败即终止循环（writeRequiredSessionEntry）。
@@ -272,7 +383,18 @@ export class OwnerScopedStore<TRow> {
 //    spec/02-architecture.md E3: 证据生成即写入只追加存储，带哈希链，
 //    外抛到被观测方不可达的位置。本骨架做 append-only + 哈希链，但
 //    固化外抛（独立信任域）属 E5，需另行实现。
+//
+//    v2.2.0 起哈希为真实 SHA-256（Node 内置 crypto，零外部依赖）——
+//    原「占位哈希（链长+前缀）等长篡改可漏检」的缺口（G2）已闭合；
+//    demo [12d] 原自曝用例改为验证「SHA-256 下等长篡改必被检出」。
 // ============================================================================
+
+import { createHash } from 'node:crypto';
+
+/** 对载荷计算 SHA-256（hex）。生产可替换为更强的哈希或 HMAC，接口不变。 */
+export function sha256(payload: string): string {
+  return createHash('sha256').update(payload, 'utf-8').digest('hex');
+}
 
 export class AppendOnlyAuditLog {
   private seq = 0;
@@ -285,8 +407,8 @@ export class AppendOnlyAuditLog {
       this.seq += 1;
       const ts = Date.now();
       const payload = JSON.stringify({ seq: this.seq, type, data, ts, prev: this.prevHash });
-      // 占位哈希：生产应换为 SHA-256；此处仅示意"每条指向前一条"。
-      const hash = `h${this.seq}:${this.prevHash.slice(0, 6)}:${payload.length}`;
+      // SHA-256 哈希链：每条事件绑定前一条的哈希，等长篡改/删改必被 verifyChain 检出。
+      const hash = sha256(payload);
       this.prevHash = hash;
       this.events.push({ type, data, ts, seq: this.seq, hash });
       return { seq: this.seq, hash };
@@ -299,17 +421,12 @@ export class AppendOnlyAuditLog {
     return this.seq;
   }
 
-  /** 完整性校验：可检测出中间条目被删改（呼应 E4 交叉验证的廉价版）。 */
+  /** 完整性校验：任何中间条目被删改都会导致后续哈希不匹配（呼应 E4 交叉验证的廉价版）。 */
   verifyChain(): boolean {
     let prev = '';
     for (const e of this.events) {
-      if (e.hash !== `h${e.seq}:${prev.slice(0, 6)}:${JSON.stringify({
-        seq: e.seq,
-        type: e.type,
-        data: e.data,
-        ts: e.ts,
-        prev,
-      }).length}`) {
+      const payload = JSON.stringify({ seq: e.seq, type: e.type, data: e.data, ts: e.ts, prev });
+      if (e.hash !== sha256(payload)) {
         return false;
       }
       prev = e.hash;
@@ -475,17 +592,270 @@ export function regressionGuard(
 }
 
 // ============================================================================
+// 9. EntryGuard / ExitGuard —— E1 入口检查 / E5 出口检查的最小可运行示例
+//    spec/02-architecture.md E1：证据采集应在内核侧进行，不经用户态路径。
+//    spec/02-architecture.md E5：采集模块自身须在独立信任域、须签名。
+//
+//    ⚠️ 本组件是对 E1/E5 的**语义演示**，不是真正的内核侧采集或独立信任域。
+//    真正的 E1 需要 eBPF/LSM 探针（见 PRODUCTION-GAPS.md G3）；
+//    真正的 E5 需要独立硬件信任域 + 远程证明（见 PRODUCTION-GAPS.md G4）。
+//    本组件的角色是把"E1/E5 拦截什么、用什么规则、拦截后留下什么证据"
+//    变成可读、可测试的代码——让读者看到"确定性强制力"长什么样。
+// ============================================================================
+
+/** 工具调用请求——EntryGuard 的输入。 */
+export interface ToolCallRequest {
+  tool: string;
+  args: unknown;
+  /** 调用者身份（由运行器注入，模型不可伪造——呼应 OwnerScopedStore 的设计）。 */
+  callerId: string;
+}
+
+/** 工具调用结果——ExitGuard 的输入。 */
+export interface ToolCallResult {
+  ok: boolean;
+  /** 工具返回的数据（成功时）或错误消息（失败时）。 */
+  output: unknown;
+  /** 工具调用的资源消耗（ExitGuard 检查是否超预算）。 */
+  resources?: { tokens?: number; memoryMb?: number; durationMs?: number };
+}
+
+/** 入口检查裁决。 */
+export type EntryVerdict =
+  | { kind: 'allow' }
+  | { kind: 'deny'; reason: string; /** 拦截类别，用于审计与统计 */ category: EntryDenyCategory };
+
+export type EntryDenyCategory =
+  | 'tool-not-allowed'     // 工具不在白名单
+  | 'arg-policy-violation' // 参数违反策略（如禁止的路径、禁止的操作）
+  | 'rate-limit'           // 速率超限
+  | 'budget-exhausted';    // 预算耗尽
+
+/**
+ * E1 入口检查守卫——在工具调用**执行之前**做确定性裁决。
+ *
+ * 与 CapabilityRegistry 的区别：
+ *   - CapabilityRegistry 回答"这个工具存不存在、模型能不能看到它"（注册态）。
+ *   - EntryGuard 回答"这次具体的调用，要不要放行"（运行态）。
+ *
+ * 裁决全部是确定性硬规则——不依赖任何 AI 判断（呼应 spec/09 看门狗原则）。
+ * 拦截时记一条审计事件，把"为什么拦、拦了谁、依据哪条规则"全留痕。
+ */
+export class EntryGuard {
+  constructor(
+    /** 允许的工具白名单。 */
+    private readonly allowedTools: ReadonlySet<string>,
+    /** 参数策略：返回 false 表示该参数值违反策略。 */
+    private readonly argPolicies: Array<{
+      name: string;
+      tools: ReadonlySet<string>;
+      check: (args: unknown) => boolean;
+      reason: (args: unknown) => string;
+    }>,
+    /** 审计日志：每次拦截记一条。 */
+    private readonly audit: { append: (type: string, data: unknown) => unknown },
+  ) {}
+
+  check(req: ToolCallRequest): EntryVerdict {
+    // 规则 1：工具必须在白名单
+    if (!this.allowedTools.has(req.tool)) {
+      this.audit.append('entry_deny', {
+        tool: req.tool,
+        callerId: req.callerId,
+        category: 'tool-not-allowed',
+        reason: `tool "${req.tool}" is not in the allowed set`,
+      });
+      return {
+        kind: 'deny',
+        category: 'tool-not-allowed',
+        reason: `tool "${req.tool}" is not in the allowed set`,
+      };
+    }
+
+    // 规则 2：逐条参数策略
+    for (const policy of this.argPolicies) {
+      if (policy.tools.has(req.tool) && !policy.check(req.args)) {
+        this.audit.append('entry_deny', {
+          tool: req.tool,
+          callerId: req.callerId,
+          category: 'arg-policy-violation',
+          policy: policy.name,
+          reason: policy.reason(req.args),
+        });
+        return {
+          kind: 'deny',
+          category: 'arg-policy-violation',
+          reason: `[${policy.name}] ${policy.reason(req.args)}`,
+        };
+      }
+    }
+
+    return { kind: 'allow' };
+  }
+}
+
+/** 出口检查裁决。 */
+export type ExitVerdict =
+  | { kind: 'accept' }
+  | { kind: 'reject'; reason: string; category: ExitRejectCategory };
+
+export type ExitRejectCategory =
+  | 'output-policy-violation'  // 输出违反策略（如泄露了禁止字段）
+  | 'resource-over-budget'     // 资源消耗超预算
+  | 'integrity-check-failed';  // 完整性校验失败（如签名不匹配——E5 的核心）
+
+/**
+ * E5 出口检查守卫——在工具调用**返回之后**做确定性裁决。
+ *
+ * 与 EntryGuard 的对称性：
+ *   - EntryGuard 在执行前拦截"不该发生"的调用；
+ *   - ExitGuard 在执行后拦截"不该被采纳"的结果（如超预算、输出违规、完整性失败）。
+ *
+ * ⚠️ 真正的 E5 完整性校验需要独立信任域的签名比对（见 PRODUCTION-GAPS.md G4）。
+ * 此处的 `integrityCheck` 只是一个占位钩子——演示语义，不提供真正的密码学保证。
+ */
+export class ExitGuard {
+  constructor(
+    /** 资源预算上限。 */
+    private readonly budget: { maxTokens?: number; maxMemoryMb?: number; maxDurationMs?: number },
+    /** 输出策略：返回 false 表示输出违反策略。 */
+    private readonly outputPolicies: Array<{
+      name: string;
+      tools: ReadonlySet<string>;
+      check: (result: ToolCallResult) => boolean;
+      reason: (result: ToolCallResult) => string;
+    }>,
+    /**
+     * 完整性校验钩子——返回 false 表示完整性校验失败（E5 核心）。
+     * 占位实现：默认返回 true（不做校验）。
+     * 生产实现：应比对独立信任域的签名/承诺。
+     */
+    private readonly integrityCheck: (req: ToolCallRequest, result: ToolCallResult) => boolean = () => true,
+    /** 审计日志：每次拒绝记一条。 */
+    private readonly audit: { append: (type: string, data: unknown) => unknown },
+  ) {}
+
+  check(req: ToolCallRequest, result: ToolCallResult): ExitVerdict {
+    // 规则 1：资源预算
+    if (result.resources) {
+      if (this.budget.maxTokens !== undefined && result.resources.tokens !== undefined) {
+        if (result.resources.tokens > this.budget.maxTokens) {
+          this.audit.append('exit_reject', {
+            tool: req.tool,
+            callerId: req.callerId,
+            category: 'resource-over-budget',
+            metric: 'tokens',
+            actual: result.resources.tokens,
+            budget: this.budget.maxTokens,
+          });
+          return {
+            kind: 'reject',
+            category: 'resource-over-budget',
+            reason: `tokens ${result.resources.tokens} > budget ${this.budget.maxTokens}`,
+          };
+        }
+      }
+      if (this.budget.maxDurationMs !== undefined && result.resources.durationMs !== undefined) {
+        if (result.resources.durationMs > this.budget.maxDurationMs) {
+          this.audit.append('exit_reject', {
+            tool: req.tool,
+            callerId: req.callerId,
+            category: 'resource-over-budget',
+            metric: 'duration',
+            actual: result.resources.durationMs,
+            budget: this.budget.maxDurationMs,
+          });
+          return {
+            kind: 'reject',
+            category: 'resource-over-budget',
+            reason: `duration ${result.resources.durationMs}ms > budget ${this.budget.maxDurationMs}ms`,
+          };
+        }
+      }
+    }
+
+    // 规则 2：输出策略
+    for (const policy of this.outputPolicies) {
+      if (policy.tools.has(req.tool) && !policy.check(result)) {
+        this.audit.append('exit_reject', {
+          tool: req.tool,
+          callerId: req.callerId,
+          category: 'output-policy-violation',
+          policy: policy.name,
+          reason: policy.reason(result),
+        });
+        return {
+          kind: 'reject',
+          category: 'output-policy-violation',
+          reason: `[${policy.name}] ${policy.reason(result)}`,
+        };
+      }
+    }
+
+    // 规则 3：完整性校验（E5 核心，占位）
+    if (!this.integrityCheck(req, result)) {
+      this.audit.append('exit_reject', {
+        tool: req.tool,
+        callerId: req.callerId,
+        category: 'integrity-check-failed',
+        reason: 'integrity check failed (signature/commitment mismatch)',
+      });
+      return {
+        kind: 'reject',
+        category: 'integrity-check-failed',
+        reason: 'integrity check failed (signature/commitment mismatch)',
+      };
+    }
+
+    return { kind: 'accept' };
+  }
+}
+
+/**
+ * 受守卫的工具调用——把 EntryGuard + 工具执行 + ExitGuard 串成一条管道。
+ *
+ * 这就是把"观测"升级为"观测 + 一次性的强制力展示"的最小形态：
+ *   - EntryGuard 拦截 → 工具根本不执行（强制力）；
+ *   - ExitGuard 拒绝 → 结果被丢弃、审计留痕（强制力）；
+ *   - 只有 EntryGuard 放行 **且** ExitGuard 接受，结果才会被返回给调用方。
+ *
+ * 这是 demo [17] 组要证明的语义。
+ */
+export async function guardedToolCall(
+  entry: EntryGuard,
+  exit: ExitGuard,
+  req: ToolCallRequest,
+  execute: (req: ToolCallRequest) => Promise<ToolCallResult>,
+): Promise<{ verdict: 'allowed' | 'denied-entry' | 'rejected-exit'; result?: ToolCallResult; denyReason?: string }> {
+  const ev = entry.check(req);
+  if (ev.kind === 'deny') {
+    return { verdict: 'denied-entry', denyReason: ev.reason };
+  }
+  const result = await execute(req);
+  const xv = exit.check(req, result);
+  if (xv.kind === 'reject') {
+    return { verdict: 'rejected-exit', denyReason: xv.reason };
+  }
+  return { verdict: 'allowed', result };
+}
+
+// ============================================================================
 // 导出汇总
 // ============================================================================
 export const RuntimeOversight = {
   LeaseLostError,
   isLeaseLostError,
   InMemoryLeaseAuthority,
+  SqliteLeaseAuthority,
   OrderedDurableChain,
   LifecycleTripwire,
   OwnerScopedStore,
   AppendOnlyAuditLog,
+  sha256,
   CapabilityRegistry,
   RuntimeOverseer,
   regressionGuard,
+  EntryGuard,
+  ExitGuard,
+  guardedToolCall,
 };

@@ -1,5 +1,40 @@
 # 变更日志
 
+## v2.2.0（2026-09-02）— L2 参照实现工程可信度补强：G1/G2 闭合 + E1/E5 强制力展示 + OTel 适配器 + 证据偏置声明
+
+1. **G2 闭合：审计哈希升级为真实 SHA-256**（`index.ts` 新增导出 `sha256()`，Node 内置
+   `node:crypto`，零外部依赖）。原「占位哈希（链长 + 前缀）等长篡改可漏检」缺口闭合：
+   demo [12d] 从「自曝等长碰撞漏检」改为**验证闭合语义**——「SHA-256 下等长篡改必被检出」；
+   新增 [12e] 验证哈希形态为 64 位 hex。诚实边界同步更新：闭合的是「等长篡改漏检」这一
+   具体缺口，不是完整的 E5（进程被攻陷时哈希链可整体重算，签名比对仍需独立信任域，见 G4）。
+2. **G1 闭合：租约权威 SQLite 持久化**（`index.ts` 新增 `SqliteLeaseAuthority`，Node 22+
+   内置 `node:sqlite`，零外部依赖；接口与 `LeaseAuthority` 完全一致，`InMemoryLeaseAuthority`
+   保留供纯内存场景）。demo [18] 验证核心持久化语义：写盘 → close 模拟崩溃 → 重开同一
+   数据库 → 租约状态仍在、心跳/窃取防护语义不变。生产级仍需 PostgreSQL / 独立信任域
+   （SQLite 同机同权限可被文件篡改），如实标注。
+3. **E1/E5 强制力展示：新增 `EntryGuard` / `ExitGuard` / `guardedToolCall`**（demo [17]，
+   21 项断言）。入口拦截恶意工具调用（白名单外工具、`rm -rf /` 破坏性命令、写 `/etc/passwd`
+   系统路径）、出口拦截超预算与数据泄露（信用卡号输出策略）；端到端证明**拦截时工具根本
+   不执行**（execute 回调零调用）——把「观测」升级为「观测 + 一次性的强制力展示」。
+   诚实边界：真正的 E1 需 eBPF/LSM 内核侧采集（G3）、真正的 E5 需独立信任域签名比对
+   （G4，`ExitGuard.integrityCheck` 为占位钩子，默认恒真）——本组件是语义演示，如实标注。
+4. **新增 `PRODUCTION-GAPS.md`（一级章节性文件）**：把 8 项生产级缺口（G1–G8）从散落的
+   index.ts 注释、demo 自曝用例、README 表格集中到一处，逐项给出「现状 → spec 锚点 →
+   差距描述 → 最小缓解路径」，并标注 v2.2.0 闭合状态（G1/G2 演示级闭合，G3–G8 未闭合）。
+   引用本实现时必须同时引用本文件——spec/13 诚实传统的直接落地。
+5. **新增 `otel-adapter.ts`：OpenTelemetry 导出适配器**（E3「固化外抛」的工程对接层）。
+   把 `AppendOnlyAuditLog` 事件流转换为 OTLP/JSON Logs 结构（resourceLogs → scopeLogs →
+   logRecords），可被任何 OTLP collector 直接摄取；拦截/拒绝/失败事件自动升级 WARN/ERROR
+   严重级别；stdin→stdout 管道模式 + 内置 14 项自检全 PASS。诚实边界：只做格式转换，
+   不采集不发送；不验证审计链完整性；无背压/批量/重试——生产接入应使用官方 OTel SDK。
+6. **README 双语新增「结构性偏置声明」**：证据分级章节显式声明 B 级占 80%（45/56）、
+   A 级仅 1 条——反映规范类项目天然形态（政策文件/机构报告/预印本多于一手可复现实验），
+   **不应被解读为实证充分**；提升 A 级占比的路径已列入开放问题。
+7. **可复现验证**：`node --experimental-transform-types demo.ts` → **18 组、100 项断言
+   全部 PASS、0 FAIL、退出码 0**；`node --experimental-transform-types otel-adapter.ts
+   --selftest` → 14 项自检全 PASS；门禁 29 项全绿。
+8. **版本号 2.1.1 → 2.2.0**：`VERSION`、README 两版、`CITATION.cff` 共 10 处同步。
+
 ## v2.1.0（2026-09-02）— 首份可运行参照实现：L2 运行时监察骨架并入 reference/
 
 1. **新增 `reference/runtimes/l2-runtime-oversight/`**（`index.ts` + `demo.ts` + README）：

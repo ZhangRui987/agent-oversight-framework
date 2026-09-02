@@ -19,12 +19,15 @@
 | 组件 | 对应 spec 机制 | 机制来源 |
 |---|---|---|
 | `LeaseAuthority` + `LeaseLostError` | spec/09 看门狗：确定性租约/心跳，AI 关不掉 | OpenMAIC runner 心跳/失租即停 |
+| `SqliteLeaseAuthority` | 同上（G1 演示级闭合）：租约权威 SQLite 持久化，崩溃后可恢复（Node 22+ 内置 `node:sqlite`，零外部依赖） | 本框架自研（接口形态与 OpenMAIC store 一致） |
 | `LifecycleTripwire` | spec/09 看门狗思想：事件序确定性闸门 | OpenMAIC runner 首事件必须为 lifecycle |
 | `OwnerScopedStore` | spec/09 责任锚定：ownerId 由运行器注入，工具层不可伪造 | OpenMAIC probeStageAccess 门控 |
 | `OrderedDurableChain` | spec/02 有序写入 + 关键写入不允许部分成功 | OpenMAIC enqueue / writeRequiredSessionEntry |
-| `AppendOnlyAuditLog` | spec/02 E3：采集后即固化外抛（append-only + 哈希链）的进程内缩样 | OpenMAIC appendRunEvent seq 代际 |
+| `AppendOnlyAuditLog` + `sha256` | spec/02 E3：采集后即固化外抛（append-only + SHA-256 哈希链，G2 演示级闭合）的进程内缩样 | OpenMAIC appendRunEvent seq 代际 |
+| `otel-adapter` | E3 固化外抛的工程对接层：审计事件流 → OTLP/JSON Logs，接入现有可观测性栈（otel-collector / Loki / Datadog 等） | 本框架自研（格式转换桥，非采集/发送端） |
 | `CapabilityRegistry` | spec/09 L0 准入：能力门控 + fail-loud（注册 ≠ 授权） | OpenMAIC 能力门控工具 + 白名单 |
 | `regressionGuard` | spec/09 二号监察：确定性裁决 + 错误样本排除（基础设施故障不算模型行为） | OpenMAIC eval/orchestration |
+| `EntryGuard` / `ExitGuard` / `guardedToolCall` | spec/02 E1 入口 / E5 出口检查的最小可运行示例：拦截恶意工具调用（白名单 / 参数策略 / 资源预算 / 输出策略），把「观测」升级为「观测 + 一次性的强制力展示」 | 本框架自研（语义演示，非内核侧采集 / 独立信任域，见 PRODUCTION-GAPS.md G3/G4） |
 | `RuntimeOverseer` | 以上组合成 L2 最小监察循环：claim → 心跳 → 执行 → 收尾 | OpenMAIC runSession 裁剪镜像 |
 
 ## 运行验证
@@ -36,7 +39,16 @@ node --experimental-transform-types demo.ts
 # 退出码 0 = 全部 PASS；1 = 有 FAIL
 ```
 
-demo 覆盖 16 组、72 项断言（截至 v2.1.0 实测全绿），含 9 组对抗性用例：
+OpenTelemetry 导出适配器（把审计事件流转为 OTLP/JSON，接入现有可观测性栈）：
+
+```bash
+# 自检
+node --experimental-transform-types otel-adapter.ts --selftest
+# 管道模式：把 JSONL 事件流转换为 OTLP/JSON Logs
+node --experimental-transform-types otel-adapter.ts < audit-events.jsonl > otlp-export.json
+```
+
+demo 覆盖 18 组、100 项断言（截至 v2.2.0 实测全绿），含 9 组对抗性用例：
 
 | 组 | 证明的机制 / 对抗目标 |
 |---|---|
@@ -45,26 +57,30 @@ demo 覆盖 16 组、72 项断言（截至 v2.1.0 实测全绿），含 9 组对
 | [9] | 租约窃取、伪造 worker、attempt 重放、双重抢占 |
 | [10] | tripwire 违规不可恢复、名称混淆、空事件名 |
 | [11] | tombstoned/missing 拒绝、TOCTOU、不信任后端 read |
-| [12] | 审计链篡改/截断检测；**自曝**：占位哈希等长碰撞可漏检 |
+| [12] | 审计链篡改/截断检测；G2 闭合验证：SHA-256 下等长篡改必被检出（原「占位哈希碰撞漏检」自曝用例已改为验证闭合语义） |
 | [13] | 工具名称混淆、注册 ≠ 授权、白名单与注册错配 |
 | [14] | **自曝**：错误洪泛可绕过守卫（缺 min-sample 门禁）、阈值边界、空基线失效 |
 | [15] | 超尝试上限不执行、execute 抛错不崩溃、心跳异常视为失租 |
 | [16] | 关键写入失败中止整链（拒绝部分成功）、非关键失败被容忍 |
+| [17] | E1/E5 强制力展示：入口拦截恶意工具调用（rm -rf / 写 /etc）、出口拦截超预算与数据泄露；端到端证明拦截时工具根本不执行 |
+| [18] | G1 闭合：SQLite 租约权威——崩溃（close）后重开数据库租约状态仍在；语义与内存实现一致 |
 
 ## 诚实边界（生产前必须补齐，不得误标为完整合规）
 
-| 缺口 | 本实现现状 | spec 要求 |
-|---|---|---|
-| 租约权威存储 | 内存 `InMemoryLeaseAuthority` 占位 | PostgreSQL 或独立信任域 |
-| 审计哈希 | 占位哈希（仅链长 + 前缀），等长篡改可漏检（demo [12d] 自曝） | SHA-256 及以上 |
-| E1 内核侧采集 | 无（事件产生于被观测进程内部） | spec/02：eBPF/LSM 等内核侧采集，不经用户态路径 |
-| E5 采集点自身完整性 | 无 | spec/02：独立信任域、采集模块签名 |
-| 资源账本 | 无（仅 attempt/lease 预算） | spec/10：预算比、影子比、记忆写入审计 |
-| 三号公证机 | 无 | spec/09：独立硬件信任域、三号甲/乙拆分、Merkle 双盲 |
-| 信用分与信用回避 | 无 | spec/04 |
-| 群治理与涌现检测 | 无（集中调度模型） | spec/07 |
+本实现存在 **8 项生产级缺口（G1–G8）**，已集中到同目录 [`PRODUCTION-GAPS.md`](PRODUCTION-GAPS.md) 作为一级章节性文件。**v2.2.0 起 G1（SQLite 持久化租约）与 G2（SHA-256 哈希链）已演示级闭合**；其余 6 项未闭合：
 
-因此：本实现**不能单独用作信任根**。在 spec/02 所述 P3 阶段（独立硬件域 + 远程证明）落地之前，它只是把「确定性硬闸门应该怎么写」变成可运行、可复现的参照。
+| 编号 | 缺口 | 状态 |
+|---|---|---|
+| **G1** | 租约权威存储 | ✅ 演示级闭合（`SqliteLeaseAuthority`，崩溃后可恢复）；生产级需 PostgreSQL / 独立信任域 |
+| **G2** | 审计哈希强度 | ✅ 演示级闭合（SHA-256 哈希链，等长篡改必检出）；生产级需 E5 签名比对 |
+| **G3** | E1 内核侧采集 | ❌ 需内核态组件（eBPF / LSM） |
+| **G4** | E5 采集点完整性 | ❌ 需独立硬件信任域 + 远程证明 |
+| **G5** | 资源账本 | ❌ 可扩展接口（`ResourceLedger`），需对接外部账本 |
+| **G6** | 三号公证机 | ❌ 需独立公证服务 |
+| **G7** | 信用分与信用回避 | ❌ 需对接 L1 信用分子系统 |
+| **G8** | 群治理与涌现检测 | ❌ 需分布式交互图谱层 |
+
+因此：本实现**不能单独用作信任根**。在 spec/02 所述 P3 阶段（独立硬件域 + 远程证明）落地之前，它只是把「确定性硬闸门应该怎么写」变成可运行、可复现的参照。**引用本实现时，必须同时引用 `PRODUCTION-GAPS.md`**——这是本框架「诚实边界」纪律的直接落地。
 
 ## 许可证
 
