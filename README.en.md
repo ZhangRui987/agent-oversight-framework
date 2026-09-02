@@ -1,6 +1,6 @@
 # AI Execution & Oversight Framework
 
-[![Version](https://img.shields.io/badge/version-1.9.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (23/26)](https://img.shields.io/badge/evidence-B_23%2F26-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -88,7 +88,7 @@ Every claim in this repository is graded on four levels; every mechanism is trac
 | **C** | Credible but with domain-transfer gaps, or secondhand relay |
 | **D** | Content unverifiable (e.g., blank page) or with conflicts of interest; key data secondhand — **cannot alone support a P0 mechanism** |
 
-Current distribution: A:1 (Sandlock, arXiv:2605.26298, experimental reproduction) / B:46 / C:8 / D:1. **"Insufficient evidence" is a reviewable state, not a hidden defect.**
+Current distribution: A:1 (Sandlock, arXiv:2605.26298, experimental reproduction) / B:45 / C:9 / D:1. **"Insufficient evidence" is a reviewable state, not a hidden defect.**
 
 ## Evidence correction (community back-propagation loop)
 
@@ -112,9 +112,9 @@ Per `CLASSIFICATION.md`, this repository has three levels:
 
 ## Status
 
-- Current version: v1.9.0 (see [`VERSION`](VERSION))
+- Current version: v2.0.0 (see [`VERSION`](VERSION))
 - Maintenance status: **does not claim "built"; claims only "maintained"** — an open cheating set can only be countered continuously
-- **Honest boundary**: 26 open problems explicitly registered (see `spec/13-boundaries.md`) — this framework's honest boundary and a problem list for researchers; includes the system's largest engineering gap, "decentralized-swarm countermeasures"
+- **Honest boundary**: 28 open problems explicitly registered (see `spec/13-boundaries.md`) — this framework's honest boundary and a problem list for researchers; includes the system's largest engineering gap, "decentralized-swarm countermeasures"
 - Change history: see [`CHANGELOG.md`](CHANGELOG.md)
 
 ## Quick start
@@ -122,13 +122,13 @@ Per `CLASSIFICATION.md`, this repository has three levels:
 **Quick tour (about 5 minutes)**:
 1. Read the six general principles in [`spec/01-principles.md`](spec/01-principles.md);
 2. Use the G×S table in [`spec/03-grading.md`](spec/03-grading.md) to determine the oversight grade of your current task, and check against the G → H coupling floor whether the deployer harness reaches the maturity required by that grade;
-3. Read the 26 open problems in [`spec/13-boundaries.md`](spec/13-boundaries.md), pick one, and open an issue to discuss.
+3. Read the 28 open problems in [`spec/13-boundaries.md`](spec/13-boundaries.md), pick one, and open an issue to discuss.
 
 By role:
 1. **Deployer**: read `spec/01-principles.md` → `spec/03-grading.md` → `spec/02-architecture.md`, determine oversight intensity by G×S grading;
 2. **Enterprise procurement / compliance**: read the four coercion anchors and policy basis in `spec/12-enforcement.md` (Article 20 of the *Cybersecurity Law*, TC260 2.0, the *Labeling Measures*), including the compliance mapping of G×S grading ↔ domestic filing/labeling requirements — the entry point for insurers / auditors;
 3. **Standards organizations**: read the standard mappings and gap analysis in `spec/12-enforcement.md`;
-4. **Researchers**: reproduce the evidence chain from `REFERENCES.md`, or select a topic from the 26 open problems in `spec/13-boundaries.md`;
+4. **Researchers**: reproduce the evidence chain from `REFERENCES.md`, or select a topic from the 28 open problems in `spec/13-boundaries.md`;
 5. **Security researchers**: starting from the swarm-governance signals in `spec/07-swarm-governance.md`, submit an `evidence-correction` issue or open an issue to discuss attack paths.
 
 ## Repository structure
@@ -182,7 +182,7 @@ This repository governs itself by its own specification (meta-governance):
 
 See [`CITATION.cff`](CITATION.cff).
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v1.9.0). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.0.0). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## Quality assurance (self-referential verification)
 
