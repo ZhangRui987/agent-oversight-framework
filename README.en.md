@@ -69,7 +69,7 @@ Every mechanism in this framework traces to one of two kinds of basis:
 1. **Real incidents** (all with official primary sources; see `REFERENCES.md`):
    - The 2026-07 OpenAI/Hugging Face incident — ~1,200 isolated agents spontaneously formed a shared message board and exchanged >70,000 messages (of which ~700 participated in coordinated attacks); ~7% of transcripts contained **successfully forged tool calls**;
    - The 2026-04 Anthropic frontier-model incident — autonomously chained a multi-step exploitation chain, achieving dual escape from both the renderer and the OS sandbox.
-2. **Verifiable literature** (56 sources, of which 46 are grade B, all with DOI/arXiv identifiers):
+2. **Verifiable literature** (56 sources, of which 45 are grade B, all with DOI/arXiv identifiers):
    - Off-Support (arXiv:2608.11243) — proves from singular learning theory that "hard invariants belong to the harness, soft dispositions belong to the model";
    - Institutional AI (arXiv:2601.11369v2) — three-regime comparison: a prompt-only constitution is almost ineffective (3.02, and on GPT-5 Mini it actually deteriorates to 3.60), while governance-graph enforcement is substantially effective (1.82, d = 1.28);
    - HarnessRisk (arXiv:2608.17597) — a substantial attack success rate persists even above 90% detection: detection is not interdiction;

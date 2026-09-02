@@ -156,6 +156,54 @@ check("CHANGELOG 声明「54 条参考文献（其中 B 级 44 条）」",
 check("REFERENCES 注脚「45 条 B 级、9 条 C 级、1 条 D 级（合计 56 条来源）」",
       "45 条 B 级、9 条 C 级、1 条 D 级（合计 56 条来源）" in refs)
 
+# ── 3b. README 全文证据计数一致性 ─────────────
+# 教训：v2.1.0 之前门禁只锁了 README 顶部声明与 REFERENCES 注脚两个固定字符串，
+# 仓库结构表（README.md L139）漏写旧值「55 条分级证据」、英文版「可核查文献」段
+# 写成「46 are grade B」都没被覆盖——同文件内部自相矛盾却照常提交。
+# 本项扫描 README 双语全文出现的「N 条…证据 / N sources / N graded… / grade B」，
+# 所有出现的总数与 B 级数都必须与门禁实测一致。
+readme_en = read(os.path.join(ROOT, "README.en.md"))
+
+# 总数声明：中文「N 条…分级证据」「N 条来源」、英文「N sources」「N graded evidence sources」
+TOTAL_RE_ZH = re.compile(r"(\d{2})\s*条(?:[^\n]{0,6})?(?:分级)?证据")
+TOTAL_RE_ZH2 = re.compile(r"(\d{2})\s*条来源")
+TOTAL_RE_EN = re.compile(r"(\d{2})\s+(?:sources|graded(?:\s+evidence)?(?:\s+sources)?)", re.I)
+
+# B 级数声明：中文「B 级 N 条」「其中 B 级 N 条」、英文「N are grade B」「grade-B: N」「B:N」
+B_RE_ZH = re.compile(r"B\s*级\s*(\d{2})\s*条")
+B_RE_EN1 = re.compile(r"(\d{2})\s+are\s+grade\s+B", re.I)
+B_RE_EN2 = re.compile(r"B\s*[:：]\s*(\d{2})")
+B_RE_ZH_DIST = re.compile(r"B\s*[:：]\s*(\d{2})")
+
+_bad_total = []
+_bad_b = []
+for _label, _content in (("README.md", readme), ("README.en.md", readme_en)):
+    # 总数：取所有声明集合，须全部 == total
+    _tot = set(int(m.group(1)) for m in TOTAL_RE_ZH.finditer(_content))
+    _tot |= set(int(m.group(1)) for m in TOTAL_RE_ZH2.finditer(_content))
+    _tot |= set(int(m.group(1)) for m in TOTAL_RE_EN.finditer(_content))
+    for _n in _tot:
+        if _n != total:
+            _bad_total.append(f"{_label} 出现总数 {_n} != 实测 {total}")
+    # B 级：取所有声明集合，须全部 == b
+    _bb = set(int(m.group(1)) for m in B_RE_ZH.finditer(_content))
+    _bb |= set(int(m.group(1)) for m in B_RE_EN1.finditer(_content))
+    _bb |= set(int(m.group(1)) for m in B_RE_EN2.finditer(_content))
+    _bb |= set(int(m.group(1)) for m in B_RE_ZH_DIST.finditer(_content))
+    for _n in _bb:
+        if _n != b:
+            _bad_b.append(f"{_label} 出现 B 级数 {_n} != 实测 {b}")
+check(
+    f"README 双语全文「证据总数」一致（所有出现的总数 == {total}）",
+    not _bad_total,
+    "; ".join(_bad_total[:5]),
+)
+check(
+    f"README 双语全文「B 级数」一致（所有出现的 B 级数 == {b}）",
+    not _bad_b,
+    "; ".join(_bad_b[:5]),
+)
+
 # ── 4. 事故数字口径 ──────────────────────────
 check("README 事故数字（1,200 留言板）",
       "1,200 个隔离 Agent 自发形成共享留言板" in readme)
