@@ -1,5 +1,27 @@
 # 变更日志
 
+## v2.0.1（2026-09-02）— D4 存档核验闭环：DEMM-Bench 的 Zenodo 存档浏览器实测确认
+
+1. **Zenodo 存档核验完成（浏览器实测）**：`10.5281/zenodo.20426092` 真实存在——
+   v0.1.1（2026-05-28 发布，另含 v0.1.0），软件包 zip 可下载且含源码结构与 CI 工作流配置，
+   关联 GitHub 仓库 agent-runtime-evidence/decision-evidence-benchmark（Releases v0.1.1）
+   与 Software Heritage 长期存档。Zenodo 描述中的 75% / 50% / 56.25% 与 paired-oracle
+   Cohen's κ=1.0 与本仓 REFERENCES 条目及引用红线口径一致（κ=1.0 恰为「按构造为真」
+   的量化体现）。**「代码与 178 个测试真实存在」断言的存档侧自此有了独立证据**；
+   178 计数仍以 D4 复核记录为据（截图未展示测试计数，不加码）。
+2. **HF「404」之辨（更正一项核验记录）**：D4 复核记录原称「HF dev404ai/DEMM-Bench
+   未获独立核验」。本轮查明：该 HF 标识出自论文 arXiv 页 Comments 字段，正确 URL 为
+   `huggingface.co/datasets/dev404ai/DEMM-Bench`（**须带 `/datasets/` 前缀**）；
+   不带前缀的 model 路径实测 404 系路径错误，**不构成「论文声称的仓库不存在」的反证**。
+   **datasets 页面随后亦经浏览器实测核验**：64 案例行、regime 列 8 个枚举值、
+   question_family 枚举（actor_identity / principal_authority 等）与八个治理属性维度
+   一致，许可 CC-BY-4.0。**至此 Zenodo、GitHub、Hugging Face 三处存档全部核验闭合。**
+3. **一处如实登记**：Zenodo 记录标题（"A Decision Evidence Maturity Benchmark for
+   Agent-Runtime Decisions Across Evidence Regimes"）与 arXiv 论文标题（"A Cross-Regime
+   Benchmark for Agent-Runtime Governance-Evidence Sufficiency"）不一致，属存档与论文
+   常见差异，已在 REFERENCES 条目注记。
+4. **版本号 2.0.0 → 2.0.1**：`VERSION`、README 两版、`CITATION.cff` 共 10 处同步。
+
 ## v2.0.0（2026-09-02）— 23 条登记备用全部回灌：备用清单清零，双向引用检查完全闭合
 
 1. **【登记备用】清零（23 → 0）**：v1.8.0 存量的 13 条（含 arXiv 号）与 v1.9.0 新标的 10 条
