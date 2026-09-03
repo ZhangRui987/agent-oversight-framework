@@ -28,6 +28,7 @@
 | `CapabilityRegistry` | spec/09 L0 准入：能力门控 + fail-loud（注册 ≠ 授权） | OpenMAIC 能力门控工具 + 白名单 |
 | `regressionGuard` | spec/09 二号监察：确定性裁决 + 错误样本排除（基础设施故障不算模型行为） | OpenMAIC eval/orchestration |
 | `EntryGuard` / `ExitGuard` / `guardedToolCall` | spec/02 E1 入口 / E5 出口检查的最小可运行示例：拦截恶意工具调用（白名单 / 参数策略 / 资源预算 / 输出策略），把「观测」升级为「观测 + 一次性的强制力展示」 | 本框架自研（语义演示，非内核侧采集 / 独立信任域，见 PRODUCTION-GAPS.md G3/G4） |
+| `ConfigReviewer` | spec/02 第四条「配置权即攻击面」的五项配置内容审查（明文凭据 / 共享范围 / 审批步骤 / 网关公开 / 脱敏弱化），经 `EntryGuard` 注入接入入口检查管道——性能不回归不等于安全不退化 | 本框架自研（语义演示，确定性字符串/结构匹配，非语义级配置 schema，见 PRODUCTION-GAPS.md G9） |
 | `RuntimeOverseer` | 以上组合成 L2 最小监察循环：claim → 心跳 → 执行 → 收尾 | OpenMAIC runSession 裁剪镜像 |
 
 ## 运行验证
@@ -48,7 +49,7 @@ node --experimental-transform-types otel-adapter.ts --selftest
 node --experimental-transform-types otel-adapter.ts < audit-events.jsonl > otlp-export.json
 ```
 
-demo 覆盖 18 组、100 项断言（截至 v2.2.0 实测全绿），含 9 组对抗性用例：
+demo 覆盖 19 组、115 项断言（截至 v2.5.0 实测全绿），含 9 组对抗性用例：
 
 | 组 | 证明的机制 / 对抗目标 |
 |---|---|
@@ -64,6 +65,7 @@ demo 覆盖 18 组、100 项断言（截至 v2.2.0 实测全绿），含 9 组�
 | [16] | 关键写入失败中止整链（拒绝部分成功）、非关键失败被容忍 |
 | [17] | E1/E5 强制力展示：入口拦截恶意工具调用（rm -rf / 写 /etc）、出口拦截超预算与数据泄露；端到端证明拦截时工具根本不执行 |
 | [18] | G1 闭合：SQLite 租约权威——崩溃（close）后重开数据库租约状态仍在；语义与内存实现一致 |
+| [19] | G9 闭合：spec/02 第四条「配置权即攻击面」五项配置内容审查（明文凭据 / 共享范围 / 审批关闭 / 网关公开 / 脱敏弱化）；端到端证明恶意配置变更被拦在入口、execute 零调用 |
 
 ## 诚实边界（生产前必须补齐，不得误标为完整合规）
 

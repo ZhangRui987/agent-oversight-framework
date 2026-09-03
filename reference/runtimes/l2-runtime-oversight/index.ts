@@ -626,10 +626,150 @@ export type EntryVerdict =
   | { kind: 'deny'; reason: string; /** 拦截类别，用于审计与统计 */ category: EntryDenyCategory };
 
 export type EntryDenyCategory =
-  | 'tool-not-allowed'     // 工具不在白名单
-  | 'arg-policy-violation' // 参数违反策略（如禁止的路径、禁止的操作）
-  | 'rate-limit'           // 速率超限
-  | 'budget-exhausted';    // 预算耗尽
+  | 'tool-not-allowed'      // 工具不在白名单
+  | 'arg-policy-violation'  // 参数违反策略（如禁止的路径、禁止的操作）
+  | 'config-review-fail'    // 配置内容审查未通过（spec/02 第四条：配置权即攻击面）
+  | 'rate-limit'            // 速率超限
+  | 'budget-exhausted';     // 预算耗尽
+
+/**
+ * 配置内容审查裁决项——由 ConfigReviewer 产出，对应 spec/02 第四条「配置权即攻击面」
+ * 明确要求的五项审查：凭据明文内联 / 共享范围扩大 / 审批步骤关闭 / 对外网关公开化 / 脱敏强度弱化。
+ *
+ * 设计要点：审查项与准入判定式 **并列**，而非嵌进 g(c)>0 ∧ R(c)≤δ——
+ * 性能不回归不等于安全不退化，二者不可互相替代（spec/02 L100）。
+ */
+export type ConfigReviewFinding = {
+  /** 命中的审查项（对应 spec/02 五项中的哪一条）。 */
+  rule: ConfigReviewRule;
+  /** 人类可读的命中说明（用于审计日志）。 */
+  detail: string;
+};
+
+export type ConfigReviewRule =
+  | 'inline-credential'        // 凭据是否明文内联
+  | 'share-scope-widened'      // 共享范围是否被扩大
+  | 'approval-disabled'        // 审批或复核步骤是否被关闭
+  | 'gateway-publicized'       // 对外网关是否被公开化
+  | 'redaction-weakened';      // 脱敏强度是否被弱化
+
+export type ConfigReviewVerdict =
+  | { kind: 'pass' }
+  | { kind: 'fail'; findings: ConfigReviewFinding[] };
+
+/**
+ * 配置内容审查器——把 spec/02 第四条「配置权即攻击面」的五项检查点落成确定性规则。
+ *
+ * spec 锚点：spec/02-architecture.md L98–L100。
+ * 判据来源（B 级，可核查预印本）：HarnessRisk（arXiv:2608.17597）在三个 harness 六阶段
+ * 生命周期评测中显示 **配置阶段是最脆弱的阶段**——已授权的配置编辑可以把不安全参数藏进
+ * 一条本来被 sanction 过的工作流，且性能上完全可以中性甚至为正（关掉审批步骤会提升通过率，
+ * 不会触发任何回归告警）。本审查器回答的是「这条配置变更会不会把一条被信任的工作流变成攻击面」，
+ * 与「会不会让系统变差」的准入判定式 **并行**，不可替代。
+ *
+ * ⚠️ 本审查器是 **语义演示**：每一项检查的实现都是一条确定性的字符串/结构匹配规则，
+ * 用于把「配置内容审查长什么样」变成可读、可测试的代码。它 **不** 覆盖所有可能的攻击变体，
+ * 生产级审查需要语义级的配置 schema 与意图分析——见 PRODUCTION-GAPS.md G9。
+ */
+export class ConfigReviewer {
+  /**
+   * @param checks 可选的自定义检查集；默认使用本类内置的五项检查（对应 spec/02 五项）。
+   *               每项检查返回 true = 该变更**命中**该审查项（即应被拦）。
+   */
+  constructor(
+    private readonly checks: Array<{
+      rule: ConfigReviewRule;
+      test: (config: unknown) => boolean;
+      detail: (config: unknown) => string;
+    }> = ConfigReviewer.DEFAULT_CHECKS,
+  ) {}
+
+  /**
+   * 对一条配置变更做五项内容审查。
+   * @param config 候选配置（通常是工具调用 args 中的 config 字段或整体 args）。
+   * @returns 命中任何一项即 fail；全部不命中才 pass。
+   */
+  review(config: unknown): ConfigReviewVerdict {
+    const findings: ConfigReviewFinding[] = [];
+    for (const c of this.checks) {
+      try {
+        if (c.test(config)) {
+          findings.push({ rule: c.rule, detail: c.detail(config) });
+        }
+      } catch {
+        // 检查规则自身抛错（如 config 结构不匹配）视为未命中——保持 fail-open 语义，
+        // 但会记入审计日志（由调用方负责）。生产实现应考虑 fail-closed（结构不匹配即拦）。
+      }
+    }
+    if (findings.length === 0) return { kind: 'pass' };
+    return { kind: 'fail', findings };
+  }
+
+  /**
+   * 内置的五项检查（对应 spec/02 L100 明列的五项）。
+   * 每项都是确定性字符串/结构匹配——演示语义，不覆盖所有攻击变体。
+   */
+  static readonly DEFAULT_CHECKS: Array<{
+    rule: ConfigReviewRule;
+    test: (config: any) => boolean;
+    detail: (config: any) => string;
+  }> = [
+    // ① 凭据明文内联：配置中出现形如 password= / api_key= / secret= / token= 的明文赋值
+    //    正则容忍 JSON 引号包裹键名（"password":）与裸键名（password=）两种形态。
+    {
+      rule: 'inline-credential',
+      test: (c) => {
+        const s = ConfigReviewer.stringify(c);
+        return /["']?(?:password|passwd|api[_-]?key|secret|token|private[_-]?key)["']?\s*[:=]\s*['"]?[A-Za-z0-9+/=_-]{8,}/i.test(s);
+      },
+      detail: (c) => `inline credential detected in config: ${ConfigReviewer.stringify(c).slice(0, 80)}`,
+    },
+    // ② 共享范围扩大：share/shareWith/visibility 字段被设为公开或通配
+    {
+      rule: 'share-scope-widened',
+      test: (c) => {
+        const v = c?.visibility ?? c?.share ?? c?.shareWith ?? c?.accessLevel;
+        return v === 'public' || v === '*' || v === 'all' || v === 'org-wide' || v === 'everyone';
+      },
+      detail: (c) => `share scope widened to public/wildcard: visibility=${c?.visibility ?? c?.share ?? c?.shareWith ?? c?.accessLevel}`,
+    },
+    // ③ 审批步骤关闭：requireApproval / approvalRequired / reviewRequired 被设为 false
+    {
+      rule: 'approval-disabled',
+      test: (c) => {
+        const v = c?.requireApproval ?? c?.approvalRequired ?? c?.reviewRequired ?? c?.requireReview;
+        return v === false || v === 0 || v === 'false' || v === 'no' || v === 'off';
+      },
+      detail: (c) => `approval/review step disabled: requireApproval=${c?.requireApproval ?? c?.approvalRequired ?? c?.reviewRequired ?? c?.requireReview}`,
+    },
+    // ④ 对外网关公开化：gateway/host 字段从内网改为外网可达
+    {
+      rule: 'gateway-publicized',
+      test: (c) => {
+        const g = c?.gateway ?? c?.endpoint ?? c?.host;
+        if (g === undefined) return false;
+        const s = String(g);
+        // 公开化判定：从 127.0.0.1 / localhost / 10.* / 192.168.* / 内网名 改为 0.0.0.0 / 公网域名 / *
+        return s === '0.0.0.0' || s === '*' || /^https?:\/\/(?!127\.|localhost|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)[a-z0-9.-]+\.[a-z]{2,}/i.test(s);
+      },
+      detail: (c) => `gateway publicized to external network: gateway=${c?.gateway ?? c?.endpoint ?? c?.host}`,
+    },
+    // ⑤ 脱敏强度弱化：redact/redaction/pii/mask 字段从严格降为宽松
+    {
+      rule: 'redaction-weakened',
+      test: (c) => {
+        const r = c?.redact ?? c?.redaction ?? c?.pii ?? c?.mask;
+        return r === false || r === 0 || r === 'off' || r === 'none' || r === 'disabled';
+      },
+      detail: (c) => `redaction weakened: redact=${c?.redact ?? c?.redaction ?? c?.pii ?? c?.mask}`,
+    },
+  ];
+
+  private static stringify(x: unknown): string {
+    if (typeof x === 'string') return x;
+    try { return JSON.stringify(x) ?? String(x); } catch { return String(x); }
+  }
+}
 
 /**
  * E1 入口检查守卫——在工具调用**执行之前**做确定性裁决。
@@ -640,6 +780,11 @@ export type EntryDenyCategory =
  *
  * 裁决全部是确定性硬规则——不依赖任何 AI 判断（呼应 spec/09 看门狗原则）。
  * 拦截时记一条审计事件，把"为什么拦、拦了谁、依据哪条规则"全留痕。
+ *
+ * v2.5.0 起：若注入 configReviewer 且该工具被标记为「配置变更类」（configTools），
+ * 则在参数策略之外、执行之前追加一道**配置内容审查**（spec/02 第四条：配置权即攻击面）——
+ * 回答「这次变更会不会把一条被信任的工作流变成攻击面」。这道审查与参数策略**并列**，
+ * 不可互相替代：性能不回归不等于安全不退化。
  */
 export class EntryGuard {
   constructor(
@@ -654,6 +799,13 @@ export class EntryGuard {
     }>,
     /** 审计日志：每次拦截记一条。 */
     private readonly audit: { append: (type: string, data: unknown) => unknown },
+    /**
+     * 配置内容审查器（可选注入）——对应 spec/02 第四条「配置权即攻击面」。
+     * 不注入则不启用该道审查（保持向后兼容）。
+     */
+    private readonly configReviewer?: ConfigReviewer,
+    /** 被视为「配置变更类」的工具名集合——对这些工具的 args 追加配置内容审查。 */
+    private readonly configTools?: ReadonlySet<string>,
   ) {}
 
   check(req: ToolCallRequest): EntryVerdict {
@@ -686,6 +838,36 @@ export class EntryGuard {
           kind: 'deny',
           category: 'arg-policy-violation',
           reason: `[${policy.name}] ${policy.reason(req.args)}`,
+        };
+      }
+    }
+
+    // 规则 3：配置内容审查（spec/02 第四条——配置权即攻击面）。
+    // 仅对「配置变更类」工具启用；与参数策略并列——参数策略考核「会不会让系统变差」，
+    // 这道审查考核「会不会把不安全参数写进已授权的工作流」。二者不可互相替代。
+    // 审查目标：若 args 形如 { config: {...}, ... } 则审查 args.config 子字段；
+    // 否则退化为审查整体 args（便于工具直接以配置字段作为顶层参数的场景）。
+    if (this.configReviewer && this.configTools?.has(req.tool)) {
+      const argsObj = req.args as Record<string, unknown> | null;
+      const reviewTarget = argsObj && typeof argsObj === 'object' && 'config' in argsObj
+        ? argsObj.config
+        : req.args;
+      const verdict = this.configReviewer.review(reviewTarget);
+      if (verdict.kind === 'fail') {
+        const reason = verdict.findings
+          .map((f) => `config-review[${f.rule}]: ${f.detail}`)
+          .join('; ');
+        this.audit.append('entry_deny', {
+          tool: req.tool,
+          callerId: req.callerId,
+          category: 'config-review-fail',
+          findings: verdict.findings,
+          reason,
+        });
+        return {
+          kind: 'deny',
+          category: 'config-review-fail',
+          reason,
         };
       }
     }
@@ -858,4 +1040,5 @@ export const RuntimeOversight = {
   EntryGuard,
   ExitGuard,
   guardedToolCall,
+  ConfigReviewer,
 };

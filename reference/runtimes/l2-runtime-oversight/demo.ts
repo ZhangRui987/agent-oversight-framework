@@ -25,6 +25,7 @@
  *   [16] 对抗性：OrderedDurableChain（关键写入失败中止/非关键容忍）
  *   [17] EntryGuard/ExitGuard（E1 入口/E5 出口检查——拦截恶意工具调用的强制力展示）
  *   [18] SqliteLeaseAuthority（G1 闭合：租约权威 SQLite 持久化——崩溃后可恢复）
+ *   [19] ConfigReviewer（spec/02 第四条：配置权即攻击面——五项配置内容审查，恶意配置注入被拦）
  *
  * 运行：node --experimental-transform-types demo.ts
  * 退出码：0 = 全部 PASS，1 = 有 FAIL
@@ -35,6 +36,7 @@
 import {
   AppendOnlyAuditLog,
   CapabilityRegistry,
+  ConfigReviewer,
   EntryGuard,
   ExitGuard,
   InMemoryLeaseAuthority,
@@ -856,6 +858,146 @@ async function testSqliteLease(): Promise<void> {
 }
 
 // ============================================================================
+// 19. ConfigReviewer + EntryGuard 配置内容审查 —— spec/02 第四条「配置权即攻击面」
+//     证明：恶意配置变更（明文凭据内联 / 共享范围扩大 / 审批步骤关闭 / 网关公开化 /
+//     脱敏弱化）即使工具在白名单、参数策略全通过、性能完全不回归，也会被第五道
+//     审查拦在执行之前——「性能不回归不等于安全不退化」的强制力展示。
+//     五项检查点对应 spec/02-architecture.md L98–L100；证据锚点 HarnessRisk（arXiv:2608.17597，B 级）。
+// ============================================================================
+function testConfigReview(): void {
+  console.log('\n[19] ConfigReviewer（spec/02 第四条：配置权即攻击面——五项检查点）');
+
+  const audit = new AppendOnlyAuditLog();
+  // 场景：update_workflow_config 是一条**已被授权**的配置变更工具（白名单内）；
+  // 它的参数不含任何被参数策略禁止的模式——恶意性完全藏在配置内容里。
+  const allowedTools = new Set(['update_workflow_config']);
+  const reviewer = new ConfigReviewer();
+  const entry = new EntryGuard(allowedTools, [], audit, reviewer, new Set(['update_workflow_config']));
+
+  // 19a. 凭据明文内联 → 拦截
+  const ev1 = entry.check({
+    tool: 'update_workflow_config',
+    args: { workflowId: 'wf-1', config: 'api_key=sk-abc123def456ghi789' },
+    callerId: 'agent-1',
+  });
+  check('① 明文凭据内联被拦截（inline-credential）',
+    ev1.kind === 'deny' && ev1.category === 'config-review-fail' && ev1.reason.includes('inline-credential'));
+  check('  拒绝理由包含命中的规则名与细节', ev1.kind === 'deny' && ev1.reason.includes('config-review['));
+
+  // 19b. 共享范围扩大（public）→ 拦截
+  const ev2 = entry.check({
+    tool: 'update_workflow_config',
+    args: { workflowId: 'wf-2', config: { visibility: 'public' } },
+    callerId: 'agent-1',
+  });
+  check('② 共享范围扩大（visibility: public）被拦截（share-scope-widened）',
+    ev2.kind === 'deny' && ev2.category === 'config-review-fail' && ev2.reason.includes('share-scope-widened'));
+
+  // 19c. 审批步骤关闭 → 拦截
+  //     这是关键对抗场景：关掉审批步骤会让通过率上升（性能中性甚至为正），
+  //     参数策略与准入判定式都不会拦——只有配置内容审查会拦。
+  const ev3 = entry.check({
+    tool: 'update_workflow_config',
+    args: { workflowId: 'wf-3', config: { requireApproval: false } },
+    callerId: 'agent-1',
+  });
+  check('③ 审批步骤关闭（requireApproval: false）被拦截（approval-disabled）',
+    ev3.kind === 'deny' && ev3.category === 'config-review-fail' && ev3.reason.includes('approval-disabled'));
+
+  // 19d. 对外网关公开化（127.0.0.1 → 0.0.0.0）→ 拦截
+  const ev4 = entry.check({
+    tool: 'update_workflow_config',
+    args: { workflowId: 'wf-4', config: { gateway: '0.0.0.0' } },
+    callerId: 'agent-1',
+  });
+  check('④ 对外网关公开化（gateway: 0.0.0.0）被拦截（gateway-publicized）',
+    ev4.kind === 'deny' && ev4.category === 'config-review-fail' && ev4.reason.includes('gateway-publicized'));
+
+  // 19e. 脱敏强度弱化（redact: off）→ 拦截
+  const ev5 = entry.check({
+    tool: 'update_workflow_config',
+    args: { workflowId: 'wf-5', config: { redact: 'off' } },
+    callerId: 'agent-1',
+  });
+  check('⑤ 脱敏强度弱化（redact: off）被拦截（redaction-weakened）',
+    ev5.kind === 'deny' && ev5.category === 'config-review-fail' && ev5.reason.includes('redaction-weakened'));
+
+  // 19f. 复合恶意配置（一次命中多项）→ 拦截且 findings 全部记录
+  const ev6 = entry.check({
+    tool: 'update_workflow_config',
+    args: { workflowId: 'wf-6', config: { visibility: 'everyone', requireApproval: false, redact: 'none' } },
+    callerId: 'agent-1',
+  });
+  check('复合恶意配置一次命中多项（share-scope-widened + approval-disabled + redaction-weakened）',
+    ev6.kind === 'deny' &&
+    ev6.reason.includes('share-scope-widened') &&
+    ev6.reason.includes('approval-disabled') &&
+    ev6.reason.includes('redaction-weakened'));
+
+  // 19g. 良性配置变更（改个超时参数）→ 放行——审查不误伤正常运维
+  const ev7 = entry.check({
+    tool: 'update_workflow_config',
+    args: { workflowId: 'wf-7', config: { timeoutMs: 30000, retries: 3 } },
+    callerId: 'agent-1',
+  });
+  check('良性配置变更（timeoutMs/retries）放行（不误伤正常运维）', ev7.kind === 'allow');
+
+  // 19h. 内网地址不触发网关公开化误报（127.0.0.1 / 10.x 内网不拦）
+  const ev8 = entry.check({
+    tool: 'update_workflow_config',
+    args: { workflowId: 'wf-8', config: { gateway: '127.0.0.1:8080' } },
+    callerId: 'agent-1',
+  });
+  check('内网网关（127.0.0.1）不触发误报', ev8.kind === 'allow');
+
+  // 19i. 恶意拦截全部留痕——审计日志有 6 条 entry_deny（19a–19f），类别正确
+  check('五项拦截 + 复合拦截均记审计事件（config-review-fail × 6）', audit.lastSeq === 6);
+
+  // 19j. 端到端：guardedToolCall + ConfigReviewer——恶意配置变更被拦在入口，execute 不执行
+  const audit2 = new AppendOnlyAuditLog();
+  const entry2 = new EntryGuard(
+    new Set(['update_workflow_config']),
+    [],
+    audit2,
+    new ConfigReviewer(),
+    new Set(['update_workflow_config']),
+  );
+  const exit2 = new ExitGuard({}, [], () => true, audit2);
+  let actuallyExecuted = false;
+  const outcome = guardedToolCallSync(entry2, exit2, {
+    tool: 'update_workflow_config',
+    args: { workflowId: 'wf-9', config: { password: 'hunter2hunter2hunter2', requireApproval: false } },
+    callerId: 'agent-x',
+  }, () => { actuallyExecuted = true; return { ok: true, output: 'should never reach' }; });
+  check('端到端：恶意配置变更被拦在入口（denied-entry）', outcome.verdict === 'denied-entry');
+  check('端到端：execute 回调根本没被调用（强制力）', actuallyExecuted === false);
+  check('端到端：拒绝理由同时命中明文凭据与审批关闭两项', outcome.verdict === 'denied-entry' &&
+    !!outcome.denyReason && outcome.denyReason.includes('inline-credential') && outcome.denyReason.includes('approval-disabled'));
+
+  // 19k. ConfigReviewer 单独可用（不依赖 EntryGuard）——可直接用于变更准入流水线
+  const solo = new ConfigReviewer();
+  check('ConfigReviewer 可独立使用：review() 单独判定恶意配置',
+    solo.review({ token: 'ghp_1234567890abcdef' }).kind === 'fail');
+  check('ConfigReviewer 可独立使用：review() 单独判定良性配置',
+    solo.review({ timeoutMs: 5000 }).kind === 'pass');
+}
+
+/** 同步版管道——仅供 demo [19j] 在不引入 async 的情况下展示「拦截即不执行」语义。 */
+function guardedToolCallSync(
+  entry: EntryGuard,
+  exit: ExitGuard,
+  req: ToolCallRequest,
+  execute: (req: ToolCallRequest) => { ok: boolean; output: unknown; resources?: { tokens?: number; memoryMb?: number; durationMs?: number } },
+): { verdict: 'allowed' | 'denied-entry' | 'rejected-exit'; result?: unknown; denyReason?: string } {
+  const ev = entry.check(req);
+  if (ev.kind === 'deny') return { verdict: 'denied-entry', denyReason: ev.reason };
+  const result = execute(req);
+  const xv = exit.check(req, result);
+  if (xv.kind === 'reject') return { verdict: 'rejected-exit', denyReason: xv.reason };
+  return { verdict: 'allowed', result };
+}
+
+// ============================================================================
 // main
 // ============================================================================
 async function main(): Promise<void> {
@@ -879,6 +1021,7 @@ async function main(): Promise<void> {
   await testChainAdversarial();
   await testEntryExitGuards();
   await testSqliteLease();
+  testConfigReview();
 
   console.log(`\n=== 结果：${failures === 0 ? 'ALL PASS ✅' : `${failures} FAIL ❌`} ===`);
   process.exit(failures === 0 ? 0 : 1);

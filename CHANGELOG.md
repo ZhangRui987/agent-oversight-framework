@@ -1,5 +1,57 @@
 # 变更日志
 
+## v2.5.0（2026-09-03）— 方案 B 落地：配置内容审查演示级闭合（G9）
+
+1. **L2 参照实现新增 `ConfigReviewer`——把 spec/02 第四条「配置权即攻击面」的五项检查点
+   落成确定性规则**。截至 v2.4.0，变更准入只考核「变更是否让系统变差」（能力增益 /
+   回归量），不考核「变更是否把不安全参数写进了已授权的工作流」——spec/02 第四条
+   明确要求在准入判定式之外增加一道**配置内容审查**，判据是「性能不回归不等于安全
+   不退化」。证据锚点：HarnessRisk（arXiv:2608.17597，B 级）在三个 harness 六阶段
+   生命周期评测显示**配置阶段是最脆弱的阶段**——已授权的配置编辑可以把不安全参数
+   藏进一条本来被 sanction 过的工作流，且性能上完全可以中性甚至为正（关掉一个审批
+   步骤会提升通过率、不触发任何回归告警，两道准入判据都会放行）。本轮闭合：
+   - **新增 `ConfigReviewer`**（`reference/runtimes/l2-runtime-oversight/index.ts`），
+     把 spec/02 L100 明列的五项审查各落成一条确定性规则：
+     ① 凭据明文内联（字符串/结构匹配，容忍 JSON 键引号与裸键名两种形态）；
+     ② 共享范围扩大（visibility/share/shareWith/accessLevel 设为 public / 通配 / org-wide 等）；
+     ③ 审批步骤关闭（requireApproval/approvalRequired/reviewRequired 设为 false/off 等）；
+     ④ 对外网关公开化（gateway/endpoint/host 从内网改为 0.0.0.0 / 公网域名 / 通配）；
+     ⑤ 脱敏强度弱化（redact/redaction/pii/mask 设为 off/none/disabled 等）。
+   - **`EntryGuard` 扩展可选构造参数 `configReviewer` + `configTools`**——被标记为
+     「配置变更类」的工具调用，在参数策略之外、执行之前追加一道配置内容审查；
+     `EntryDenyCategory` 相应新增 `config-review-fail`；不注入则不启用（向后兼容）。
+     审查目标自动适配：args 形如 `{ config: {...} }` 时审查 `args.config` 子字段，
+     否则审查整体 args。
+   - **`guardedToolCall` 管道接入**——恶意配置变更被拦在入口，execute 零调用。
+2. **demo 新增 `[19]` 组——15 项断言全绿**。覆盖：五项各自拦截、复合恶意配置一次
+   命中多项、良性变更放行（不误伤正常运维）、内网网关不误报、拦截留痕（审计事件 × 6）、
+   端到端（管道中 execute 回调零调用）、`ConfigReviewer` 可独立用于变更准入流水线。
+   全量断言计数从 100 → **115**、测试组从 18 → **19**。
+3. **PRODUCTION-GAPS.md 新增 G9 条目并直接标注「演示级闭合（v2.5.0）」**。G9 与 G1/G2
+   并列为「演示级闭合」状态；生产级差距如实声明：每项检查都是确定性的字符串/结构匹配
+   ——演示语义，不覆盖所有攻击变体（命名混淆、编码混淆、间接引用等绕过路径仍需语义级
+   配置 schema 与意图分析方能覆盖）。
+4. **l2 README.md 组件映射表新增 `ConfigReviewer` 行**、demo 组表格新增 `[19]` 行、
+   断言计数更新为 19 组 / 115 项（截至 v2.5.0 实测全绿）。
+5. **版本号 10 处同步**：VERSION、CITATION.cff（× 2）、README.md（badge / 当前版本 /
+   APA 引用）、README.en.md（badge / Current version / APA citation）、index.ts 内联
+   注释、PRODUCTION-GAPS.md（v2.5.0 更新提示 + G9 标题 + 闭合内容 + 总结性声明）、
+   l2 README.md（断言计数行）。
+
+### 诚实边界（本次闭合的范围限定）
+
+- **演示级闭合 ≠ 生产级闭合**：`ConfigReviewer` 的每项检查都是确定性字符串/结构匹配，
+  能把「配置内容审查长什么样」变成可读、可测试的代码，但**不**覆盖所有攻击变体——
+  命名混淆（如 `reqApprov` 绕过 `requireApproval` 字段名匹配）、编码混淆、间接引用
+  （凭据不内联而是指向外部引用）等绕过路径需要语义级配置 schema 与意图分析方能覆盖。
+- **fail-open 语义**：当前检查规则自身抛错（如 config 结构不匹配）时视为未命中——
+  保持 fail-open；生产实现应考虑 fail-closed（结构不匹配即拦）。
+- **G9 闭合不改变 P3 前的信任根上限**：本实现仍**不能单独用作信任根**——在 spec/02
+  所述 P3 阶段（独立硬件域 + 远程证明）落地之前，G3–G8 仍未闭合，本实现只是把
+  「确定性硬闸门应该怎么写」变成可运行、可复现的参照。
+
+---
+
 ## v2.4.0（2026-09-03）— 资源账本与强制力两章补强：方案 A 剩余两篇薄 spec 落地
 
 1. **spec/10-resource-ledger 双语新增「三信号的实证支撑与边界」一节**。截至 v2.3.0，
