@@ -9,7 +9,7 @@
 
 ### 提交前必跑：一致性校验（pre-commit）
 
-本仓库自带发布一致性校验（`scripts/verify_consistency.py`，18 项：表格格式 / 证据分级数量 / 事故数字口径 / 章节号 / 术语口径）。启用方式（仓库根目录执行一次）：
+本仓库自带发布一致性校验（`scripts/verify_consistency.py`，30 项：表格格式 / 证据分级数量 / 事故数字口径 / 章节号 / 术语口径 / 双向引用检查 / 引用键质量）。启用方式（仓库根目录执行一次）：
 
 ```sh
 git config core.hooksPath .githooks

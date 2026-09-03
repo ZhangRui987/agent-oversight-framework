@@ -2,7 +2,7 @@
 
 [![Version](https://img.shields.io/badge/version-2.5.0-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
-[![Evidence: B (23/26)](https://img.shields.io/badge/evidence-B_23%2F26-yellow)](spec/11-traceability.md)
+[![Evidence: B (56/67)](https://img.shields.io/badge/evidence-B_56%2F67-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
 
 **A layered governance specification for AI agent oversight — evidence-graded, self-correcting, and boundary-honest.**
@@ -39,7 +39,7 @@ This framework extends the "delegable boundary" from "no harm if wrong" (writing
 
 When agents can forge sandbox logs and spontaneously grow command hierarchies, the traditional "oversee individual behavior" approach fails. This framework's swarm governance (`spec/07-swarm-governance.md`) elevates the oversight target from **behavior logs** to **the interaction graph** — but we honestly admit: **for decentralized swarms (wolf-packs), we currently have detection capability only, and no empirically proven countermeasure.**
 
-This is open problem **#15** of 15 (see `spec/13-boundaries.md`), and a priority direction for community co-development. Publicly admitting "we haven't solved wolf-packs yet" builds more trust with the expert community than claiming "we can handle everything."
+This is open problem **#15** of 28 (see `spec/13-boundaries.md`), and a priority direction for community co-development. Publicly admitting "we haven't solved wolf-packs yet" builds more trust with the expert community than claiming "we can handle everything."
 
 ## Architecture overview
 
@@ -188,7 +188,7 @@ See [`CITATION.cff`](CITATION.cff).
 
 ## Quality assurance (self-referential verification)
 
-This repository governs itself with itself: `scripts/verify_consistency.py` provides 18 release-consistency checks (table format / evidence-grade counts / incident-number conventions / section numbering / terminology), mounted as a pre-commit hook (`.githooks/`). See `CONTRIBUTING.md` for enabling; every commit runs it automatically and blocks on failure. Manual run: `python scripts/verify_consistency.py` (pure standard library, no dependencies to install).
+This repository governs itself with itself: `scripts/verify_consistency.py` provides 30 release-consistency checks (table format / evidence-grade counts / incident-number conventions / section numbering / terminology / bidirectional reference checks / citation-key quality), mounted as a pre-commit hook (`.githooks/`). See `CONTRIBUTING.md` for enabling; every commit runs it automatically and blocks on failure. Manual run: `python scripts/verify_consistency.py` (pure standard library, no dependencies to install).
 
 This is not a document maintained by good faith alone; it is a specification with an automated gate.
 

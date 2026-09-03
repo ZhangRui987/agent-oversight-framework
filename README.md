@@ -2,7 +2,7 @@
 
 [![Version](https://img.shields.io/badge/version-2.5.0-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
-[![Evidence: B (23/26)](https://img.shields.io/badge/evidence-B_23%2F26-yellow)](spec/11-traceability.md)
+[![Evidence: B (56/67)](https://img.shields.io/badge/evidence-B_56%2F67-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
 
 **一份分层治理规范：面向 AI Agent 监察——证据分级、自校正、边界诚实。**
@@ -188,7 +188,7 @@ graph TD
 
 ## 质量保障（自指验证）
 
-本仓库用自己治理自己：`scripts/verify_consistency.py` 提供 18 项发布一致性校验（表格格式 / 证据分级数量 / 事故数字口径 / 章节号 / 术语口径），已挂载为 pre-commit 钩子（`.githooks/`）。启用方式见 `CONTRIBUTING.md`；每次提交自动执行，校验失败即拦截。手动运行：`python scripts/verify_consistency.py`（纯标准库，无需安装依赖）。
+本仓库用自己治理自己：`scripts/verify_consistency.py` 提供 30 项发布一致性校验（表格格式 / 证据分级数量 / 事故数字口径 / 章节号 / 术语口径 / 双向引用检查 / 引用键质量），已挂载为 pre-commit 钩子（`.githooks/`）。启用方式见 `CONTRIBUTING.md`；每次提交自动执行，校验失败即拦截。手动运行：`python scripts/verify_consistency.py`（纯标准库，无需安装依赖）。
 
 这不是靠自觉维护的文档，而是有自动化门禁的规范。
 
