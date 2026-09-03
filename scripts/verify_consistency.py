@@ -6,7 +6,7 @@
   2. 所有 Markdown 表格（≥2 行的 | 块）表头后都有分隔行；且每行列数与分隔行一致
      —— 两种表头风格都覆盖：带首竖线（| 表头 | ... |）与不带首竖线（表头 | ...）
         （后者曾长期未被校验，导致 11-traceability 出现「6 列 vs 表头 5 列」而漏检）
-  3. 证据分级数量一致：REFERENCES 表格实测 A/B/C/D 条数 == 各处声明（56 总 / 45 B / 9 C）
+  3. 证据分级数量一致：REFERENCES 表格实测 A/B/C/D 条数 == 各处声明（61 总 / 50 B / 9 C）
   4. 事故数字口径一致（1,200 留言板 / 700 参与攻击）
   5. ANTITRUST 章节号（第十二章，非第十三章）
   6. STYLE 术语口径（允许 P0 优先级、禁 P0-x 审阅编号）
@@ -139,22 +139,22 @@ b = sum(1 for g, _ in grades if g == "B")
 c = sum(1 for g, _ in grades if g == "C")
 d = sum(1 for g, _ in grades if g == "D")
 check("REFERENCES 实测 A:1", a == 1, f"实测 A={a}")
-check("REFERENCES 实测 B:45", b == 45, f"实测 B={b}")
+check("REFERENCES 实测 B:50", b == 50, f"实测 B={b}")
 check("REFERENCES 实测 C:9", c == 9, f"实测 C={c}")
 check("REFERENCES 实测 D:1", d == 1, f"实测 D={d}")
 total = a + b + c + d
-check("REFERENCES 合计 56 条", total == 56, f"实测合计={total}")
+check("REFERENCES 合计 61 条", total == 61, f"实测合计={total}")
 
 readme = read(os.path.join(ROOT, "README.md"))
 chg = read(os.path.join(ROOT, "CHANGELOG.md"))
-check("README 声明「56 条来源，其中 B 级 45 条」",
-      "56 条来源，其中 B 级 45 条" in readme)
-check("README 分布「A:1 / B:45 / C:9 / D:1」（含 A 级来源标注）",
-      "A:1" in readme and "B:45 / C:9 / D:1" in readme)
+check("README 声明「61 条来源，其中 B 级 50 条」",
+      "61 条来源，其中 B 级 50 条" in readme)
+check("README 分布「A:1 / B:50 / C:9 / D:1」（含 A 级来源标注）",
+      "A:1" in readme and "B:50 / C:9 / D:1" in readme)
 check("CHANGELOG 声明「54 条参考文献（其中 B 级 44 条）」",
       "54 条参考文献（其中 B 级 44 条）" in chg)
-check("REFERENCES 注脚「45 条 B 级、9 条 C 级、1 条 D 级（合计 56 条来源）」",
-      "45 条 B 级、9 条 C 级、1 条 D 级（合计 56 条来源）" in refs)
+check("REFERENCES 注脚「50 条 B 级、9 条 C 级、1 条 D 级（合计 61 条来源）」",
+      "50 条 B 级、9 条 C 级、1 条 D 级（合计 61 条来源）" in refs)
 
 # ── 3b. README 全文证据计数一致性 ─────────────
 # 教训：v2.1.0 之前门禁只锁了 README 顶部声明与 REFERENCES 注脚两个固定字符串，
