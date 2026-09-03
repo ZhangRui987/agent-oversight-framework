@@ -1,43 +1,46 @@
 # -*- coding: utf-8 -*-
 """发布一致性校验（推送前 / pre-commit 用）。
 
-校验项（共 30 项，按运行顺序）：
+校验项（共 33 项，按运行顺序）：
   1. 全仓库无 [TABLE START/END] 伪标记
   2. 所有 Markdown 表格表头后都有 |---| 分隔行
   3. 表格每行列数与分隔行一致
      —— 两种表头风格都覆盖：带首竖线（| 表头 | ... |）与不带首竖线（表头 | ...）
         （后者曾长期未被校验，导致 11-traceability 出现「6 列 vs 表头 5 列」而漏检）
   4. REFERENCES 实测 A:1
-  5. REFERENCES 实测 B:56
+  5. REFERENCES 实测 B:58
   6. REFERENCES 实测 C:9
   7. REFERENCES 实测 D:1
-  8. REFERENCES 合计 67 条
-  9. README 声明「67 条来源，其中 B 级 56 条」
- 10. README 分布「A:1 / B:56 / C:9 / D:1」（含 A 级来源标注）
- 11. CHANGELOG 声明「54 条参考文献（其中 B 级 44 条）」
- 12. REFERENCES 注脚「56 条 B 级、9 条 C 级、1 条 D 级（合计 67 条来源）」
- 13. README 双语全文「证据总数」一致（所有出现的总数 == 67）
- 14. README 双语全文「B 级数」一致（所有出现的 B 级数 == 56）
- 15. README 事故数字（1,200 留言板）
- 16. README 事故数字（700 参与攻击）
- 17. REFERENCES 一手材料（1,200 留言板 / 700 攻击）
- 18. ANTITRUST 指第十二章
- 19. STYLE 禁 P0-x 审阅编号
- 20. STYLE 允许 P0 优先级标记
- 21. spec/ 无 14-references.md（唯一真相源 = 根 REFERENCES.md）
- 22. 引用红线：正文无禁止引用的数字（GAIE 84–97%）
- 23. 13-boundaries 实测未解问题条数 = 28
- 24. README 声明「28 条未解问题」
- 25. README.en 声明「28 open problems」
- 26. REFERENCES 无悬空引用：条目的登记键须在 spec/ 正文出现；
+  8. REFERENCES 实测 G:15
+  9. REFERENCES 合计 84 条
+ 10. README 声明「84 条来源，其中 B 级 58 条」
+ 11. README 分布「A:1 / B:58 / C:9 / D:1」（含 A 级来源标注）
+ 12. CHANGELOG 声明参考文献条数（取最近一轮变更后的值）
+ 13. REFERENCES 注脚「58 条 B 级、9 条 C 级、1 条 D 级、15 条 G 级（合计 84 条来源）」
+ 14. README 双语全文「证据总数」一致（所有出现的总数 == 84）
+ 15. README 双语全文「B 级数」一致（所有出现的 B 级数 == 58）
+ 16. README 事故数字（1,200 留言板）
+ 17. README 事故数字（700 参与攻击）
+ 18. REFERENCES 一手材料（1,200 留言板 / 700 攻击）
+ 19. ANTITRUST 指第十二章
+ 20. STYLE 禁 P0-x 审阅编号
+ 21. STYLE 允许 P0 优先级标记
+ 22. spec/ 无 14-references.md（唯一真相源 = 根 REFERENCES.md）
+ 23. 引用红线：正文无禁止引用的数字（GAIE 84–97%）
+ 24. 13-boundaries 实测未解问题条数 = 28
+ 25. README 声明「28 条未解问题」
+ 26. README.en 声明「28 open problems」
+ 27. REFERENCES 无悬空引用：条目的登记键须在 spec/ 正文出现；
      若确系有意登记而未回灌，须在落点列显式标注【登记备用】
      —— 备用清单逐条打印公示，无法静默堆积
- 27. 反向悬空：spec/ 正文引用的每个 arXiv 号，均须在 REFERENCES 有条目登记
-     —— 与第 26 项对称，双向都查才闭合
- 28. 无 arXiv 号的条目均已在文献列声明【键: XXX】
-     —— 让第 26 项的覆盖从「有号条目」扩展到全部条目
- 29. 引用键全局唯一（不同条目不得共用同一键）
- 30. 引用键非通用词（不在黑名单且长度 ≥ 4）
+ 28. 反向悬空：spec/ 正文引用的每个 arXiv 号，均须在 REFERENCES 有条目登记
+     —— 与第 27 项对称，双向都查才闭合
+ 29. 无 arXiv 号的条目均已在文献列声明【键: XXX】
+     —— 让第 27 项的覆盖从「有号条目」扩展到全部条目
+ 30. 引用键全局唯一（不同条目不得共用同一键）
+ 31. 引用键非通用词（不在黑名单且长度 ≥ 4）
+ 32. G 类引用键前缀合法（cn- / us- / eu- / uk- / ca- / au- / jp- / kr- / sg- / int- / iso- / owasp-）
+ 33. G 类条目须声明【键: XXX】且键含管辖前缀（G 类无 arXiv 号，强制声明键以防漏检）
 
 用法：
   python scripts/verify_consistency.py [仓库根目录，默认脚本所在目录的上级]
@@ -149,29 +152,34 @@ check(
 refs = read(os.path.join(ROOT, "REFERENCES.md"))
 # 数表格行：等级格允许带括号说明（如 C（域迁移缺口）/ B（可核查预印本；…））。
 # 旧实现用 ^A \| / ^B \| / ^C（ / ^D（ 四个不一致的正则，导致「带括号的 B 级行」被漏计。
-GRADE_RE = re.compile(r"^(A|B|C|D)(（[^）]*）)?\s*\|", re.M)
+# G 类（治理 / 政策 / 执法一手实证）2026-09-04 新增，与 A/B/C/D 同等并列。
+GRADE_RE = re.compile(r"^(A|B|C|D|G)(（[^）]*）)?\s*\|", re.M)
 grades = GRADE_RE.findall(refs)
 a = sum(1 for g, _ in grades if g == "A")
 b = sum(1 for g, _ in grades if g == "B")
 c = sum(1 for g, _ in grades if g == "C")
 d = sum(1 for g, _ in grades if g == "D")
+g_count = sum(1 for g_, _ in grades if g_ == "G")
 check("REFERENCES 实测 A:1", a == 1, f"实测 A={a}")
 check("REFERENCES 实测 B:58", b == 58, f"实测 B={b}")
 check("REFERENCES 实测 C:9", c == 9, f"实测 C={c}")
 check("REFERENCES 实测 D:1", d == 1, f"实测 D={d}")
-total = a + b + c + d
-check("REFERENCES 合计 69 条", total == 69, f"实测合计={total}")
+check("REFERENCES 实测 G:15", g_count == 15, f"实测 G={g_count}")
+total = a + b + c + d + g_count
+check("REFERENCES 合计 84 条", total == 84, f"实测合计={total}")
 
 readme = read(os.path.join(ROOT, "README.md"))
 chg = read(os.path.join(ROOT, "CHANGELOG.md"))
-check("README 声明「69 条来源，其中 B 级 58 条」",
-      "69 条来源，其中 B 级 58 条" in readme)
+check("README 声明「84 条来源，其中 B 级 58 条」",
+      "84 条来源，其中 B 级 58 条" in readme)
 check("README 分布「A:1 / B:58 / C:9 / D:1」（含 A 级来源标注）",
       "A:1" in readme and "B:58 / C:9 / D:1" in readme)
-check("CHANGELOG 声明「54 条参考文献（其中 B 级 44 条）」",
-      "54 条参考文献（其中 B 级 44 条）" in chg)
-check("REFERENCES 注脚「58 条 B 级、9 条 C 级、1 条 D 级（合计 69 条来源）」",
-      "58 条 B 级、9 条 C 级、1 条 D 级（合计 69 条来源）" in refs)
+# CHANGELOG 取最近版本声明——门禁只校验字符串存在，数值一致性由第 14-15 项覆盖
+# v2.7.0 条目含「G 类新增 15 条治理实证」字样
+check("CHANGELOG 声明「新增 15 条 G 级」（v2.7.0）",
+      "新增 15 条 G 级" in chg)
+check("REFERENCES 注脚「58 条 B 级、9 条 C 级、1 条 D 级、15 条 G 级（合计 84 条来源）」",
+      "58 条 B 级、9 条 C 级、1 条 D 级、15 条 G 级（合计 84 条来源）" in refs)
 
 # ── 3b. README 全文证据计数一致性 ─────────────
 # 教训：v2.1.0 之前门禁只锁了 README 顶部声明与 REFERENCES 注脚两个固定字符串，
@@ -425,6 +433,46 @@ check(
 print(f"       ↳ 无号条目 {sum(1 for e in _entries if not e[1])} 条，"
       f"其中已声明键 "
       f"{sum(1 for e in _entries if not e[1] and e[0])} 条")
+
+# ── 13. G 类引用键的管辖前缀合法性（2026-09-04 新增） ──────
+# G 类条目无 arXiv 号，全部依赖显式【键: XXX】声明。为防止自由命名导致引用混乱，
+# G 类键必须以管辖前缀开头，门禁逐条校验。
+# 教训预防：非 G 类条目此前已出现过随意命名（如 GEN-RWD / Glasswing），但 G 类
+# 因涉及多法域且同名事件跨域重复（如「意大利 Garante」既可指欧盟成员国执法、
+# 也可引申至 GDPR 框架），前缀化是区分的最低门槛。
+G_PREFIXES = {
+    "cn-", "us-", "eu-", "uk-", "ca-", "au-", "jp-", "kr-",
+    "sg-", "int-", "iso-", "owasp-",
+}
+_bad_g_prefix = []
+_g_entries = []
+for _keys, _has_arx, _lit, _land, _tag in _entries:
+    # G 类条目：文献列等级标记为「G」（由 GRADE_RE 解析，此处用 _lit 反查不精确，
+    # 改用直接扫原文件匹配）
+    pass
+
+# 直接从 refs 按 G 级行重新解析，确保只管 G 类
+_G_LINE_RE = re.compile(r"^G(?:（[^）]*）)?\s*\|\s*【键:\s*([^】]+?)\s*】", re.M)
+_g_keys_in_refs = [m.group(1) for m in _G_LINE_RE.finditer(refs)]
+for _k in _g_keys_in_refs:
+    _matched = any(_k.startswith(_p) for _p in G_PREFIXES)
+    if not _matched:
+        _bad_g_prefix.append(_k)
+check(
+    "G 类引用键前缀合法（cn- / us- / eu- / uk- / ca- / au- / jp- / kr- / sg- / int- / iso- / owasp-）",
+    not _bad_g_prefix,
+    "; ".join(_bad_g_prefix[:5]),
+)
+
+# ── 14. G 类条目必须声明【键: XXX】（与第 12 项 a 子规则互补） ──────
+# G 类条目天然无 arXiv 号，本项确保「G 类无键」不会成为盲区。
+_G_NOKEY_RE = re.compile(r"^G(?:（[^）]*）)?\s*\|(?!.*【键:)", re.M)
+_g_nokey = _G_NOKEY_RE.findall(refs)
+check(
+    "G 类条目均声明【键: XXX】（G 类无 arXiv 号，强制声明键）",
+    not _g_nokey,
+    f"{len(_g_nokey)} 条 G 类条目未声明键",
+)
 
 # ── 汇总 ─────────────────────────────────────
 print()

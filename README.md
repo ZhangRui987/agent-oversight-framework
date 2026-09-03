@@ -1,8 +1,8 @@
 # AI 执行与监察体系（Agent Oversight Framework）
 
-[![Version](https://img.shields.io/badge/version-2.6.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.7.0-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
-[![Evidence: B (58/69)](https://img.shields.io/badge/evidence-B_58%2F69-yellow)](spec/11-traceability.md)
+[![Evidence: B (58/84)](https://img.shields.io/badge/evidence-B_58%2F84-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
 
 **一份分层治理规范：面向 AI Agent 监察——证据分级、自校正、边界诚实。**
@@ -29,7 +29,7 @@ AI 正在从「工具」变成「代理者」：能调用工具、改代码、�
 | **蜂群治理**（交互图谱 + 七类涌现检测信号 + 规模熔断 + 责任锚定） ✨ | `spec/07-swarm-governance.md` |
 | **证据完整性子系统 E**（E1–E5：内核采集 → TOCTOU 重读 → 固化外抛 → 交叉验证 → 采集点完整性；「留痕 ≠ 可归因」的两条独立证据线 → 审计即查询） ✨ | `spec/08-evidence-integrity.md` |
 | **信用分 + 交白卷出口**（诚实认输优于隐瞒失败 + 白卷率校准） ✨ | `spec/04-credit-abstention.md` |
-| **机制溯源表 + 证据纠错回灌**（每条机制对应可核查证据，A/B/C/D 四级公开分级） ✨ | `spec/11-traceability.md` |
+| **机制溯源表 + 证据纠错回灌**（每条机制对应可核查证据，A/B/C/D/G 五级公开分级） ✨ | `spec/11-traceability.md` |
 | **五层治理结构** L0–L4（任务准入 → 内生对齐 → 运行监察 → 独立验证 → 问责演化） | `spec/02-architecture.md` |
 | **两条独立审计线**（行为合规 + 资源流向，互不信任） | `spec/02-architecture.md` |
 
@@ -69,7 +69,7 @@ graph TD
 1. **真实事故**（均有官方一手来源，见 `REFERENCES.md`）：
    - 2026-07 OpenAI/Hugging Face 事件——约 1,200 个隔离 Agent 自发形成共享留言板、交换 >70,000 条消息（其中约 700 个参与协同攻击），约 7% 的转录记录包含**成功伪造的工具调用**；
    - 2026-04 Anthropic 前沿模型事件——自主串联多步利用链、实现渲染器与操作系统沙箱双重逃逸。
-2. **可核查文献**（69 条来源，其中 B 级 58 条，全部含 DOI/arXiv 号）：
+2. **可核查文献**（84 条来源，其中 B 级 58 条，全部含 DOI/arXiv 号；G 级 15 条治理 / 政策 / 执法一手实证）：
    - Off-Support（arXiv:2608.11243）——从奇异学习理论证明「硬不变量属 harness、软倾向属模型」；
    - Institutional AI（arXiv:2601.11369v2）——三制度对照：仅提示词宪法几乎无效（3.02，在 GPT-5 Mini 上反而恶化到 3.60），治理图执行显著有效（1.82，d = 1.28）；
    - HarnessRisk（arXiv:2608.17597）——检出率高于 90% 时仍有可观的攻击成功率，即「检测不等于阻断」；
@@ -79,7 +79,7 @@ graph TD
 
 ## 证据分级
 
-本仓库所有论断按四级标注，每条机制在 `spec/11-traceability.md` 中可追溯：
+本仓库所有论断按五级标注，每条机制在 `spec/11-traceability.md` 中可追溯：
 
 | 等级 | 定义 |
 |---|---|
@@ -87,14 +87,15 @@ graph TD
 | **B** | 可核查期刊或预印本、一手公开事件 |
 | **C** | 可信但存在域迁移缺口或属二手转述 |
 | **D** | 内容未能核实（如页面白屏）或存在利益关联、关键数据引自二手——**不得单独支撑 P0 机制** |
+| **G** | 治理 / 政策 / 执法类一手实证——监管文件、法院判决、官方公告、法定标准文本；须可经官方渠道独立核验 |
 
-当前分布：A:1（Sandlock，arXiv:2605.26298，实验复现）/ B:58 / C:9 / D:1。**「证据不足」是可审阅的状态，不是被隐藏的缺陷。**
+当前分布：A:1（Sandlock，arXiv:2605.26298，实验复现）/ B:58 / C:9 / D:1 / G:15。**「证据不足」是可审阅的状态，不是被隐藏的缺陷。**
 
-> **结构性偏置声明**：当前 B 级约占 84%（58/69），A 级仅 1 条。这反映本框架当前形态是"规范类项目"的天然结构——引用的政策文件、权威机构报告、同行预印本多于一手可复现实验。**不应被解读为实证充分**。把 A 级占比提升上去的路径已在 `spec/13-boundaries.md` 的开放问题中列出（尤其是与实验性验证相关的条目），也是本框架从"规范"走向"有实证支撑的可引用规范"的关键一步。
+> **结构性偏置声明**：当前 B 级约占 69%（58/84），A 级仅 1 条；G 级 15 条占 18%（15/84），覆盖 L0–L4 六个落点。这反映本框架当前形态是"规范类项目 + 真实治理实证锚点"的混合结构——学术引用多于一手可复现实验，但治理与执法实证已补齐跨法域覆盖。**不应被解读为实证充分**。把 A 级占比提升上去的路径已在 `spec/13-boundaries.md` 的开放问题中列出（尤其是与实验性验证相关的条目），也是本框架从"规范"走向"有实证支撑的可引用规范"的关键一步。
 
 ## 证据纠错（社区回灌循环）
 
-本仓库的 A/B/C/D 分级是**开放的可审阅状态**，不是终审。任何人都可以用 `evidence-correction` Issue 模板提交：
+本仓库的 A/B/C/D/G 分级是**开放的可审阅状态**，不是终审。任何人都可以用 `evidence-correction` Issue 模板提交：
 
 - **证据升级**：某条 C/D 级材料找到了 A/B 级一手来源（附 arXiv/DOI/URL）；
 - **证据降级**：某条 A/B 级来源发现利益关联、断链或属二手转述；
@@ -114,7 +115,7 @@ graph TD
 
 ## 状态
 
-- 当前版本：v2.6.0（见 [`VERSION`](VERSION)）
+- 当前版本：v2.7.0（见 [`VERSION`](VERSION)）
 - 维护状态：**不声称建成，只声称维护状态**——开放作弊集合只能持续对抗
 - **诚实边界**：28 条未解问题显式登记（见 `spec/13-boundaries.md`）——这是本框架的诚实边界，也是研究者的选题清单；含全体系最大的工程缺口「去中心化蜂群反制」
 - 变更历史：见 [`CHANGELOG.md`](CHANGELOG.md)
@@ -138,7 +139,7 @@ graph TD
 | 目录 / 文件 | 内容 |
 |---|---|
 | `spec/` | 规范正文（13 篇：01 原则 → 13 诚实边界） |
-| `REFERENCES.md` | 69 条分级证据（单一真相源） |
+| `REFERENCES.md` | 84 条分级证据（单一真相源） |
 | `restricted/` | 受限内容（仅随部署包分发） |
 | `scripts/` | 一致性校验工具 |
 | `.github/` | Issue / PR 模板与代码归属 |
@@ -184,11 +185,11 @@ graph TD
 
 见 [`CITATION.cff`](CITATION.cff)。
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.6.0). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.7.0). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## 质量保障（自指验证）
 
-本仓库用自己治理自己：`scripts/verify_consistency.py` 提供 30 项发布一致性校验（表格格式 / 证据分级数量 / 事故数字口径 / 章节号 / 术语口径 / 双向引用检查 / 引用键质量），已挂载为 pre-commit 钩子（`.githooks/`）。启用方式见 `CONTRIBUTING.md`；每次提交自动执行，校验失败即拦截。手动运行：`python scripts/verify_consistency.py`（纯标准库，无需安装依赖）。
+本仓库用自己治理自己：`scripts/verify_consistency.py` 提供 33 项发布一致性校验（表格格式 / 证据分级数量 / 事故数字口径 / 章节号 / 术语口径 / 双向引用检查 / 引用键质量 / G 类管辖前缀合法性），已挂载为 pre-commit 钩子（`.githooks/`）。启用方式见 `CONTRIBUTING.md`；每次提交自动执行，校验失败即拦截。手动运行：`python scripts/verify_consistency.py`（纯标准库，无需安装依赖）。
 
 这不是靠自觉维护的文档，而是有自动化门禁的规范。
 
@@ -202,4 +203,4 @@ graph TD
 
 ## 参与贡献
 
-见 `CONTRIBUTING.md`。所有新增机制必须附 A/B/C/D 证据等级与来源；D 级（推演）不得单独支撑 P0 机制。
+见 `CONTRIBUTING.md`。所有新增机制必须附 A/B/C/D/G 证据等级与来源；D 级（推演）不得单独支撑 P0 机制。
