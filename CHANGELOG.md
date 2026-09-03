@@ -1,5 +1,22 @@
 # 变更日志
 
+## v2.6.0（2026-09-03）— 证据扩充：任务定义层治理杠杆 + 声明式禁令的跨性质旁证
+
+**总纲一新增第三角度论证（spec/01）：任务定义 / 提示词层本身即治理杠杆。**
+此前总纲一只有两条外部论据（SemaClaw 论证「治理重心在 harness 层」、AutoHarness 论证「harness 自动合成的收益侧」）。本轮补入第三角度——Prompt-Induced Waste in Coding Agents（arXiv:2608.01347，Sarel Weinberger、Amir Hohez，v5 2026-08-24，含预注册 + 冻结 holdout；4,644 次有效 run）：在任务不变下，单是「develop several approaches, compare their trade-offs」这类**多方案指令**就把六个开源模型的推理 token 放大 **2.4–7.4×**（冻结 holdout 上复现），而成功率与单方案无差异（每机制与成功率相关 ≈0）。结论纲领句：**prompt、effort 与 harness 是交互实验因子，不是独立控件**——治理杠杆不只落在模型（选型）与 harness（架构），也落在**任务定义**层（措辞本身）。故 L1 任务定义 QA 须把「避免诱发无成功率增益的多方案推理」纳入提示词审查清单。
+
+**声明式禁令不具约束力新增跨性质旁证（spec/09）：厂商 issue tracker 用户痛点印证。**
+此前该命题只有 Institutional AI（arXiv:2601.11369v2）一条受控实验证据（提示词层宪法在博弈环境下被击穿、且在 GPT-5 Mini 上恶化到 3.60 > 基线 3.10）。本轮补入 anthropics/claude-code issue #65961（2026-06-07 创建，截至 2026-09-03 state=open、reactions **+189**）：用户报告 Claude Code 在 Opus 4.8 / Opus 5 / Sonnet 5 上默认过度注释，且「CLAUDE.md 强制规则 + memory 系统强化」**仍不可靠地压不住**（issue 原话 "does not reliably suppress it"）。两者性质不同须分列不可合并——前者证明「优化压力击穿提示词约束」，后者证明「即便无对抗者、仅凭模型默认行为，提示词约束也压不住」；**前者仍是看门狗设计的最强外部支持，#65961 只补「该现象在日常使用中同样存在且已被 189 名用户独立确认」这一面**。
+
+**证据核验方法论的一次实操记录：本轮独立核验发现并拒绝了外部项目的反向引用错误。**
+本项目 no-negative-echo（github.com/LB623/no-negative-echo）的 BACKGROUND.md 第 4.3 节把 arXiv:2608.01347 用作「Agent 内部展开被淘汰方案、这些枝会漏进注释和 PR」的支撑。本轮经 arXiv HTML 全文逐段核验，**论文实证恰恰相反**——Appendix F "No second implemented alternative is observed"、Table 2 "edits +0"：被淘汰分支只发生在推理 token、**不引发额外代码编辑**。论文证明的是**浪费**，不是**污染**。本体系的引用据此严格限定在论文实际证实的范围（多方案指令浪费推理且无成功率增益），并在 REFERENCES.md 条目中显式标注「不引 no-negative-echo BACKGROUND.md 用法，因与论文结论相反」。这是 2026-09-03 晚「证据核验方法论」四条教训的第二次实操（上次是 AutoResearch 公众号核实），印证「单源查不到反证 ≠ 反证不存在」同样适用于第三方项目的引用核验。
+
+**REFERENCES.md 与计数门禁同步更新：**
+- **新增 2 条 B 级**：claude-code #65961（键【claude-code-65961】，B 级跨性质旁证）+ arXiv:2608.01347（键【Weinberger】，B 级可核查预印本）。均经 GitHub API 与 arXiv HTML 全文逐段独立核验。
+- **证据总数**：67 → **69**（A:1 / B:**58** / C:9 / D:1）。B 级占比维持约 84%。
+- **门禁计数校验**（scripts/verify_consistency.py）：B:56→**58**、合计 67→**69**；README / README.en 全文证据计数声明同步更新。
+- **不动历史声明**：CHANGELOG 历史版本（v1.0.0 → v2.5.0）中的「54 条参考文献」「44 条 B 级」等表述保持原样不动（那些是当时发布快照，不是当前状态）。
+
 ## v2.5.0（2026-09-03）— 方案 B 落地：配置内容审查演示级闭合（G9）
 
 1. **L2 参照实现新增 `ConfigReviewer`——把 spec/02 第四条「配置权即攻击面」的五项检查点

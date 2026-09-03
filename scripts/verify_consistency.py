@@ -156,22 +156,22 @@ b = sum(1 for g, _ in grades if g == "B")
 c = sum(1 for g, _ in grades if g == "C")
 d = sum(1 for g, _ in grades if g == "D")
 check("REFERENCES 实测 A:1", a == 1, f"实测 A={a}")
-check("REFERENCES 实测 B:56", b == 56, f"实测 B={b}")
+check("REFERENCES 实测 B:58", b == 58, f"实测 B={b}")
 check("REFERENCES 实测 C:9", c == 9, f"实测 C={c}")
 check("REFERENCES 实测 D:1", d == 1, f"实测 D={d}")
 total = a + b + c + d
-check("REFERENCES 合计 67 条", total == 67, f"实测合计={total}")
+check("REFERENCES 合计 69 条", total == 69, f"实测合计={total}")
 
 readme = read(os.path.join(ROOT, "README.md"))
 chg = read(os.path.join(ROOT, "CHANGELOG.md"))
-check("README 声明「67 条来源，其中 B 级 56 条」",
-      "67 条来源，其中 B 级 56 条" in readme)
-check("README 分布「A:1 / B:56 / C:9 / D:1」（含 A 级来源标注）",
-      "A:1" in readme and "B:56 / C:9 / D:1" in readme)
+check("README 声明「69 条来源，其中 B 级 58 条」",
+      "69 条来源，其中 B 级 58 条" in readme)
+check("README 分布「A:1 / B:58 / C:9 / D:1」（含 A 级来源标注）",
+      "A:1" in readme and "B:58 / C:9 / D:1" in readme)
 check("CHANGELOG 声明「54 条参考文献（其中 B 级 44 条）」",
       "54 条参考文献（其中 B 级 44 条）" in chg)
-check("REFERENCES 注脚「56 条 B 级、9 条 C 级、1 条 D 级（合计 67 条来源）」",
-      "56 条 B 级、9 条 C 级、1 条 D 级（合计 67 条来源）" in refs)
+check("REFERENCES 注脚「58 条 B 级、9 条 C 级、1 条 D 级（合计 69 条来源）」",
+      "58 条 B 级、9 条 C 级、1 条 D 级（合计 69 条来源）" in refs)
 
 # ── 3b. README 全文证据计数一致性 ─────────────
 # 教训：v2.1.0 之前门禁只锁了 README 顶部声明与 REFERENCES 注脚两个固定字符串，

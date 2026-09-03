@@ -29,6 +29,12 @@
 
 对本体系的含义是：**「模型能力趋同」与「治理重心前移」是同一枚硬币的两面**——若模型能力持续分化，则选型（换用更强的模型）本身就是有效的治理手段；若模型能力趋同，则选型不再产生治理收益，治理只能落在 harness 层。本体系取后者，这与分级章「任务跨度不因模型能力而豁免」一致。该文的四项工程贡献（DAG 两阶段混合团队编排、PermissionBridge 行为安全系统、三层上下文管理架构、agentic wiki 技能）本体系**只登记、不采纳**：PermissionBridge 与本体系的权限门同属一类，但其效果未见独立验证。
 
+**治理重心前移的第三角度：任务定义 / 提示词层本身即治理杠杆（本轮新增）。** Sarel Weinberger、Amir Hohez（*Prompt-Induced Waste in Coding Agents: Reasoning, Effort, Harness Design, and End-to-End Cost*；arXiv:2608.01347，v5 2026-08-24，DOI 10.48550/arXiv.2608.01347；含预注册 + 冻结 holdout；4,644 次有效 run）实证：在任务不变下，单是「develop several approaches, compare their trade-offs, and implement the best one」这类**多方案指令**就把六个开源模型的推理 token 放大 **2.4–7.4×**（在冻结 holdout 上复现），而成功率与单方案无差异——每个浪费机制与成功率的相关 ≈0（区间 −0.09 到 +0.11）。harness 间差距 5–30×。结论可作纲领句引用：**prompt、effort 与 harness 是交互实验因子，不是独立控件**——因此治理杠杆不只落在模型（选型）与 harness（架构），也落在**任务定义**那一层（措辞本身）。
+
+这条补上了前两条论据未覆盖的角度：SemaClaw 与 AutoHarness 论证的是「治理重心在 harness 层不在模型层」，本条论证的是「任务定义层也不是中性背景——错误的提示词措辞能在不改变任务的前提下把成本放大数倍且换不来成功率」。故 L1 任务定义 QA 须把「**避免诱发无成功率增益的多方案推理**」纳入提示词审查清单。
+
+⚠️ 证据等级 B，三项限定：① **不得**据 2.4–7.4× 外推为生产环境成本预期——该倍数为受控基准上的方向性证据；② **不得**引用该论文支撑「被淘汰方案泄漏到产物（注释 / PR / commit）」——论文明确反对该推断（Appendix F "No second implemented alternative is observed"；Table 2 "edits +0"：被淘汰分支只发生于推理 token、不引发额外代码编辑）；外部项目 no-negative-echo BACKGROUND.md 第 4.3 节曾据此推断，与论文结论相反，本体系不予采纳；③ 该论文证明的是**浪费**，不是**污染**——最终产物的清理纪律由本体系自有 spec/11 承担。
+
 ⚠️ 证据等级 B，限定：该文是**系统论文**，**未给出完整实验对照**，其「harness 层成为首要场所」是**作者对趋势的判断，不是测量结果**；本体系只引其**定义与趋势判断**，不引任何性能数字。
 
 **其二，harness 的收益可被量化，但其极限形态对本体系不利。** *AutoHarness: improving LLM agents by automatically synthesizing a code harness*（Xinghua Lou、Miguel Lázaro-Gredilla、Antoine Dedieu、Carter Wendelken、Wolfgang Lehrach、Kevin P. Murphy，6 位作者；arXiv:2603.03329，**2026-02-10**，DOI 10.48550/arXiv.2603.03329）给出一个尖锐的起点事实：在 Kaggle GameArena 国际象棋竞赛中，**Gemini-2.5-Flash 的败局中有 78% 被归因于非法走子**——即大多数失败不是「走得不够好」，而是「走了规则不允许的棋」。该文让 Gemini-2.5-Flash 依据环境反馈、经少量轮次的迭代代码精化**自动合成**一个代码 harness，结果在 **145 个 TextArena 游戏**（单人与双人均含）中**消除了全部非法走子**，并使较小的 Gemini-2.5-Flash **超过了更大的 Gemini-2.5-Pro**。推到极限时，该文让 Gemini-2.5-Flash **把整个策略生成为代码**，从而在决策时刻**完全不需要调用 LLM**；所得的代码策略在 16 个 TextArena 单人游戏上取得高于 Gemini-2.5-Pro 与 GPT-5.2-High 的平均奖励。
