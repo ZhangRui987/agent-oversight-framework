@@ -16,10 +16,12 @@
  *   - 审计链为 append-only + SHA-256 哈希链（G2 演示级闭合，node:crypto）；
  *     未做 E1 内核侧采集（spec/02）/ E5 独立信任域固化，对抗性多 Agent 场景（P3）下               ← G3 / G4
  *     不能单独用作信任根。
- *   - 无资源账本（预算比/影子比/记忆写入审计，spec/10）、无三号公证机（spec/09 要求                ← G5 / G6
+ *   - 资源账本已演示级闭合（G5：ResourceLedger 预算比 / 影子比 / 记忆写入审计 +
+ *     周期型外联检测占位，spec/10 三信号 + 第四类信号）；无三号公证机（spec/09 要求             ← G6
  *     独立硬件信任域 + 三号甲/乙拆分）、无信用分与信用回避（spec/04）、无群治理（spec/07）。        ← G7 / G8
  *
- * G1、G2 已演示级闭合（SQLite 持久化 + SHA-256）；G3–G8 需外部系统配合。
+ * G1、G2、G5、G9 已演示级闭合（SQLite 持久化 + SHA-256 + ResourceLedger + ConfigReviewer）；
+ * G3、G4、G6、G7、G8 需外部系统配合。
  * 完整说明见同目录 PRODUCTION-GAPS.md。
  *
  * 许可证：Apache License 2.0（代码路径，见 LICENSING.md 的路径 ↔ 许可证映射）。
@@ -1022,6 +1024,256 @@ export async function guardedToolCall(
 }
 
 // ============================================================================
+// 10. ResourceLedger —— G5 资源账本闭合（spec/10 三信号 + 第四类周期型外联）
+//     spec/10-resource-ledger.md 四类信号：
+//       ① 预算比：每任务预设算力预算，超阈值即触发审计（非拦截——超支可能合理，但必须解释）
+//       ② 影子比：同任务在不同模型/实例上的消耗分布，系统性偏离基线即异常
+//       ③ 记忆写入审计：对 memory 文件、系统提示、持久化配置的所有写入列为最高审计级别
+//       ④ 周期型外联：对出站时间序列做间隔分析，识别固定间隔轮询（与数据量无关）
+//
+//     与 ConfigReviewer 的设计同构：
+//       - 独立类，可选注入到 guardedToolCall 管道或单独使用；
+//       - 超阈值→记审计事件 + 返回 finding（调用方决定是否升级为拦截），呼应 spec/10「审计而非拦截」；
+//       - 不注入则不启用（向后兼容——现有 demo [1]–[19] 全部行为不变）。
+//
+//     实证锚点（spec/10 §实证支撑，均为 B 级可核查预印本）：
+//       - 信号①：arXiv:2604.22750——同任务消耗可相差 30×，前沿模型无法自预测（相关系数 ≤0.39）
+//         → 预算比阈值不能依赖模型自查；超支审计（非拦截）由此获得实证支撑（波动大故拦截必误伤）
+//       - 信号③：arXiv:2608.21230——写入时四阶段内容筛查管道对 360 条投毒记忆拒绝 0 条
+//         → 记忆写入不能停留在「筛查通过即可写」，须包含写入后的落地核查与检索侧约束
+//       - 信号③：arXiv:2607.27080——24 配置矩阵下恶意记忆持久化率 84.2%，完整写入—执行链 50.3%
+//         → 「列为最高审计级别」的必要性由此获得跨 24 配置的证据面
+//       - 信号④：arXiv:2605.20734——应用层多模态隐蔽信道参考监视器 + per-sink 漏桶容量账本
+//         → 「与数据量无关的周期性信号」由此获得工程化的度量口径
+//
+//     ⚠️ 演示级闭合（与 G1/G2/G9 同级）：
+//       - 闭合的是「资源账本接口 + 四类信号的确定性判定逻辑」这一具体缺口；
+//       - 生产级仍需：基线标定（影子比/周期检测阈值须用本体系自己的运行数据标定，spec/10 原文
+//         「阈值须标定后确定」）、记忆写入的落地核查与检索侧约束（spec/10 §记忆写入审计扩展）、
+//         周期型外联的频谱分析与自相关（本实现只做间隔方差占位）——见 PRODUCTION-GAPS.md G5。
+// ============================================================================
+
+/** 单次工具调用的资源消耗度量（由 execute 回调在调用后报告给 ResourceLedger）。 */
+export interface ResourceUsage {
+  /** 语言模型 token 消耗（输入 + 输出合计）。 */
+  tokens?: number;
+  /** 峰值内存（MB）。 */
+  memoryMb?: number;
+  /** 调用耗时（毫秒）。 */
+  durationMs?: number;
+  /** 出站字节（网络外联，用于周期型外联的量级参考）。 */
+  egressBytes?: number;
+}
+
+/** 单条审计信号——由 ResourceLedger 产出，对应 spec/10 四类信号之一。 */
+export type LedgerSignalKind =
+  | 'budget-exceeded'      // 信号①：消耗超预算阈值（审计而非拦截——spec/10 明确「超支可能合理，但必须解释」）
+  | 'shadow-deviation'     // 信号②：消耗系统性偏离基线（影子比超阈）
+  | 'memory-write-audited' // 信号③：记忆/系统提示/持久化配置写入——最高审计级别
+  | 'periodic-egress';     // 信号④：周期型外联——固定间隔轮询（与数据量无关）
+
+export interface LedgerSignal {
+  kind: LedgerSignalKind;
+  /** 信号触发时的任务标识（用于跨任务聚合审计）。 */
+  taskId: string;
+  /** 人类可读的命中说明（写入审计日志）。 */
+  detail: string;
+  /** 触发信号的实测值（如 tokens=12340、interval-variance=0.01）。 */
+  measured?: Record<string, number>;
+  /** 对应的预算/基线（若有）。 */
+  threshold?: Record<string, number>;
+}
+
+/**
+ * 任务预算定义——由调用方在任务定义时预设。
+ *
+ * 超预算触发的是 **审计信号**（spec/10「非即拦截」），不是 EntryGuard/ExitGuard 的硬拦截——
+ * 这呼应 spec/10 的实证支撑（arXiv:2604.22750）：同任务消耗可相差 30 倍，拦截必然误伤，
+ * 但解释义务不变。调用方可根据业务把信号升级为拦截（如连续 N 次超预算才熔断）。
+ */
+export interface TaskBudget {
+  /** 任务标识（与 LedgerSignal.taskId 对应）。 */
+  taskId: string;
+  /** token 预算上限（超阈触发审计信号）。 */
+  maxTokens?: number;
+  /** 内存预算上限（MB）。 */
+  maxMemoryMb?: number;
+  /** 时长预算上限（毫秒）。 */
+  maxDurationMs?: number;
+  /**
+   * 影子比阈值——实际消耗 / 基线 的比例超过此值触发偏离信号。
+   * spec/10 明确「阈值须标定后确定」——此处给默认 2.0 占位（实际消耗达基线 2 倍才触发），
+   * 生产实现须用本体系自己的运行数据标定（见 PRODUCTION-GAPS.md G5 剩余差距）。
+   */
+  shadowRatioThreshold?: number;
+  /**
+   * 影子比基线——同任务的历史消耗中位数。
+   * undefined 时跳过影子比检测（基线未建立前不判定偏离）。
+   */
+  shadowBaseline?: { tokens?: number; memoryMb?: number; durationMs?: number };
+}
+
+/**
+ * 资源账本——记录每次工具调用的资源消耗并产出四类审计信号（spec/10）。
+ *
+ * 使用范式（与 ConfigReviewer 同构——独立类、可选注入、向后兼容）：
+ * ```ts
+ * const ledger = new ResourceLedger(auditLog);
+ * const budget: TaskBudget = { taskId: 't1', maxTokens: 8000 };
+ * const usage: ResourceUsage = { tokens: 12000 };
+ * const signals = ledger.record('t1', 'search', usage, budget);
+ * // signals: [{ kind: 'budget-exceeded', detail: 'tokens 12000 > 8000', ... }]
+ * ```
+ *
+ * 记忆写入审计（信号③）单独提供 `auditMemoryWrite` 方法——调用方在执行 memory/config/prompt
+ * 写入工具调用后须显式调用此方法把写入登记为最高审计级别（spec/10 要求）。
+ */
+export class ResourceLedger {
+  /**
+   * @param audit 审计日志接口——每次信号触发记一条 `ledger_signal` 事件（调用方注入 AppendOnlyAuditLog 或兼容对象）。
+   */
+  constructor(
+    private readonly audit: { append: (type: string, data: unknown) => unknown },
+    /**
+     * 周期型外联检测的窗口大小（收集多少个出站时间戳后做一次间隔方差判定）。
+     * 默认 8——生产实现应配合自相关 + 频谱分析（本实现只做间隔方差占位，阈值方差 ≤1ms² 即判定周期性）。
+     */
+    private readonly periodicWindow: number = 8,
+  ) {}
+
+  /**
+   * 记录一次工具调用的资源消耗并产出审计信号。
+   *
+   * 产出规则（全部为审计信号，不拦截执行——spec/10「审计而非拦截」）：
+   *   - 信号①（预算比）：usage 中任一维度超过 budget 对应阈值即产出；
+   *   - 信号②（影子比）：budget.shadowBaseline 存在且实际/基线比例超过 shadowRatioThreshold 即产出；
+   *   - 信号④（周期型外联）：当累计的同任务出站时间戳达到 periodicWindow 时做一次间隔方差判定。
+   *
+   * 信号③（记忆写入审计）不在此方法——记忆写入须显式调用 `auditMemoryWrite` 标记为最高审计级别，
+   * 因为 memory/config/prompt 写入与普通工具调用的审计强度不同（spec/10 原文「列为最高审计级别」）。
+   */
+  record(
+    taskId: string,
+    tool: string,
+    usage: ResourceUsage,
+    budget?: TaskBudget,
+  ): LedgerSignal[] {
+    const signals: LedgerSignal[] = [];
+    const ts = Date.now();
+
+    // —— 信号① 预算比（超阈审计——非拦截）——
+    if (budget) {
+      const dims: Array<{ key: 'tokens' | 'memoryMb' | 'durationMs'; max: number | undefined; actual: number | undefined }> = [
+        { key: 'tokens', max: budget.maxTokens, actual: usage.tokens },
+        { key: 'memoryMb', max: budget.maxMemoryMb, actual: usage.memoryMb },
+        { key: 'durationMs', max: budget.maxDurationMs, actual: usage.durationMs },
+      ];
+      for (const { key, max, actual } of dims) {
+        if (max !== undefined && actual !== undefined && actual > max) {
+          const sig: LedgerSignal = {
+            kind: 'budget-exceeded',
+            taskId,
+            detail: `${key} ${actual} > budget ${max} (tool=${tool})`,
+            measured: { [key]: actual },
+            threshold: { [key]: max },
+          };
+          signals.push(sig);
+          this.audit.append('ledger_signal', { ...sig, ts });
+        }
+      }
+
+      // —— 信号② 影子比（偏离基线）——
+      if (budget.shadowBaseline && budget.shadowRatioThreshold !== undefined) {
+        const baseDims: Array<{ key: 'tokens' | 'memoryMb' | 'durationMs'; b: number | undefined; a: number | undefined }> = [
+          { key: 'tokens', b: budget.shadowBaseline.tokens, a: usage.tokens },
+          { key: 'memoryMb', b: budget.shadowBaseline.memoryMb, a: usage.memoryMb },
+          { key: 'durationMs', b: budget.shadowBaseline.durationMs, a: usage.durationMs },
+        ];
+        for (const { key, b, a } of baseDims) {
+          if (b !== undefined && b > 0 && a !== undefined) {
+            const ratio = a / b;
+            if (ratio > budget.shadowRatioThreshold) {
+              const sig: LedgerSignal = {
+                kind: 'shadow-deviation',
+                taskId,
+                detail: `${key} shadow ratio ${ratio.toFixed(2)} > ${budget.shadowRatioThreshold} (baseline=${b}, actual=${a}, tool=${tool})`,
+                measured: { [`${key}_ratio`]: Math.round(ratio * 100) / 100 },
+                threshold: { [`${key}_ratio`]: budget.shadowRatioThreshold },
+              };
+              signals.push(sig);
+              this.audit.append('ledger_signal', { ...sig, ts });
+            }
+          }
+        }
+      }
+    }
+
+    // —— 信号④ 周期型外联（间隔方差检测——占位实现）——
+    // 收集同任务的出站时间戳，达到窗口大小时做一次间隔方差判定。
+    // 生产实现应改为自相关 + 频谱分析（spec/10 原文），本实现只做间隔方差占位。
+    const list = this.egressTimestamps.get(taskId) ?? [];
+    if (usage.egressBytes !== undefined && usage.egressBytes > 0) {
+      list.push(ts);
+      if (list.length > this.periodicWindow) list.shift();
+      this.egressTimestamps.set(taskId, list);
+    }
+    if (list.length >= this.periodicWindow) {
+      const intervals: number[] = [];
+      for (let i = 1; i < list.length; i++) intervals.push(list[i]! - list[i - 1]!);
+      const mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+      const variance = intervals.reduce((a, b) => a + (b - mean) ** 2, 0) / intervals.length;
+      // 占位阈值：间隔方差 ≤ 1ms²（毫秒平方）即判定为周期性——
+      // 这是非常宽松的占位，生产实现须根据实际流量特征标定（spec/10「阈值须标定后确定」）。
+      const periodicThreshold = 1; // ms²
+      if (variance <= periodicThreshold && mean > 0) {
+        const sig: LedgerSignal = {
+          kind: 'periodic-egress',
+          taskId,
+          detail: `periodic egress detected: interval mean=${mean.toFixed(0)}ms variance=${variance.toFixed(2)}ms² (tool=${tool}, n=${list.length})`,
+          measured: { interval_mean_ms: Math.round(mean), interval_variance_ms2: Math.round(variance * 100) / 100 },
+          threshold: { interval_variance_ms2: periodicThreshold },
+        };
+        signals.push(sig);
+        this.audit.append('ledger_signal', { ...sig, ts });
+      }
+    }
+
+    return signals;
+  }
+
+  /**
+   * 信号③ 记忆写入审计——把一次 memory/system-prompt/persisted-config 写入标记为最高审计级别。
+   *
+   * spec/10 原文：「对 memory 文件、系统提示、持久化配置的所有写入列为最高审计级别」。
+   * 实证支撑：arXiv:2608.21230——写入时四阶段内容筛查管道对 360 条投毒记忆拒绝 0 条，
+   * 故审计级别不能停留在「筛查通过即可写」，必须显式登记并留痕（写入后的落地核查由调用方负责）。
+   *
+   * 与 `record` 的区别：记忆写入单独标记，因为它的审计级别高于普通资源消耗（spec/10 要求），
+   * 且不依赖预算/影子比阈值——无论消耗多少，只要发生记忆/提示/配置写入就必须审计。
+   */
+  auditMemoryWrite(
+    taskId: string,
+    target: 'memory' | 'system-prompt' | 'persisted-config',
+    writeDetail: { tool: string; fieldsChanged?: string[]; bytes?: number },
+  ): LedgerSignal {
+    const ts = Date.now();
+    const sig: LedgerSignal = {
+      kind: 'memory-write-audited',
+      taskId,
+      detail: `${target} write audited (highest level): tool=${writeDetail.tool}` +
+        (writeDetail.fieldsChanged ? ` fields=[${writeDetail.fieldsChanged.join(',')}]` : '') +
+        (writeDetail.bytes !== undefined ? ` bytes=${writeDetail.bytes}` : ''),
+      measured: writeDetail.bytes !== undefined ? { bytes: writeDetail.bytes } : undefined,
+    };
+    this.audit.append('ledger_signal', { ...sig, level: 'highest', target, ts });
+    return sig;
+  }
+
+  /** 内部状态：同任务的出站时间戳队列（用于信号④间隔方差检测）。 */
+  private egressTimestamps = new Map<string, number[]>();
+}
+
+// ============================================================================
 // 导出汇总
 // ============================================================================
 export const RuntimeOversight = {
@@ -1041,4 +1293,5 @@ export const RuntimeOversight = {
   ExitGuard,
   guardedToolCall,
   ConfigReviewer,
+  ResourceLedger,
 };

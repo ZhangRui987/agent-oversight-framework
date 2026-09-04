@@ -26,6 +26,7 @@
  *   [17] EntryGuard/ExitGuard（E1 入口/E5 出口检查——拦截恶意工具调用的强制力展示）
  *   [18] SqliteLeaseAuthority（G1 闭合：租约权威 SQLite 持久化——崩溃后可恢复）
  *   [19] ConfigReviewer（spec/02 第四条：配置权即攻击面——五项配置内容审查，恶意配置注入被拦）
+ *   [20] ResourceLedger（G5 闭合：spec/10 资源账本——预算比超阈审计 + 影子比偏离 + 记忆写入最高级审计 + 周期型外联检测）
  *
  * 运行：node --experimental-transform-types demo.ts
  * 退出码：0 = 全部 PASS，1 = 有 FAIL
@@ -44,6 +45,7 @@ import {
   LifecycleTripwire,
   OrderedDurableChain,
   OwnerScopedStore,
+  ResourceLedger,
   RuntimeOverseer,
   SqliteLeaseAuthority,
   guardedToolCall,
@@ -51,6 +53,8 @@ import {
   regressionGuard,
   type ClaimedSession,
   type LeaseAuthority,
+  type ResourceUsage,
+  type TaskBudget,
   type ToolCallRequest,
 } from './index.ts';
 
@@ -998,9 +1002,111 @@ function guardedToolCallSync(
 }
 
 // ============================================================================
+// 20. ResourceLedger —— G5 闭合：spec/10 资源账本（预算比/影子比/记忆写入审计/周期型外联）
+// ============================================================================
+function testResourceLedger(): void {
+  console.log('\n[20] ResourceLedger（G5 闭合：spec/10 资源账本——四类信号）');
+
+  // 辅助：提取审计日志中的 ledger_signal 事件
+  function extractLedgerSignals(log: AppendOnlyAuditLog): Array<{ kind: string; taskId: string; detail: string }> {
+    const events = (log as unknown as { events: Array<{ type: string; data: unknown }> }).events;
+    return events
+      .filter((e) => e.type === 'ledger_signal')
+      .map((e) => (e.data as { kind: string; taskId: string; detail: string }));
+  }
+
+  // —— 信号① 预算比：超阈触发审计信号（非拦截）——
+  const log1 = new AppendOnlyAuditLog();
+  const ledger1 = new ResourceLedger(log1);
+  const budget1: TaskBudget = { taskId: 't-budget', maxTokens: 8000, maxDurationMs: 5000 };
+  const signals1 = ledger1.record('t-budget', 'search', { tokens: 12000, durationMs: 3000 }, budget1);
+  check('预算比：tokens 超阈 → 产出 budget-exceeded 信号', signals1.some((s) => s.kind === 'budget-exceeded' && s.detail.includes('tokens 12000 > budget 8000')));
+  check('预算比：duration 未超阈 → 不产出该维度信号', signals1.every((s => s.kind !== 'budget-exceeded' || !s.detail.includes('duration'))));
+  check('预算比：信号写入审计日志（ledger_signal 事件）', extractLedgerSignals(log1).some((s) => s.kind === 'budget-exceeded'));
+  check('预算比：预算内消耗不触发信号', ledger1.record('t-budget', 'search', { tokens: 4000, durationMs: 2000 }, budget1).length === 0);
+
+  // —— 信号② 影子比：实际/基线 比例超阈触发偏离信号 ——
+  const log2 = new AppendOnlyAuditLog();
+  const ledger2 = new ResourceLedger(log2);
+  const budget2: TaskBudget = {
+    taskId: 't-shadow',
+    shadowRatioThreshold: 2.0,
+    shadowBaseline: { tokens: 5000, durationMs: 1000 },
+  };
+  const signals2 = ledger2.record('t-shadow', 'infer', { tokens: 12000, durationMs: 800 }, budget2);
+  check('影子比：tokens 偏离基线 2.4 倍 > 阈值 2.0 → 产出 shadow-deviation', signals2.some((s) => s.kind === 'shadow-deviation' && s.detail.includes('tokens')));
+  check('影子比：duration 0.8 倍 < 阈值 2.0 → 不产出该维度信号', signals2.every((s) => s.kind !== 'shadow-deviation' || !s.detail.includes('duration')));
+  check('影子比：基线内消耗不触发偏离信号', ledger2.record('t-shadow', 'infer', { tokens: 6000 }, budget2).every((s) => s.kind !== 'shadow-deviation'));
+  check('影子比：无基线（shadowBaseline=undefined）时跳过影子比检测', new ResourceLedger(new AppendOnlyAuditLog()).record('t-no-base', 'infer', { tokens: 99999 }, { taskId: 't-no-base', shadowRatioThreshold: 2.0 }).length === 0);
+
+  // —— 信号③ 记忆写入审计：memory/system-prompt/persisted-config 写入标记为最高审计级别 ——
+  const log3 = new AppendOnlyAuditLog();
+  const ledger3 = new ResourceLedger(log3);
+  const memSig = ledger3.auditMemoryWrite('t-mem', 'memory', { tool: 'write_memory', fieldsChanged: ['preferences', 'goals'], bytes: 512 });
+  check('记忆写入审计：产出 memory-write-audited 信号', memSig.kind === 'memory-write-audited');
+  check('记忆写入审计：detail 含 target=memory', memSig.detail.includes('memory'));
+  check('记忆写入审计：detail 含 fields 变更列表', memSig.detail.includes('preferences') && memSig.detail.includes('goals'));
+  check('记忆写入审计：detail 含字节数', memSig.detail.includes('bytes=512'));
+  const sysSig = ledger3.auditMemoryWrite('t-mem', 'system-prompt', { tool: 'update_prompt' });
+  check('记忆写入审计：system-prompt 写入同样标记', sysSig.detail.includes('system-prompt'));
+  const cfgSig = ledger3.auditMemoryWrite('t-mem', 'persisted-config', { tool: 'set_config', fieldsChanged: ['model'], bytes: 64 });
+  check('记忆写入审计：persisted-config 写入同样标记', cfgSig.detail.includes('persisted-config'));
+  check('记忆写入审计：写入留痕于审计日志', extractLedgerSignals(log3).filter((s) => s.kind === 'memory-write-audited').length === 3);
+
+  // —— 信号④ 周期型外联：固定间隔轮询触发（与数据量无关） ——
+  const log4 = new AppendOnlyAuditLog();
+  const ledger4 = new ResourceLedger(log4, 4); // 窗口=4，便于快速触发
+  // 模拟 C2 心跳：4 次出站，每次间隔固定 100ms，但每次数据量极小（与量级信号无关）
+  let clock4 = 1000000;
+  const realNow = Date.now;
+  for (let i = 0; i < 4; i++) {
+    clock4 += 100; // 固定间隔 100ms
+    // 临时让 Date.now 返回受控值（signals 在 record 内部用 Date.now() 取时间戳）
+    (Date as unknown as { now: () => number }).now = () => clock4;
+    ledger4.record('t-c2', 'http_post', { egressBytes: 32 }, { taskId: 't-c2' });
+  }
+  (Date as unknown as { now: () => number }).now = realNow;
+  const periodicSignals = extractLedgerSignals(log4).filter((s) => s.kind === 'periodic-egress');
+  check('周期型外联：固定间隔小数据量触发 periodic-egress（与量级信号无关）', periodicSignals.length >= 1);
+  check('周期型外联：信号 detail 含 interval mean 与 variance', periodicSignals[0]?.detail.includes('interval mean') && periodicSignals[0]?.detail.includes('variance'));
+
+  // —— 对抗性：非周期出站不触发信号④ ——
+  const log5 = new AppendOnlyAuditLog();
+  const ledger5 = new ResourceLedger(log5, 4);
+  let clock5 = 2000000;
+  const intervals5 = [50, 800, 30, 950]; // 高度不规则的间隔
+  for (const gap of intervals5) {
+    clock5 += gap;
+    (Date as unknown as { now: () => number }).now = () => clock5;
+    ledger5.record('t-burst', 'http_get', { egressBytes: 100 }, { taskId: 't-burst' });
+  }
+  (Date as unknown as { now: () => number }).now = realNow;
+  check('对抗性：非周期出站（间隔方差极大）不触发 periodic-egress', extractLedgerSignals(log5).every((s) => s.kind !== 'periodic-egress'));
+
+  // —— 对抗性：信号①预算比与信号③记忆写入审计级别不同 ——
+  const log6 = new AppendOnlyAuditLog();
+  const ledger6 = new ResourceLedger(log6);
+  ledger6.record('t-mix', 'infer', { tokens: 99999 }, { taskId: 't-mix', maxTokens: 100 });
+  ledger6.auditMemoryWrite('t-mix', 'memory', { tool: 'write', bytes: 10 });
+  const events6 = (log6 as unknown as { events: Array<{ type: string; data: unknown }> }).events.filter((e) => e.type === 'ledger_signal');
+  const budgetEv = events6.find((e) => (e.data as { kind: string }).kind === 'budget-exceeded');
+  const memEv = events6.find((e) => (e.data as { kind: string }).kind === 'memory-write-audited');
+  check('对抗性：记忆写入审计事件含 level=highest 标记（高于普通预算信号）', (memEv?.data as { level?: string }).level === 'highest');
+  check('对抗性：普通预算信号不含 level=highest', (budgetEv?.data as { level?: string }).level === undefined);
+
+  // —— 向后兼容：不注入 ResourceLedger 时现有组件行为不变（与 ConfigReviewer 同构） ——
+  check('向后兼容：ResourceLedger 不注入不影响 AppendOnlyAuditLog 正常工作', (() => {
+    const log = new AppendOnlyAuditLog();
+    log.append('test_event', { x: 1 });
+    return log.lastSeq === 1;
+  })());
+}
+
+// ============================================================================
 // main
 // ============================================================================
 async function main(): Promise<void> {
+
   console.log('=== runtime-oversight-skeleton demo ===');
   await testLeaseAuthority();
   testTripwire();
@@ -1022,6 +1128,7 @@ async function main(): Promise<void> {
   await testEntryExitGuards();
   await testSqliteLease();
   testConfigReview();
+  testResourceLedger();
 
   console.log(`\n=== 结果：${failures === 0 ? 'ALL PASS ✅' : `${failures} FAIL ❌`} ===`);
   process.exit(failures === 0 ? 0 : 1);
