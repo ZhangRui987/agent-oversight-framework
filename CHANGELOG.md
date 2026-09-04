@@ -1,5 +1,37 @@
 # 变更日志
 
+## v2.10.0（2026-09-04）— C 级追溯升级：13 条二手来源追溯至一手后升级为 G 级
+
+**新增 13 条 G 级条目，均为 C 级二手来源经 WebSearch 追溯至一手官方链接后升级入库。** v2.7.0 / v2.8.0 两批共 33 条 G 级已穷尽豆包合并清单中所有一手可达的严格 B 级条目；本轮把此前降为 C 级（链接指向律所博客 / 咨询公司 / 事件追踪站 / GitHub）的约 18 条逐条追溯，15 条找到一手官方来源达标——经交叉核对去重后（IL HB 3773 = 已有 us-illinois-2026；FTC Operation AI Comply = 已有 us-ai-comply-2024），实际新增 13 条。
+
+**证据总数：102 → 115（A:1 / B:58 / C:9 / D:1 / G:46）。**
+
+**本轮 13 条按地域与类型分类：**
+
+| 键 | 事件 | 地域 | 类型 | spec 落点 |
+|---|---|---|---|---|
+| us-ca-sb942-2024 | California AI Transparency Act (SB 942) | US-CA | 州级立法 | L0 准入 |
+| us-nyc-ll144-2021 | NYC Local Law 144 (AEDT bias audit) | US-NYC | 市级立法 | L0 准入 |
+| us-tx-traiga-2025 | Texas TRAIGA (HB 149) | US-TX | 州级立法 | L0 准入 |
+| us-nhtsa-waymo-2024 | NHTSA Waymo 召回 (24E-049 + 25E-034) | US-Federal | 联邦监管 | L2 运行监察 |
+| us-fda-pccp-2024 | FDA PCCP 指南 (草案 + AIML 终版) | US-Federal | 联邦指南 | L2 运行监察 |
+| us-nyt-v-openai-2023 | NYT v. OpenAI (SDNY 1:23-cv-11195) | US-Federal | 联邦诉讼 | L4 问责 |
+| us-kadrey-v-meta-2023 | Kadrey v. Meta (N.D. Cal. 3:23-cv-03417) | US-Federal | 联邦诉讼 | L4 问责 |
+| us-sec-ai-washing-2024 | SEC AI Washing 执法 | US-Federal | 联邦执法 | L4 问责 |
+| us-aclu-hirevue-2025 | ACLU 对 Intuit/HireVue 投诉 + Aon FTC 投诉 | US-Federal | NGO 投诉 | L0+L4 |
+| uk-ai-playbook-2025 | UK AI Playbook for Government | UK | 政府指南 | L0 准入 |
+| au-robodebt-2023 | Australian Royal Commission into Robodebt | AU | 皇家委员会 | L4 问责 |
+| int-g7-hiroshima-2023 | G7 Hiroshima AI Process | Intl | 国际框架 | L0 准入 |
+| int-imdrf-n67-n88 | IMDRF ML 医疗器械术语 + GMLP 原则 | Intl | 国际标准 | L0 准入 |
+
+**追溯方法论：** 每条 C 级条目经 WebSearch 追溯至一手来源（州议会法文 / 联邦执法机构公告 / 联邦法院案件文 / 政府官方文件 / 皇家委员会报告 / 国际标准 / 联邦监管指南），确认一手可达后升级为 G 级。6 条不达标条目（欧盟跨境电商定价罚 / 上海法院 AI 连带责任 / 加拿大·比利时·印度深伪案 / ICE 简历分类·挪威虚假来源 / Meta Agent 泄露·Cline 投毒 / 韩国数字医疗·AI 基本法）暂保留 C 级，后续按需追溯。
+
+**已入库的 2 条重复项识别：** 追溯过程中发现 IL HB 3773 与已有 us-illinois-2026 为同一法案、FTC Operation AI Comply 与已有 us-ai-comply-2024 为同一事件——去重后实际新增 13 条而非 15 条。
+
+**门禁脚本更新：** G 类计数 33 → 46、合计 102 → 115、CHANGELOG 声明改为「新增 13 条 G 级」。33 项门禁全部 PASS。
+
+**剩余推进路径：** 6 条 C 级不达标保留后续追溯；2 条重复项可在后续版本中更新一手来源链接（ilga.gov / ftc.gov）。
+
 ## v2.9.0（2026-09-04）— G 类实证锚点按落点回灌至具体机制段落
 
 **结构升级：G 类引用键从 spec/01 集中登记回灌至各章节具体机制段落。** v2.7.0 / v2.8.0 两批共 33 条 G 类引用键此前统一登记在 spec/01「治理实证锚点」段以防悬空；本轮按落点把每条键嵌入到对应的 spec 章节并在该章新增「治理实证锚点」段对接具体机制。spec/01 同段落改为跨章节索引表（落点 → 章节 → 键列表），保留全部 33 条键以防悬空引用门禁失效。
