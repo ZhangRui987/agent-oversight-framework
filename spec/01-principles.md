@@ -51,16 +51,16 @@
 
 本节登记已在真实治理 / 监管 / 执法环境中落地的一手实证，作为机制设计的实证锚点。G 类条目链接指向一手监管文件、法院判决、官方公告或法定标准文本，与学术证据（A / B / C / D）平行支撑 P0 硬约束。
 
-下列四十六条由全球 AI 治理真实案例三轮遴选（v2.7.0 首批 15 条 + v2.8.0 第二批 18 条 + v2.10.0 C 级追溯升级 13 条），自 v2.9.0 起按落点回灌至具体机制段落。本段保留为**跨章节索引**——每条键须在正文至少一个 spec 文件出现以防悬空引用（门禁第 10 项），详细机制对接见各章节「治理实证锚点」段。
+下列四十七条由全球 AI 治理真实案例四轮遴选（v2.7.0 首批 15 条 + v2.8.0 第二批 18 条 + v2.10.0 C 级追溯升级 13 条 + v2.11.0 韩国立法一手升级 1 条），自 v2.9.0 起按落点回灌至具体机制段落。本段保留为**跨章节索引**——每条键须在正文至少一个 spec 文件出现以防悬空引用（门禁第 10 项），详细机制对接见各章节「治理实证锚点」段。
 
 | 落点 | 章节 | G 类引用键 |
 | --- | --- | --- |
-| L0 准入 | spec/02 | 【键: cn-clear-2026】【键: cn-chongqing-2024】【键: cn-shanghai-2025】【键: cn-export-2025】【键: us-rite-aid-2024】【键: us-ngl-2024】【键: eu-garante-openai-2024】【键: eu-ai-act-2026】【键: kr-ai-act-2026】【键: sg-mgf-aa-2026】【键: us-colorado-2024】【键: us-illinois-2026】【键: uk-blueprint-2025】【键: jp-ai-promotion-2025】【键: int-oecd-unesco】【键: iso-42001-2023】【键: us-ca-sb942-2024】【键: us-nyc-ll144-2021】【键: us-tx-traiga-2025】【键: uk-ai-playbook-2025】【键: int-g7-hiroshima-2023】【键: int-imdrf-n67-n88】【键: us-aclu-hirevue-2025】 |
+| L0 准入 | spec/02 | 【键: cn-clear-2026】【键: cn-chongqing-2024】【键: cn-shanghai-2025】【键: cn-export-2025】【键: us-rite-aid-2024】【键: us-ngl-2024】【键: eu-garante-openai-2024】【键: eu-ai-act-2026】【键: kr-ai-act-2026】【键: kr-dmpa-2025】【键: sg-mgf-aa-2026】【键: us-colorado-2024】【键: us-illinois-2026】【键: uk-blueprint-2025】【键: jp-ai-promotion-2025】【键: int-oecd-unesco】【键: iso-42001-2023】【键: us-ca-sb942-2024】【键: us-nyc-ll144-2021】【键: us-tx-traiga-2025】【键: uk-ai-playbook-2025】【键: int-g7-hiroshima-2023】【键: int-imdrf-n67-n88】【键: us-aclu-hirevue-2025】 |
 | L1 内生对齐 | spec/05 | 【键: cn-label-2025】【键: us-eeoc-itutor-2023】【键: cn-wuhan-ai-news-2025】【键: us-workado-2025】【键: eu-replika-2025】 |
-| L2 运行监察 + E | spec/09 | 【键: us-fda-cgmp-2026】【键: us-waymo-bus-2025】【键: us-colorado-2024】【键: eu-ai-act-2026】【键: sg-mgf-aa-2026】【键: us-nhtsa-waymo-2024】【键: us-fda-pccp-2024】 |
+| L2 运行监察 + E | spec/09 | 【键: us-fda-cgmp-2026】【键: us-waymo-bus-2025】【键: us-colorado-2024】【键: eu-ai-act-2026】【键: sg-mgf-aa-2026】【键: us-nhtsa-waymo-2024】【键: us-fda-pccp-2024】【键: kr-dmpa-2025】 |
 | L3 离线重审 + L4 问责 | spec/12 | 【键: cn-shanghai-2025】【键: cn-ac-criminal-2026】【键: cn-qingyun-80w】【键: us-ai-comply-2024】【键: us-eeoc-workday-2024】【键: eu-rome-annul-2026】【键: uk-clearview-2025】【键: ca-thaler-dabus-2025】【键: int-gpai-2020】【键: iso-42001-2023】【键: us-illinois-frontier-2026】【键: owasp-six-nation-2026】【键: us-nyt-v-openai-2023】【键: us-kadrey-v-meta-2023】【键: us-sec-ai-washing-2024】【键: au-robodebt-2023】 |
 
-说明：部分键跨落点重复出现（如【键: cn-shanghai-2025】同时支撑 L0 准入与 L4 问责、【键: us-colorado-2024】同时支撑 L0 与 L2、【键: eu-ai-act-2026】同时支撑 L0 与 L2、【键: sg-mgf-aa-2026】同时支撑 L0 与 L2、【键: iso-42001-2023】同时支撑 L0 与 L4、【键: uk-clearview-2025】同时支撑 L0 与 L4、【键: us-aclu-hirevue-2025】同时支撑 L0 与 L4），故上表键总数按出现次数计大于 46；去重后唯一键仍为 46 条。重复出现反映的是同一案例在不同治理层有不同机制落点，非重复计数。
+说明：部分键跨落点重复出现（如【键: cn-shanghai-2025】同时支撑 L0 准入与 L4 问责、【键: us-colorado-2024】同时支撑 L0 与 L2、【键: eu-ai-act-2026】同时支撑 L0 与 L2、【键: sg-mgf-aa-2026】同时支撑 L0 与 L2、【键: iso-42001-2023】同时支撑 L0 与 L4、【键: uk-clearview-2025】同时支撑 L0 与 L4、【键: us-aclu-hirevue-2025】同时支撑 L0 与 L4），故上表键总数按出现次数计大于 47；去重后唯一键仍为 47 条。重复出现反映的是同一案例在不同治理层有不同机制落点，非重复计数。
 
 
 
