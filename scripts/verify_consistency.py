@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """发布一致性校验（推送前 / pre-commit 用）。
 
-校验项（共 34 项，按运行顺序）：
+校验项（共 35 项，按运行顺序）：
   1. 全仓库无 [TABLE START/END] 伪标记
   2. 所有 Markdown 表格表头后都有 |---| 分隔行
   3. 表格每行列数与分隔行一致
@@ -42,6 +42,7 @@
  32. G 类引用键前缀合法（cn- / us- / eu- / uk- / ca- / au- / jp- / kr- / sg- / int- / iso- / owasp-）
  33. G 类条目须声明【键: XXX】且键含管辖前缀（G 类无 arXiv 号，强制声明键以防漏检）
  34. VERIFICATION-LOG 与 REFERENCES 键集双向一致（G 键全覆盖 + 无幽灵键，防核验公示漂移）
+ 35. README 法域枚举与计数和 REFERENCES G 键前缀一致（九法域 / 九个法域 / L0–L4 + E 六落点 / nine jurisdictions，防法域计数漂移）
 
 用法：
   python scripts/verify_consistency.py [仓库根目录，默认脚本所在目录的上级]
@@ -503,6 +504,50 @@ check(
     "VERIFICATION-LOG 无幽灵键（LOG 键 ⊆ REFERENCES G 键）",
     not _ghost_in_log,
     f"{len(_ghost_in_log)} 条 LOG 键不在 REFERENCES G 类：{'; '.join(_ghost_in_log[:5])}",
+)
+
+# ── 16. README 法域枚举与 REFERENCES G 键前缀一致（防法域计数漂移） ──────
+# 教训预防：「八法域」自 v2.8.0 初写即漏计 1（当时已列 8 个主权法域），
+# v2.10.0 新增 au 时机械 7→8 未重新枚举，三轮门禁全 PASS 仍残留（v2.12.1 修正）。
+# 本项把 README 的法域枚举与计数钉死到 REFERENCES G 键前缀这一真相源上：
+# 新增主权法域前缀而不同步 README 枚举 / 计数时，本项 FAIL；旧计数残留同样 FAIL。
+# 注：int- 前缀为国际组织（OECD/GPAI/G7/IMDRF），非主权法域，README 以「等」概括，
+# 不参与逐名枚举校验；iso- / owasp- 为国际标准，仅要求出现于法域行。
+_JP_NAME = {"cn": "中", "us": "美", "uk": "英", "ca": "加", "au": "澳",
+            "eu": "欧盟", "sg": "新加坡", "kr": "韩国", "jp": "日本"}
+_ZH_NUM = {5: "五", 6: "六", 7: "七", 8: "八", 9: "九", 10: "十", 11: "十一", 12: "十二"}
+_EN_NUM = {5: "five", 6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten", 11: "eleven", 12: "twelve"}
+_sovereign = sorted({_k.split("-")[0] for _k in _g_keys_in_refs} - {"int", "iso", "owasp"})
+_n_jp = len(_sovereign)
+_zh_ct, _en_ct = _ZH_NUM.get(_n_jp), _EN_NUM.get(_n_jp)
+with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as _f:
+    _readme_zh = _f.read()
+with open(os.path.join(ROOT, "README.en.md"), encoding="utf-8") as _f:
+    _readme_en = _f.read()
+_zh_jp_line = next((_l for _l in _readme_zh.splitlines() if "法域" in _l and "覆盖" in _l), "")
+_jp_missing = [_JP_NAME[_p] for _p in _sovereign if _JP_NAME[_p] not in _zh_jp_line]
+_jp_probs = []
+if _zh_ct is None:
+    _jp_probs.append(f"主权法域数 {_n_jp} 超出 _ZH_NUM/_EN_NUM 映射范围，请先扩充映射再同步 README 双语")
+else:
+    if f"{_zh_ct}法域" not in _zh_jp_line:
+        _jp_probs.append(f"README.md 法域行未声明「{_zh_ct}法域」")
+    if f"{_zh_ct}个法域" not in _readme_zh:
+        _jp_probs.append(f"README.md 未声明「{_zh_ct}个法域」（结构性偏置声明段）")
+    if ("L0" + chr(0x2013) + "L4 + E 六个落点") not in _readme_zh:
+        _jp_probs.append("README.md 偏置声明未写「L0–L4 + E 六个落点」（中文漏 E，与英文口径不一致）")
+    if f"{_en_ct} jurisdictions" not in _readme_en:
+        _jp_probs.append(f"README.en.md 未声明「{_en_ct} jurisdictions」")
+    for _num, _w in _ZH_NUM.items():
+        if _num != _n_jp and (f"{_w}法域" in _readme_zh or f"{_w}个法域" in _readme_zh):
+            _jp_probs.append(f"README.md 残留旧计数「{_w}（个）法域」")
+        if _num != _n_jp and f"{_w} jurisdictions" in _readme_en:
+            _jp_probs.append(f"README.en.md 残留旧计数「{_w} jurisdictions」")
+_jp_fail = ([f"法域行缺 {'、'.join(_jp_missing)}"] if _jp_missing else []) + _jp_probs
+check(
+    "README 法域枚举与计数和 REFERENCES G 键前缀一致（防法域计数漂移）",
+    not _jp_fail,
+    "; ".join(_jp_fail),
 )
 
 # ── 汇总 ─────────────────────────────────────

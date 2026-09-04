@@ -1,6 +1,6 @@
 # AI Execution & Oversight Framework
 
-[![Version](https://img.shields.io/badge/version-2.12.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.12.1-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (58/116)](https://img.shields.io/badge/evidence-B_58%2F116-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -91,7 +91,7 @@ Every claim in this repository is graded on five levels; every mechanism is trac
 
 Current distribution: A:1 (Sandlock, arXiv:2605.26298, experimental reproduction) / B:58 / C:9 / D:1 / G:47. **"Insufficient evidence" is a reviewable state, not a hidden defect.**
 
-> **Structural-bias disclosure**: grade B currently accounts for about 50% (58/116), with only 1 grade-A source; grade G accounts for about 41% (47/116), covering six anchoring points L0–L4 + E across eight jurisdictions. This reflects the current hybrid shape of a specification-first project augmented with real governance/policy evidence — academic citations still outnumber primary reproducible experiments, but governance and enforcement evidence now provides broad cross-jurisdiction coverage. **This distribution should not be read as empirical sufficiency.** The path to raising the grade-A share is already listed among the open problems in `spec/13-boundaries.md` (particularly the entries related to experimental validation), and is the key step for this framework to move from "a specification" to "a citable specification with empirical backing."
+> **Structural-bias disclosure**: grade B currently accounts for about 50% (58/116), with only 1 grade-A source; grade G accounts for about 41% (47/116), covering six anchoring points L0–L4 + E across nine jurisdictions. This reflects the current hybrid shape of a specification-first project augmented with real governance/policy evidence — academic citations still outnumber primary reproducible experiments, but governance and enforcement evidence now provides broad cross-jurisdiction coverage. **This distribution should not be read as empirical sufficiency.** The path to raising the grade-A share is already listed among the open problems in `spec/13-boundaries.md` (particularly the entries related to experimental validation), and is the key step for this framework to move from "a specification" to "a citable specification with empirical backing."
 
 ## Evidence correction (community back-propagation loop)
 
@@ -115,7 +115,7 @@ Per `CLASSIFICATION.md`, this repository has three levels:
 
 ## Status
 
-- Current version: v2.12.0 (see [`VERSION`](VERSION))
+- Current version: v2.12.1 (see [`VERSION`](VERSION))
 - Maintenance status: **does not claim "built"; claims only "maintained"** — an open cheating set can only be countered continuously
 - **Honest boundary**: 28 open problems explicitly registered (see `spec/13-boundaries.md`) — this framework's honest boundary and a problem list for researchers; includes the system's largest engineering gap, "decentralized-swarm countermeasures"
 - Change history: see [`CHANGELOG.md`](CHANGELOG.md)
@@ -185,11 +185,11 @@ This repository governs itself by its own specification (meta-governance):
 
 See [`CITATION.cff`](CITATION.cff).
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.12.0). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.12.1). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## Quality assurance (self-referential verification)
 
-This repository governs itself with itself: `scripts/verify_consistency.py` provides 34 release-consistency checks (table format / evidence-grade counts / incident-number conventions / section numbering / terminology / bidirectional reference checks / citation-key quality / G-grade jurisdictional-prefix validity / verification-log key-set sync), mounted as a pre-commit hook (`.githooks/`). See `CONTRIBUTING.md` for enabling; every commit runs it automatically and blocks on failure. Manual run: `python scripts/verify_consistency.py` (pure standard library, no dependencies to install).
+This repository governs itself with itself: `scripts/verify_consistency.py` provides 35 release-consistency checks (table format / evidence-grade counts / incident-number conventions / section numbering / terminology / bidirectional reference checks / citation-key quality / G-grade jurisdictional-prefix validity / verification-log key-set sync / jurisdiction-enumeration consistency), mounted as a pre-commit hook (`.githooks/`). See `CONTRIBUTING.md` for enabling; every commit runs it automatically and blocks on failure. Manual run: `python scripts/verify_consistency.py` (pure standard library, no dependencies to install).
 
 This is not a document maintained by good faith alone; it is a specification with an automated gate.
 
