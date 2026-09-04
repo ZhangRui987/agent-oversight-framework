@@ -1,6 +1,6 @@
 # 发布一致性校验 + L2 参照实现断言（CI）
 # 动机：verify_consistency.py 与 demo.ts 此前只挂在本地 pre-commit，外部读者无法在远端
-#       机器可复现。本 workflow 把 33 项门禁与 115+14 项断言升级为 push/PR 自动执行——
+#       机器可复现。本 workflow 把 34 项门禁与 115+14 项断言升级为 push/PR 自动执行——
 #       让"自动化门禁"从口号变成任何人可核验的事实（采纳豆包深度审查建议 1）。
 # 设计约束：脚本零外部依赖（Python 纯标准库 / Node 内置 node:sqlite + node:crypto），
 #       故 CI 无需安装任何包；两 job 相互独立，可并行。
@@ -13,7 +13,7 @@ on:
 
 jobs:
   consistency-gate:
-    name: 发布一致性校验（33 项）
+    name: 发布一致性校验（34 项）
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

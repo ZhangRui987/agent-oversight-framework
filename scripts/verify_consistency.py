@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """发布一致性校验（推送前 / pre-commit 用）。
 
-校验项（共 33 项，按运行顺序）：
+校验项（共 34 项，按运行顺序）：
   1. 全仓库无 [TABLE START/END] 伪标记
   2. 所有 Markdown 表格表头后都有 |---| 分隔行
   3. 表格每行列数与分隔行一致
@@ -41,6 +41,7 @@
  31. 引用键非通用词（不在黑名单且长度 ≥ 4）
  32. G 类引用键前缀合法（cn- / us- / eu- / uk- / ca- / au- / jp- / kr- / sg- / int- / iso- / owasp-）
  33. G 类条目须声明【键: XXX】且键含管辖前缀（G 类无 arXiv 号，强制声明键以防漏检）
+ 34. VERIFICATION-LOG 与 REFERENCES 键集双向一致（G 键全覆盖 + 无幽灵键，防核验公示漂移）
 
 用法：
   python scripts/verify_consistency.py [仓库根目录，默认脚本所在目录的上级]
@@ -473,6 +474,35 @@ check(
     "G 类条目均声明【键: XXX】（G 类无 arXiv 号，强制声明键）",
     not _g_nokey,
     f"{len(_g_nokey)} 条 G 类条目未声明键",
+)
+
+# ── 15. VERIFICATION-LOG 与 REFERENCES 键集双向一致（防核验公示漂移） ──────
+# 教训预防：README「结构性偏置声明」段曾不在门禁覆盖范围，v2.11.0 升级漏改、
+# 两轮门禁全 PASS 仍残留（v2.11.2 修正）。核验公示日志若与真相源脱节
+# （新增 G 键未登记核验 / 键拼写漂移）会静默腐烂，本项把公示与真相源钉死。
+# 演进约定：未来 VERIFICATION-LOG 回填 B/C/D 类时，把「LOG 无幽灵键」方向
+# 的对照全集从 REFERENCES G 键放宽为 REFERENCES 全部条目键。
+_LOG_PATH = os.path.join(ROOT, "VERIFICATION-LOG.md")
+_log_keys = []
+if os.path.exists(_LOG_PATH):
+    with open(_LOG_PATH, encoding="utf-8") as _f:
+        for _ln in _f:
+            _m = re.match(r"^\|\s*([A-Za-z0-9][A-Za-z0-9_-]*?)\s*\|", _ln)
+            if _m:
+                _log_keys.append(_m.group(1))  # 表头中文「条目键」与 |---|---| 分隔行天然不匹配
+_log_key_set = set(_log_keys)
+_ref_g_key_set = set(_g_keys_in_refs)
+_missing_in_log = sorted(_ref_g_key_set - _log_key_set)
+_ghost_in_log = sorted(_log_key_set - _ref_g_key_set)
+check(
+    "VERIFICATION-LOG 覆盖全部 G 类键（REFERENCES G 键 ⊆ LOG 键）",
+    not _missing_in_log,
+    f"{len(_missing_in_log)} 条 G 键未在 VERIFICATION-LOG 登记：{'; '.join(_missing_in_log[:5])}",
+)
+check(
+    "VERIFICATION-LOG 无幽灵键（LOG 键 ⊆ REFERENCES G 键）",
+    not _ghost_in_log,
+    f"{len(_ghost_in_log)} 条 LOG 键不在 REFERENCES G 类：{'; '.join(_ghost_in_log[:5])}",
 )
 
 # ── 汇总 ─────────────────────────────────────
