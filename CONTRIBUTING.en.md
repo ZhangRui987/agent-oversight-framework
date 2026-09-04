@@ -9,7 +9,7 @@
 
 ### Before committing: consistency verification (pre-commit)
 
-This repository ships a release consistency check (`scripts/verify_consistency.py`, 18 items: table format / evidence-grade counts / incident-number conventions / section references / terminology conventions). Enable it (run once from the repository root):
+This repository ships a release consistency check (`scripts/verify_consistency.py`, 33 items: table format / evidence-grade counts (five grades A–G, incl. G-class jurisdiction prefixes) / incident-number conventions / section references / terminology conventions / bidirectional citation closure / reference-key quality). Enable it (run once from the repository root):
 
 ```sh
 git config core.hooksPath .githooks
@@ -54,6 +54,17 @@ Retrievability ≠ admissibility as independent evidence.
 
 - Do not introduce restricted-level content (honeypot-sample construction, rollout-roadmap timelines, audit-log formats);
 - When in doubt, read `CLASSIFICATION.md` first.
+
+## Versioning Policy
+
+Effective from v2.11.1, enforced by the maintainer at release time. This project follows semantic versioning (`major.minor.patch`):
+
+- **minor (feature)**: adding or upgrading evidence entries, spec mechanism / section changes, gate-rule changes;
+- **patch (correction & infrastructure)**: count corrections, date / typo fixes, bilingual synchronization, engineering infrastructure such as CI, text changes without mechanism semantics;
+- Every release must synchronize `VERSION` / `CHANGELOG.md` / README version badges (both languages) / `CITATION.cff`, and **create an annotated git tag (`vX.Y.Z`)**;
+- Before a release, all consistency checks (above) must pass and CI (`.github/workflows/ci.yml`) must be green.
+
+Background lessons: v2.4.1 once appeared in the README although it never existed in repository history (a typo); early count corrections repeatedly consumed minor numbers, inflating the version line. This policy explicitly classifies "count corrections / text corrections" as patch and mandates a tag on every release, so that version numbers can never again float without an anchor to a commit.
 
 ## Style
 

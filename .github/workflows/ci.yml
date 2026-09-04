@@ -1,0 +1,41 @@
+# 发布一致性校验 + L2 参照实现断言（CI）
+# 动机：verify_consistency.py 与 demo.ts 此前只挂在本地 pre-commit，外部读者无法在远端
+#       机器可复现。本 workflow 把 33 项门禁与 115+14 项断言升级为 push/PR 自动执行——
+#       让"自动化门禁"从口号变成任何人可核验的事实（采纳豆包深度审查建议 1）。
+# 设计约束：脚本零外部依赖（Python 纯标准库 / Node 内置 node:sqlite + node:crypto），
+#       故 CI 无需安装任何包；两 job 相互独立，可并行。
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  consistency-gate:
+    name: 发布一致性校验（33 项）
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run verify_consistency.py
+        run: python scripts/verify_consistency.py
+
+  runtime-tests:
+    name: L2 参照实现断言（demo 115 项 + otel 14 项）
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run demo.ts (19 组 115 项断言)
+        run: node --experimental-transform-types reference/runtimes/l2-runtime-oversight/demo.ts
+      - name: Run otel-adapter selftest (14 项)
+        run: node --experimental-transform-types reference/runtimes/l2-runtime-oversight/otel-adapter.ts --selftest

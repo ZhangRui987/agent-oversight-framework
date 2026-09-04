@@ -9,7 +9,7 @@
 
 ### 提交前必跑：一致性校验（pre-commit）
 
-本仓库自带发布一致性校验（`scripts/verify_consistency.py`，30 项：表格格式 / 证据分级数量 / 事故数字口径 / 章节号 / 术语口径 / 双向引用检查 / 引用键质量）。启用方式（仓库根目录执行一次）：
+本仓库自带发布一致性校验（`scripts/verify_consistency.py`，33 项：表格格式 / 证据分级数量（A–G 五级，含 G 类管辖前缀）/ 事故数字口径 / 章节号 / 术语口径 / 双向引用检查 / 引用键质量）。启用方式（仓库根目录执行一次）：
 
 ```sh
 git config core.hooksPath .githooks
@@ -54,6 +54,17 @@ python scripts/verify_consistency.py
 
 - 不引入受限级内容（蜜罐样本构造、落地路线时间表、审计日志格式）；
 - 不确定时先读 `CLASSIFICATION.md`。
+
+## 版本管理政策（Versioning Policy）
+
+自 v2.11.1 起生效，由维护者在发布时执行。本项目遵循语义化版本（`major.minor.patch`）：
+
+- **minor（特性）**：新增或升级证据条目、spec 机制 / 章节变更、门禁规则变更；
+- **patch（订正与基建）**：计数修正、日期 / 笔误订正、双语同步、CI 等工程基建、无机制语义的文本改动；
+- 每次发布必须同步 `VERSION` / `CHANGELOG.md` / README 双语版本徽章 / `CITATION.cff`，并**打 annotated git tag（`vX.Y.Z`）**；
+- 发布前必须通过全部一致性校验（见上文），并确保 CI（`.github/workflows/ci.yml`）全绿。
+
+背景教训：v2.4.1 曾在 README 出现而仓库历史从未存在（笔误）；早期计数修正多次占用 minor 号导致版本膨胀。本政策把「计数修正 / 文本订正」显式归入 patch，并强制每次发布打 tag，杜绝「版本号与 commit 无锚点」再次发生。
 
 ## 风格
 

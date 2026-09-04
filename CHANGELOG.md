@@ -1,6 +1,16 @@
 # 变更日志
 
-## v2.11.0（2026-09-05）— 韩国 AI 立法一手升级：DMPA 入库 + AI 基本法来源升级
+## v2.11.1（2026-09-04）— 工程信任基建：CI + 历史 tag + semver 政策
+
+**无证据数变更（116 条不变，A:1 / B:58 / C:9 / D:1 / G:47）。** 采纳豆包深度审查（`agent-oversight-framework-review.md`，修订记录 ①–⑭）发展建议 1 与问题 2/5/7 的落地——把"自动化门禁"从本地 pre-commit 升级为远端机器可复现，并补齐版本号与 commit 之间的锚点。
+
+- 新增 GitHub Actions CI（`.github/workflows/ci.yml`）：push / PR 自动执行 33 项发布一致性校验 + L2 参照实现 115 项断言 + otel-adapter 14 项自检；
+- 补打 v2.7.0–v2.11.0 五个已发布版本的 annotated git tag（此前版本号仅存于 VERSION 文件与 CHANGELOG 文本，无任何 tag 锚点）；
+- `CONTRIBUTING`（中英双语）新增版本管理政策：计数修正 / 文本订正归 patch、特性驱动 minor、每次发版打 tag 并同步 VERSION/CHANGELOG/徽章/CITATION；
+- 同步修正 CONTRIBUTING 中过期的校验项数（中文 30 项 / 英文 18 项 → 33 项）；
+- 修正 v2.11.0 条目日期笔误（2026-09-05 → 2026-09-04）。
+
+## v2.11.0（2026-09-04）— 韩国 AI 立法一手升级：DMPA 入库 + AI 基本法来源升级
 
 **新增 1 条 G 级条目（kr-dmpa-2025）+ 1 条已有条目来源升级（kr-ai-act-2026）。** v2.10.0 完成 13 条 C 级追溯升级后，评估文档中标注为「列入 v2.11.0 候选」的 #21（韩国 AI 基本法 + Digital Medical Products Act）经本轮追溯确认一手来源已达 G 级标准。
 
