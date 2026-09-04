@@ -1,6 +1,6 @@
 # AI Execution & Oversight Framework
 
-[![Version](https://img.shields.io/badge/version-2.11.1-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.11.2-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (58/116)](https://img.shields.io/badge/evidence-B_58%2F116-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -91,7 +91,7 @@ Every claim in this repository is graded on five levels; every mechanism is trac
 
 Current distribution: A:1 (Sandlock, arXiv:2605.26298, experimental reproduction) / B:58 / C:9 / D:1 / G:47. **"Insufficient evidence" is a reviewable state, not a hidden defect.**
 
-> **Structural-bias disclosure**: grade B currently accounts for about 50% (58/115), with only 1 grade-A source; grade G accounts for 40% (46/115), covering six anchoring points L0–L4 + E across eight jurisdictions. This reflects the current hybrid shape of a specification-first project augmented with real governance/policy evidence — academic citations still outnumber primary reproducible experiments, but governance and enforcement evidence now provides broad cross-jurisdiction coverage. **This distribution should not be read as empirical sufficiency.** The path to raising the grade-A share is already listed among the open problems in `spec/13-boundaries.md` (particularly the entries related to experimental validation), and is the key step for this framework to move from "a specification" to "a citable specification with empirical backing."
+> **Structural-bias disclosure**: grade B currently accounts for about 50% (58/116), with only 1 grade-A source; grade G accounts for about 41% (47/116), covering six anchoring points L0–L4 + E across eight jurisdictions. This reflects the current hybrid shape of a specification-first project augmented with real governance/policy evidence — academic citations still outnumber primary reproducible experiments, but governance and enforcement evidence now provides broad cross-jurisdiction coverage. **This distribution should not be read as empirical sufficiency.** The path to raising the grade-A share is already listed among the open problems in `spec/13-boundaries.md` (particularly the entries related to experimental validation), and is the key step for this framework to move from "a specification" to "a citable specification with empirical backing."
 
 ## Evidence correction (community back-propagation loop)
 

@@ -1,6 +1,6 @@
 # AI 执行与监察体系（Agent Oversight Framework）
 
-[![Version](https://img.shields.io/badge/version-2.11.1-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.11.2-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (58/116)](https://img.shields.io/badge/evidence-B_58%2F116-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -91,7 +91,7 @@ graph TD
 
 当前分布：A:1（Sandlock，arXiv:2605.26298，实验复现）/ B:58 / C:9 / D:1 / G:47。**「证据不足」是可审阅的状态，不是被隐藏的缺陷。**
 
-> **结构性偏置声明**：当前 B 级约占 50%（58/115），A 级仅 1 条；G 级 46 条占 40%（46/115），覆盖 L0–L4 六个落点与八个法域。这反映本框架当前形态是"规范类项目 + 真实治理实证锚点"的混合结构——学术引用多于一手可复现实验，但治理与执法实证已实现跨法域广泛覆盖。**不应被解读为实证充分**。把 A 级占比提升上去的路径已在 `spec/13-boundaries.md` 的开放问题中列出（尤其是与实验性验证相关的条目），也是本框架从"规范"走向"有实证支撑的可引用规范"的关键一步。
+> **结构性偏置声明**：当前 B 级约占 50%（58/116），A 级仅 1 条；G 级 47 条约占 41%（47/116），覆盖 L0–L4 六个落点与八个法域。这反映本框架当前形态是"规范类项目 + 真实治理实证锚点"的混合结构——学术引用多于一手可复现实验，但治理与执法实证已实现跨法域广泛覆盖。**不应被解读为实证充分**。把 A 级占比提升上去的路径已在 `spec/13-boundaries.md` 的开放问题中列出（尤其是与实验性验证相关的条目），也是本框架从"规范"走向"有实证支撑的可引用规范"的关键一步。
 
 ## 证据纠错（社区回灌循环）
 
