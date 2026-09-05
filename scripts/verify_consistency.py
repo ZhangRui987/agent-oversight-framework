@@ -477,12 +477,19 @@ check(
     f"{len(_g_nokey)} 条 G 类条目未声明键",
 )
 
+# 非 G 类条目键集合（供「VERIFICATION-LOG 无幽灵键」放宽对照用，v2.15.1 引入）
+# 非 G 类可能声明【键: XXX】（强制声明键），也可能不声明（走 arXiv 号定位）。
+# 此处提取所有非 G 行声明的键，合并入 _ref_all_keys 作幽灵键方向的全集。
+_NONG_LINE_RE = re.compile(r"^(?:A|B|C|D)(?:（[^）]*）)?\s*\|\s*【键:\s*([^】]+?)\s*】", re.M)
+_ref_non_g_keys = [m.group(1) for m in _NONG_LINE_RE.finditer(refs)]
+
 # ── 15. VERIFICATION-LOG 与 REFERENCES 键集双向一致（防核验公示漂移） ──────
 # 教训预防：README「结构性偏置声明」段曾不在门禁覆盖范围，v2.11.0 升级漏改、
 # 两轮门禁全 PASS 仍残留（v2.11.2 修正）。核验公示日志若与真相源脱节
 # （新增 G 键未登记核验 / 键拼写漂移）会静默腐烂，本项把公示与真相源钉死。
-# 演进约定：未来 VERIFICATION-LOG 回填 B/C/D 类时，把「LOG 无幽灵键」方向
-# 的对照全集从 REFERENCES G 键放宽为 REFERENCES 全部条目键。
+# 演进（v2.15.1）：VERIFICATION-LOG 已从 G-only 扩展到 A/D/C 类补登记，
+# 「无幽灵键」方向的对照全集从 REFERENCES G 键放宽为 REFERENCES 全部条目键
+# （非 G 键 + G 键合集），覆盖所有已回填类型。
 _LOG_PATH = os.path.join(ROOT, "VERIFICATION-LOG.md")
 _log_keys = []
 if os.path.exists(_LOG_PATH):
@@ -493,17 +500,20 @@ if os.path.exists(_LOG_PATH):
                 _log_keys.append(_m.group(1))  # 表头中文「条目键」与 |---|---| 分隔行天然不匹配
 _log_key_set = set(_log_keys)
 _ref_g_key_set = set(_g_keys_in_refs)
+# 构建 REFERENCES 全部条目键（含 G 与非 G）用于「无幽灵键」方向
+_ref_all_keys = set(_g_keys_in_refs)
+_ref_all_keys.update(_ref_non_g_keys)  # 非零即加入；为空则仅含 G 键
 _missing_in_log = sorted(_ref_g_key_set - _log_key_set)
-_ghost_in_log = sorted(_log_key_set - _ref_g_key_set)
+_ghost_in_log = sorted(_log_key_set - _ref_all_keys)
 check(
     "VERIFICATION-LOG 覆盖全部 G 类键（REFERENCES G 键 ⊆ LOG 键）",
     not _missing_in_log,
     f"{len(_missing_in_log)} 条 G 键未在 VERIFICATION-LOG 登记：{'; '.join(_missing_in_log[:5])}",
 )
 check(
-    "VERIFICATION-LOG 无幽灵键（LOG 键 ⊆ REFERENCES G 键）",
+    "VERIFICATION-LOG 无幽灵键（LOG 键 ⊆ REFERENCES 全部条目键）",
     not _ghost_in_log,
-    f"{len(_ghost_in_log)} 条 LOG 键不在 REFERENCES G 类：{'; '.join(_ghost_in_log[:5])}",
+    f"{len(_ghost_in_log)} 条 LOG 键不在 REFERENCES：{'; '.join(_ghost_in_log[:5])}",
 )
 
 # ── 16. README 法域枚举与 REFERENCES G 键前缀一致（防法域计数漂移） ──────

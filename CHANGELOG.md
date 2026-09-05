@@ -1,5 +1,17 @@
 # 变更日志
 
+## v2.15.1（2026-09-05）— VERIFICATION-LOG 第 1 批回填：A/D/C 三类清零
+
+**证据总数不变（118）。** 落地豆包审查建议 4「VERIFICATION-LOG 回填 B/C/D/A 69 条」的第 1 批：
+
+- **回填范围**：A 类 3 条（Sandlock + AOE-CALIB-001 + AOE-CALIB-002）+ D 类 1 条（Mitchell-2026-04）+ C 类 9 条（AIprint / SABSA / Institutional AI / HarnessCard / DEMM-Bench / DES / AIREP / SDB-Runtime / GAIE）= **13 条**；三类彻底清零。
+- **回填日期口径**：核验实际发生于入库版本日，本次为补登记——日期列填「2026-09-05（补登记）」，核验方式保留入库时实际采用的方法；段落级 ⚠️ 注记仍以 REFERENCES 为唯一真相源。
+- **诚实边界**：每条均登记了一手来源、核验方式、域迁移缺口 / COI / 引用红线等限定条件（与 REFERENCES 段落级 ⚠️ 注记一致）。两条自产 A 级证据（AOE-CALIB-001/002）特注「浏览器实测 = 脚本在本机运行并复核结果，而非第三方独立复现」。
+- **REFERENCES.md 配套修订**：为 Sandlock（A 级）与 Mitchell-2026-04（D 级）补登记 【键: XXX】（两条早于键声明约定入库，原本无键）。
+- **门禁脚本演进**：第 15 项「VERIFICATION-LOG 无幽灵键」方向的对照全集从「REFERENCES G 键」放宽为「REFERENCES 全部条目键」（G 键 + 非 G 键合集），覆盖 A/D/C 类条目键；新增 `_ref_non_g_keys` 抽取器。
+- **进度**：VERIFICATION-LOG 已回填 60/118 条（G:47 + A:3 + D:1 + C:9），剩 B 类 58 条分 4 批推进。
+- **semver**：patch bump（数据补登记 + 门禁脚本扩展，无新增证据）。
+
 ## v2.15.0（2026-09-05）— A 级证据自复现实验：周期检测方差阈值标定（AOE-CALIB-002）
 
 **证据总数：117 → 118（A:3 / B:58 / C:9 / D:1 / G:47）。** 继 v2.14.0 标定影子比阈值后，本版标定周期检测方差阈值，闭合 G5 剩余差距 (a) 基线标定的全部内容：
