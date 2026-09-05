@@ -5,7 +5,7 @@
 > **口径**：
 > - 核验方法统一用五档（与 REFERENCES 注脚同口径）：**官方原文核验**（监管文件/法文/判决原文经官方渠道可达并核对）、**WebSearch 追溯至一手**（二手线索经检索定位官方原始来源）、**GitHub API 核验**（issue/仓库元数据实测）、**arXiv 全文核验**（HTML 全文逐段核对引用）、**浏览器实测**（存档/数据集页面实地打开）。
 > - 「入库版本」= 该条目进入 REFERENCES 的版本（v2.7.0 / v2.8.0 / v2.10.0 / v2.11.0）。
-> - **回填进度**：本表当前回填 **G 类 47 条** + **A 类 3 条** + **D 类 1 条** + **C 类 9 条** = **60 条**；剩余 **B 类 58 条** 待回填（v2.15.1 本轮已清零 A/D/C 三类）。
+> - **回填进度**：本表当前回填 **G 类 47 条** + **A 类 3 条** + **D 类 1 条** + **C 类 9 条** + **B 类 15 条** = **75 条**；剩余 **B 类 43 条** 待回填（v2.15.2 本轮清零 A/D/C + B 类第 1 批）。
 > - 回填日期口径：核验实际发生于入库版本日，**本次为补登记**——日期列填「2026-09-05（补登记）」，核验方式保留入库时实际采用的方法；段落级 ⚠️ 注记仍以 REFERENCES 为唯一真相源。
 > - 任何条目核验状态变化（升级/降级/来源替换）须同步更新本表并写入 CHANGELOG——这是 evidence-correction 机制的落地配套。
 
@@ -94,3 +94,23 @@
 | GAIE（arXiv:2606.22484） | 分级人工监督 | v2.8.0 入库 / v2.11.0 引用红线收紧 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2606.22484；⚠️ 引用红线：声称的编码速度保留率为 18 个自设参数算出的解析估计（论文自陈 analytical approximations, not empirical measurements），**该数字不得以任何形式引用** |
 
 ⚠️ **C 类共同限定**：9 条均存在不同程度的域迁移缺口或概念采纳限定（详见 REFERENCES.md 段落级 ⚠️ 注记），**均不单独支撑 P0 硬约束**，须配 A/B 级材料方可引用。
+
+## B 类（B-grade，可核查期刊或预印本）— 第 1 批 15 条 / 共 58 条
+
+| 条目键 | 类别 | 入库版本 | 核验日期 | 核验方式 | 一手来源（官方渠道） |
+|---|---|---|---|---|---|
+| Glasswing | Anthropic 2026-04 事故 | v2.6.0 | 2026-09-05（补登记） | 官方原文核验 + WebSearch 追溯至一手 | red.anthropic.com/2026/mythos-preview/（官方红队博客）+ Project Glasswing 发布公告（2026-04-07）+ 科技日报 / 中国科技网 / 澎湃新闻 交叉印证 |
+| AI Sandboxes（arXiv:2606.18532） | 沙箱威胁模型 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2606.18532（Inderjeet Singh 等 3 位作者）；⚠️ 保证导向框架性论述，六维未给出经实证标定的阈值 |
+| AI Sandbox Tech Report（arXiv:2608.02679） | 多租户沙箱架构 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2608.02679（Muhammad Waseem 等 11 位作者）；⚠️ 技术报告，无对照实验、无第三方评估，属架构可行性证据而非有效性证据 |
+| Zhiyuan Wan | 容器沙箱规则挖掘 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验（期刊 DOI 核实） | *Empirical Software Engineering* 24(6):4034–4070，DOI 10.1007/s10664-019-09737-2；⚠️ 引用红线：系统调用覆盖率 96.4%–99.8% 为估计值且附两项不成立假设，**不得引作采集覆盖率预期** |
+| Dzhaliuk | 提示注入检测比较 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验（期刊 DOI 核实） | *International Journal of Information Security* 25(4):109，DOI 10.1007/s10207-026-01264-8（CC BY 4.0）；⚠️ 三项限定：摘要无具体检测率数值 / 均衡基准不可外推 / 提示文本分类非工具调用序列 |
+| Kusne | 多 Agent 材料实验室 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验（期刊 DOI 核实） | *Communications Materials* 7:173，DOI 10.1038/s43246-026-01219-5（CC BY 4.0）；⚠️ Perspective 无实测数据，附 NIST 免责声明 |
+| GEN-RWD | 医疗分布式分析公证 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验（期刊 DOI 核实） | *BMC Medical Informatics and Decision Making* 24(1):170，DOI 10.1186/s12911-024-02549-5（CC BY 4.0）；⚠️ 沙箱对数据与任务不可知，不由平台自动处理偏倚 |
+| Gipiškis（arXiv:2410.23472） | GPAI 风险源目录 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2410.23472（Gipiškis 等）；自陈 descriptive, self-contained and neutral，本体系据此避免分层设计阶段引入特定法域路径依赖 |
+| Mahmutovic | EU AI Act 监管沙盒 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验（期刊 DOI 核实） | *International Journal of Law and Information Technology* Vol 33, 2025, eaaf028，DOI 10.1093/ijlit/eaaf028（Al Yamamah University 法学院） |
+| AI Code Sandboxes（arXiv:2606.08433） | AI 沙箱引擎级比较 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 + GitHub API 核验 | arXiv:2606.08433（George Andronchik、Pavel Lokhmakov）；github.com/orbitalab/RnD-ai-sandboxes-sec-study-part-1（Apache-2.0）；⚠️ 三项限定：不提出总排名 / Part 1 只覆盖引擎级 / 0 CVE 代表测量缺失 |
+| Gonzalez Torres | 公共部门 AI 沙盒 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验（期刊 DOI 核实） | *The Review of Socionetwork Strategies* 17(2):297–318，DOI 10.1007/s12626-023-00146-y；⚠️ 作者自陈框架尚未经验证，只引问题域不引成效主张 |
+| Buscemi | AI 监管沙盒操作化 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2509.25256 v4（A. Buscemi 等 6 位作者）；⚠️ 勘误：v1 旧标题「Sandbox Configurator」已按 v4 实际标题更正 |
+| AgentAbstain（arXiv:2607.10059） | LLM 弃权能力 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2607.10059（伊利诺伊大学厄巴纳-香槟分校）；263 组配对任务 / 42 个沙箱 / 8 类弃权场景 |
+| When Autonomy Goes Rogue（arXiv:2507.14660） | 多 Agent 共谋仿真 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验 + GitHub API 核验 | arXiv:2507.14660（上海交通大学 + 上海人工智能实验室，Qibing Ren 等）；github.com/renqibing/MultiAgent4Collusion（Apache-2.0） |
+| Zaidi | OpenAI-HF 事故案例研究 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验（SSRN DOI 核实） | DOI 10.2139/ssrn.7181179（SSRN Electronic Journal）；⚠️ 三项限定：事实基础与本体系同一批来源不得作独立佐证 / 9 页工作论文未经同行评审 / 监管框架判断为作者个人分析 |

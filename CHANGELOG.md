@@ -1,5 +1,13 @@
 # 变更日志
 
+## v2.15.2（2026-09-05）— VERIFICATION-LOG 第 2 批回填：B 类第 1 批 15 条
+
+**证据总数不变（118）。** 落地豆包审查建议 4 第 2 批：
+
+- **回填范围**：B 类前 15 条（Glasswing / AI Sandboxes / AI Sandbox Tech Report / Zhiyuan Wan / Dzhaliuk / Kusne / GEN-RWD / Gipiškis / Mahmutovic / AI Code Sandboxes / Gonzalez Torres / Buscemi / AgentAbstain / When Autonomy Goes Rogue / Zaidi）。
+- **进度**：VERIFICATION-LOG 已回填 75/118 条（G:47 + A:3 + D:1 + C:9 + B:15），剩 B 类 43 条分 3 批。
+- **semver**：patch bump（数据补登记，无新增证据）。
+
 ## v2.15.1（2026-09-05）— VERIFICATION-LOG 第 1 批回填：A/D/C 三类清零
 
 **证据总数不变（118）。** 落地豆包审查建议 4「VERIFICATION-LOG 回填 B/C/D/A 69 条」的第 1 批：
