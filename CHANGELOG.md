@@ -1,5 +1,23 @@
 # 变更日志
 
+## v2.15.7（2026-09-05）— evidence-correction 流程首次实地演练：修复 Hohez → Hozez 拼写错误
+
+**证据总数不变（118）。** 落地豆包审查建议 5（建立社区最小闭环）。
+
+**背景**：evidence-correction Issue 模板与 14 天审核流程自 v2.11.1 起在 README/CONTRIBUTING 声明，但此前从未被实际运行过（仅 Issue #1 翻译追踪例外）。豆包审查报告特别指出：「这些流程除 Issue #1 外从未被实际运行过」——这是低成本高战略价值的闭合点。
+
+**本次演练**：
+
+- 开 Issue #2（https://github.com/ZhangRui987/agent-oversight-framework/issues/2 ）：按 evidence-correction 模板字段提交（纠错类型 / 出错位置 / 错误描述 / 正确来源 / 治理流程登记）。
+- 候选项：arXiv:2608.01347（Weinberger et al.）第二作者姓名拼写错误——本仓库 4 处把 `Amir Hozez` 误拼为 `Amir Hohez`，经 arXiv 一手页面核验确认（https://arxiv.org/abs/2608.01347）。
+- 维护者核验：直接访问 arXiv 一手链接确认作者页签为 `Amir Hozez`（H-o-z-e-z），与本 Issue 描述一致；风险等级低（纯元数据拼写，不影响机制判断、数字、分级）。
+- 修复：3 个文件机械替换（`REFERENCES.md` / `spec/01-principles.md` / `VERIFICATION-LOG.md`）；`CHANGELOG.md` 历史条目按惯例保留原状，仅新增本条目说明修复。
+- 闭环：本条目即闭环登记；Issue #2 评论附 commit hash + 修复清单 + 核验方式后关闭。
+
+**价值**：让 evidence-correction 流程从「文档声明」变成「可回查的 GitHub 记录」，补齐 bus factor = 1 之外的可信度维度——「治理流程被实际运行过」本身是可信度的关键证据。
+
+**semver**：patch bump（元数据拼写修复，无新增证据）。
+
 ## v2.15.6（2026-09-05）— 周期检测阈值覆盖边界订正：明确默认 10000ms² 实际覆盖范围
 
 **证据总数不变（118）。** 落地豆包审查建议 7（明确周期检测阈值覆盖边界）。

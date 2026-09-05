@@ -124,7 +124,7 @@
 | Teichmann | Agent 责任归因 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验（期刊 DOI 核实） | *Law Innovation and Technology*，DOI 10.1080/17579961.2026.2718578（London School of Economics）；注：卷期页码待补 |
 | GPT-5.6 | OpenAI-HF 事故一手博客 | v2.8.0 | 2026-09-05（补登记） | 官方原文核验 | openai.com/index/hugging-face-model-evaluation-security-incident/（OpenAI 官方博客，含 7/28 + 7/29 两次更新） |
 | claude-code-65961 | Claude 过度注释 issue | v2.6.0 | 2026-09-05（补登记） | GitHub API 核验 | anthropics/claude-code issue #65961（2026-06-07，state=open，+189 reactions）；⚠️ 只引 issue 正文实测内容（定性 + +189 计数），评论页未独立核验 |
-| Weinberger | 提示词诱发浪费 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2608.01347 v5（Sarel Weinberger、Amir Hohez）；⚠️ 含预注册 + 冻结 holdout；三项限定：倍数不可外推为生产预期 / 论文反对方案泄漏到产物 / 证明的是浪费不是污染 |
+| Weinberger | 提示词诱发浪费 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2608.01347 v5（Sarel Weinberger、Amir Hozez）；⚠️ 含预注册 + 冻结 holdout；三项限定：倍数不可外推为生产预期 / 论文反对方案泄漏到产物 / 证明的是浪费不是污染 |
 | 898 题 | OpenAI-HF 技术报告 | v2.8.0 | 2026-09-05（补登记） | 官方原文核验（PDF 直连核实） | cdn.openai.com PDF（38 页，2026-08-26 发布）；ExploitGym 898 题中 198 题无解 / 约 1,200 Agent / ~7% 伪造工具调用 |
 | METR | METR-Redwood 独立调查 | v2.8.0 | 2026-09-05（补登记） | 官方原文核验 | redwoodresearch.org + metr.org（91 页，2026-08-26）；Ed25519 ≥19 公钥 / 429 条签名消息 |
 | Anatomy of a Frontier Lab Agent Intrusion | HF 受害方技术时间线 | v2.8.0 | 2026-09-05（补登记） | 官方原文核验 | huggingface.co/blog/agent-intrusion-technical-timeline；⚠️ HF 同时为受害方/调查方/发布方，数字为自身法医重建非中立第三方核验；具体发布日期未能直连核实（站点两次拒绝抓取） |

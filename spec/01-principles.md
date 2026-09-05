@@ -29,7 +29,7 @@
 
 对本体系的含义是：**「模型能力趋同」与「治理重心前移」是同一枚硬币的两面**——若模型能力持续分化，则选型（换用更强的模型）本身就是有效的治理手段；若模型能力趋同，则选型不再产生治理收益，治理只能落在 harness 层。本体系取后者，这与分级章「任务跨度不因模型能力而豁免」一致。该文的四项工程贡献（DAG 两阶段混合团队编排、PermissionBridge 行为安全系统、三层上下文管理架构、agentic wiki 技能）本体系**只登记、不采纳**：PermissionBridge 与本体系的权限门同属一类，但其效果未见独立验证。
 
-**治理重心前移的第三角度：任务定义 / 提示词层本身即治理杠杆（本轮新增）。** Sarel Weinberger、Amir Hohez（*Prompt-Induced Waste in Coding Agents: Reasoning, Effort, Harness Design, and End-to-End Cost*；arXiv:2608.01347，v5 2026-08-24，DOI 10.48550/arXiv.2608.01347；含预注册 + 冻结 holdout；4,644 次有效 run）实证：在任务不变下，单是「develop several approaches, compare their trade-offs, and implement the best one」这类**多方案指令**就把六个开源模型的推理 token 放大 **2.4–7.4×**（在冻结 holdout 上复现），而成功率与单方案无差异——每个浪费机制与成功率的相关 ≈0（区间 −0.09 到 +0.11）。harness 间差距 5–30×。结论可作纲领句引用：**prompt、effort 与 harness 是交互实验因子，不是独立控件**——因此治理杠杆不只落在模型（选型）与 harness（架构），也落在**任务定义**那一层（措辞本身）。
+**治理重心前移的第三角度：任务定义 / 提示词层本身即治理杠杆（本轮新增）。** Sarel Weinberger、Amir Hozez（*Prompt-Induced Waste in Coding Agents: Reasoning, Effort, Harness Design, and End-to-End Cost*；arXiv:2608.01347，v5 2026-08-24，DOI 10.48550/arXiv.2608.01347；含预注册 + 冻结 holdout；4,644 次有效 run）实证：在任务不变下，单是「develop several approaches, compare their trade-offs, and implement the best one」这类**多方案指令**就把六个开源模型的推理 token 放大 **2.4–7.4×**（在冻结 holdout 上复现），而成功率与单方案无差异——每个浪费机制与成功率的相关 ≈0（区间 −0.09 到 +0.11）。harness 间差距 5–30×。结论可作纲领句引用：**prompt、effort 与 harness 是交互实验因子，不是独立控件**——因此治理杠杆不只落在模型（选型）与 harness（架构），也落在**任务定义**那一层（措辞本身）。
 
 这条补上了前两条论据未覆盖的角度：SemaClaw 与 AutoHarness 论证的是「治理重心在 harness 层不在模型层」，本条论证的是「任务定义层也不是中性背景——错误的提示词措辞能在不改变任务的前提下把成本放大数倍且换不来成功率」。故 L1 任务定义 QA 须把「**避免诱发无成功率增益的多方案推理**」纳入提示词审查清单。
 
