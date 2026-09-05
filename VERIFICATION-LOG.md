@@ -5,7 +5,7 @@
 > **口径**：
 > - 核验方法统一用五档（与 REFERENCES 注脚同口径）：**官方原文核验**（监管文件/法文/判决原文经官方渠道可达并核对）、**WebSearch 追溯至一手**（二手线索经检索定位官方原始来源）、**GitHub API 核验**（issue/仓库元数据实测）、**arXiv 全文核验**（HTML 全文逐段核对引用）、**浏览器实测**（存档/数据集页面实地打开）。
 > - 「入库版本」= 该条目进入 REFERENCES 的版本（v2.7.0 / v2.8.0 / v2.10.0 / v2.11.0）。
-> - **回填进度**：本表当前回填 **G 类 47 条** + **A 类 3 条** + **D 类 1 条** + **C 类 9 条** + **B 类 30 条** = **90 条**；剩余 **B 类 28 条** 待回填（v2.15.3 本轮清零 A/D/C + B 类前 30 条）。
+> - **回填进度**：本表当前回填 **G 类 47 条** + **A 类 3 条** + **D 类 1 条** + **C 类 9 条** + **B 类 45 条** = **105 条**；剩余 **B 类 13 条** 待回填（v2.15.4 本轮清零 A/D/C + B 类前 45 条）。
 > - 回填日期口径：核验实际发生于入库版本日，**本次为补登记**——日期列填「2026-09-05（补登记）」，核验方式保留入库时实际采用的方法；段落级 ⚠️ 注记仍以 REFERENCES 为唯一真相源。
 > - 任何条目核验状态变化（升级/降级/来源替换）须同步更新本表并写入 CHANGELOG——这是 evidence-correction 机制的落地配套。
 
@@ -134,3 +134,23 @@
 | Self-Harness（arXiv:2606.09498） | harness 自我改进 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2606.09498 v3（2026-08）；⚠️ 单作者预印本，不引用增益数值作为生产预期 |
 | From Prompts to Contracts（arXiv:2607.08028） | 企业级 harness 可审计 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 + GitHub API 核验 | arXiv:2607.08028（Joongho Ahn、Moonsoo Kim）；github.com/hammerbaki/enterprise-llm-agent-harness + Zenodo 10.5281/zenodo.21269426；⚠️ 单机构实现 / 单一领域 / 120 分制自设打分 |
 | AutoHarness（arXiv:2603.03329） | harness 自动合成 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2603.03329（Xinghua Lou 等 6 位作者，**2026-02-10** 原登记 2026-03 已订正）；⚠️ 78% 为败局中归因非法走子的比例非全部走子比例，TextArena 游戏环境具备完备可判定规则集 |
+
+## B 类（B-grade，可核查期刊或预印本）— 第 3 批 15 条 / 共 58 条
+
+| 条目键 | 类别 | 入库版本 | 核验日期 | 核验方式 | 一手来源（官方渠道） |
+|---|---|---|---|---|---|
+| Agentic Abstention（arXiv:2606.28733） | LLM 弃权时机 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2606.28733（Han Luo 等）；⚠️ 26.7→57.4 只在 WebShop + Llama-3.3-70B 验证，不得外推为通用增益 |
+| Abduct Act Predict（arXiv:2509.10401） | 失效归因因果推断 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 + GitHub API 核验 | arXiv:2509.10401（Alva West 等 6 位）；github.com/ResearAI/A2P；⚠️ 只引较低者 29.31%（手工构造集）作天花板 |
+| LongCoT（arXiv:2604.14140） | 长程推理基准 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2604.14140（Sumeet Ramesh Motwani 等 20 位）；2,500 道专家设计题，最佳模型不足 10%；⚠️ 不得用来断言「有 harness 也解决不了长程任务」 |
+| Multi-Agent Risks（arXiv:2502.14143） | 蜂群失效模式分类 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2502.14143（多机构 40 余位作者，被引 180 次）；⚠️ 二手合成综述非一手实证，只支撑分类骨架 |
+| Open Challenges MAS（arXiv:2505.02077） | multi-agent security 学科界定 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2505.02077（Christian Schroeder de Witt 等 23 位）；⚠️ 自陈「preliminary work」，非已验证威胁清单；概念性机理无实测值 |
+| Colosseum（arXiv:2602.15198） | 协作共谋审计 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2602.15198（2026-02）；19 模型在 DCOP 协调任务评测；⚠️ 未在英语以外语种评测，中文推广系本框架外推 |
+| Mapping Anti-collusion（arXiv:2601.00360） | 人类反共谋映射 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验（期刊 DOI 核实） | arXiv:2601.00360 + *Knowledge-Based Systems* DOI 10.1016/j.knosys.2026.116067；⚠️ 无一手实验，映射研究虽经 SCI 同行评议 |
+| SWARM（arXiv:2604.19752） | 软标签分布式治理 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验 + GitHub API 核验 | arXiv:2604.19752（**2026-03-19** 原登记 04 已订正）；swarm-ai.org；⚠️ 仿真框架非实测，未给跨场景方差 |
+| Institutional AI 实验（arXiv:2601.11369） | 三制度对照实验 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2601.11369（Marcantonio Bracale Syrnikov 等 9 位）；N=90/组，Welch p=4.67e−15；⚠️ 受控博弈环境非真实部署 |
+| Runtime Contract（arXiv:2608.11274） | 安全运行时契约 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2608.11274（2026-08）；⚠️ 立场论文，四条证据线非受控实验 |
+| DarwinX（arXiv:2608.07545） | harness 自然选择进化 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2608.07545（2026-07-31）；⚠️ 预印本，不引用 +17 分增益作为生产预期 |
+| Meta-Harness（arXiv:2603.28052） | harness 自动搜索 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 + GitHub API 核验 | arXiv:2603.28052（Stanford IRIS Lab，Yoonho Lee 等）；github.com/stanford-iris-lab/meta-harness；5 个社区独立实现 |
+| SemaClaw（arXiv:2604.11548） | harness 工程定义 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2604.11548（Ningyan Zhu 等 11 位）；⚠️ 系统论文，未见完整实验对照，只引定义与趋势判断 |
+| Quipu（arXiv:2608.16813） | 受治理双时态知识图 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2608.16813（Steve Brown）；独立跑通 DEMM-Bench（属同一证据线的外部使用者，非独立第二条线） |
+| From Runtime Records（arXiv:2607.00941） | 法律可归因性准则 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验（Zenodo DOI 核实） | arXiv:2607.00941（Jeroen Janssen）；Zenodo 10.5281/zenodo.21025237；⚠️ 作者法律分析非监管方立场，不得表述为「欧盟 AI Act 要求」 |

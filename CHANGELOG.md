@@ -1,5 +1,13 @@
 # 变更日志
 
+## v2.15.4（2026-09-05）— VERIFICATION-LOG 第 4 批回填：B 类第 3 批 15 条
+
+**证据总数不变（118）。** 落地豆包审查建议 4 第 4 批：
+
+- **回填范围**：B 类第 3 批 15 条（Agentic Abstention / Abduct Act Predict / LongCoT / Multi-Agent Risks / Open Challenges MAS / Colosseum / Mapping Anti-collusion / SWARM / Institutional AI 实验 / Runtime Contract / DarwinX / Meta-Harness / SemaClaw / Quipu / From Runtime Records）。
+- **进度**：VERIFICATION-LOG 已回填 105/118 条（G:47 + A:3 + D:1 + C:9 + B:45），剩 B 类 13 条为最后一批。
+- **semver**：patch bump（数据补登记，无新增证据）。
+
 ## v2.15.3（2026-09-05）— VERIFICATION-LOG 第 3 批回填：B 类第 2 批 15 条
 
 **证据总数不变（118）。** 落地豆包审查建议 4 第 3 批：
