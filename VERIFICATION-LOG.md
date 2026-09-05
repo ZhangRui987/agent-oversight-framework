@@ -5,7 +5,7 @@
 > **口径**：
 > - 核验方法统一用五档（与 REFERENCES 注脚同口径）：**官方原文核验**（监管文件/法文/判决原文经官方渠道可达并核对）、**WebSearch 追溯至一手**（二手线索经检索定位官方原始来源）、**GitHub API 核验**（issue/仓库元数据实测）、**arXiv 全文核验**（HTML 全文逐段核对引用）、**浏览器实测**（存档/数据集页面实地打开）。
 > - 「入库版本」= 该条目进入 REFERENCES 的版本（v2.7.0 / v2.8.0 / v2.10.0 / v2.11.0）。
-> - **回填进度**：本表当前回填 **G 类 47 条** + **A 类 3 条** + **D 类 1 条** + **C 类 9 条** + **B 类 45 条** = **105 条**；剩余 **B 类 13 条** 待回填（v2.15.4 本轮清零 A/D/C + B 类前 45 条）。
+> - **回填进度**：本表当前回填 **G 类 47 条** + **A 类 3 条** + **D 类 1 条** + **C 类 9 条** + **B 类 58 条** = **118 条（全部完成）**。豆包审查建议 4 全部落地。
 > - 回填日期口径：核验实际发生于入库版本日，**本次为补登记**——日期列填「2026-09-05（补登记）」，核验方式保留入库时实际采用的方法；段落级 ⚠️ 注记仍以 REFERENCES 为唯一真相源。
 > - 任何条目核验状态变化（升级/降级/来源替换）须同步更新本表并写入 CHANGELOG——这是 evidence-correction 机制的落地配套。
 
@@ -154,3 +154,23 @@
 | SemaClaw（arXiv:2604.11548） | harness 工程定义 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2604.11548（Ningyan Zhu 等 11 位）；⚠️ 系统论文，未见完整实验对照，只引定义与趋势判断 |
 | Quipu（arXiv:2608.16813） | 受治理双时态知识图 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2608.16813（Steve Brown）；独立跑通 DEMM-Bench（属同一证据线的外部使用者，非独立第二条线） |
 | From Runtime Records（arXiv:2607.00941） | 法律可归因性准则 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验（Zenodo DOI 核实） | arXiv:2607.00941（Jeroen Janssen）；Zenodo 10.5281/zenodo.21025237；⚠️ 作者法律分析非监管方立场，不得表述为「欧盟 AI Act 要求」 |
+
+## B 类（B-grade，可核查期刊或预印本）— 第 4 批 13 条 / 共 58 条（完结）
+
+| 条目键 | 类别 | 入库版本 | 核验日期 | 核验方式 | 一手来源（官方渠道） |
+|---|---|---|---|---|---|
+| AI Agents Under EU Law（arXiv:2604.04604） | EU 监管映射工作文件 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2604.04604（Luca Nannini 等 9 位）；⚠️ Working Paper，作者监管映射分析非监管方立场，只作旁证 |
+| CASE Framework（arXiv:2608.10153） | 多学科控制架构 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 + GitHub API 核验 | arXiv:2608.10153（Srinivas Telukunta 等）；github.com/srinivastelukunta/case_framework_arxiv_codes；⚠️ 本轮新收录尚未走独立技术复核，82% / 22 / 35 三项调查口径须自核验 |
+| RL Beneficial Models（arXiv:2606.24014） | RL 训练有益特质 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2606.24014（Akshay V. Jagadeesh 等 8 位）；⚠️ COI 强制声明：作者全部隶属 OpenAI，训练与评估均基于其自家模型，有益特质数据集未公开 |
+| When RLHF Fails（arXiv:2606.03238） | RLHF 失效分类 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 + GitHub API 核验 | arXiv:2606.03238 v2（Zelalem Abahana 等）；github.com/zabahana/rlhf-failure-modes-diagnostics；⚠️ 紧凑流水线非前沿模型规模 |
+| TRACE Benchmark（arXiv:2601.20103） | reward hack 检测基准 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 + 浏览器实测（数据集页） | arXiv:2601.20103（Patronus AI）；huggingface.co/datasets/PatronusAI/trace-dataset；⚠️ 轨迹合成生成 + 人工核验，作者隶属 Patronus AI 存在轻度利益关联 |
+| Alignment Sycophancy（arXiv:2607.18114） | 对齐安装线索诱导偏差 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2607.18114 v2（Prakhar Gupta 等）；⚠️ 基座模型参与度混淆未被完全排除，作者已登记 |
+| Reward Hacking Gridworlds（arXiv:2606.15385） | 文本化安全 Gridworlds | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 + GitHub API 核验 | arXiv:2606.15385（Ömer Veysel Çağatan、Xuandong Zhao）；github.com/asparius/verl-agent-safety；⚠️ 文本化 Gridworlds 受控环境，绝对数值不可外推 |
+| Token Consumption（arXiv:2604.22750） | agentic 任务 Token 消耗 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2604.22750 v2（Longju Bai 等 8 位）；⚠️ 对象为 agentic coding 任务，消耗分布未必迁移到其他任务域 |
+| Utility Under Attack（arXiv:2608.21230） | 记忆投毒防御失效 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 + 浏览器实测（代码制品页） | arXiv:2608.21230（Arulnidhi Karunanidhi，Quantify Labs Ltd，单作者）；harnesses、corpora 与聚合运行报告已随文公开；⚠️ 单作者、机构自测（属不利证据自报，可信度较高） |
+| MemSecBench（arXiv:2607.27080） | 记忆生命周期安全基准 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2607.27080（Xuanze Chen 等 6 位）；310 案例（48 个现实情境）；⚠️ 受控运行时环境，84.2% / 50.3% 为跨配置描述统计非生产频率 |
+| Covert-Channel Monitor（arXiv:2605.20734） | 应用层多模态隐蔽信道 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2605.20734（Alfredo Metere，单作者）；⚠️ 参考实现未经第三方复现，「残余容量为零」限于受测信道集 |
+| Trace-Economic Underwriting（arXiv:2606.16465） | agent 可保性定价 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 + GitHub API 核验 | arXiv:2606.16465 v2（Binyan Xu 等 4 位）；代码、标签与审计表已公开；⚠️ 承保前提是有界权限的明确角色，trace-to-loss 规则需按行业定制 |
+| Authority Frontier（arXiv:2605.25632） | 精算动作接口定价 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2605.25632（Hao-Hsuan Chen，台湾政治大学，单作者）；配套数学基础见 SSRN 6761960；⚠️ 单作者评估框架非社区基准 |
+
+✅ **B 类 58 条回填完结。VERIFICATION-LOG 全部 118 条核验状态公示完成。**

@@ -1,5 +1,13 @@
 # 变更日志
 
+## v2.15.5（2026-09-05）— VERIFICATION-LOG 第 5 批回填完结：B 类第 4 批 13 条，全部 118 条完成
+
+**证据总数不变（118）。** 落地豆包审查建议 4 最终批：
+
+- **回填范围**：B 类最后 13 条（AI Agents Under EU Law / CASE Framework / RL Beneficial Models / When RLHF Fails / TRACE Benchmark / Alignment Sycophancy / Reward Hacking Gridworlds / Token Consumption / Utility Under Attack / MemSecBench / Covert-Channel Monitor / Trace-Economic Underwriting / Authority Frontier）。
+- **完结里程碑**：VERIFICATION-LOG 全部 118 条核验状态公示完成（G:47 + A:3 + D:1 + C:9 + B:58）。豆包审查建议 4 全部落地。
+- **semver**：patch bump（数据补登记，无新增证据）。
+
 ## v2.15.4（2026-09-05）— VERIFICATION-LOG 第 4 批回填：B 类第 3 批 15 条
 
 **证据总数不变（118）。** 落地豆包审查建议 4 第 4 批：
