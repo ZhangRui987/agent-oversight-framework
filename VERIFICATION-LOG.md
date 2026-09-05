@@ -5,7 +5,7 @@
 > **口径**：
 > - 核验方法统一用五档（与 REFERENCES 注脚同口径）：**官方原文核验**（监管文件/法文/判决原文经官方渠道可达并核对）、**WebSearch 追溯至一手**（二手线索经检索定位官方原始来源）、**GitHub API 核验**（issue/仓库元数据实测）、**arXiv 全文核验**（HTML 全文逐段核对引用）、**浏览器实测**（存档/数据集页面实地打开）。
 > - 「入库版本」= 该条目进入 REFERENCES 的版本（v2.7.0 / v2.8.0 / v2.10.0 / v2.11.0）。
-> - **回填进度**：本表当前回填 **G 类 47 条** + **A 类 3 条** + **D 类 1 条** + **C 类 9 条** + **B 类 15 条** = **75 条**；剩余 **B 类 43 条** 待回填（v2.15.2 本轮清零 A/D/C + B 类第 1 批）。
+> - **回填进度**：本表当前回填 **G 类 47 条** + **A 类 3 条** + **D 类 1 条** + **C 类 9 条** + **B 类 30 条** = **90 条**；剩余 **B 类 28 条** 待回填（v2.15.3 本轮清零 A/D/C + B 类前 30 条）。
 > - 回填日期口径：核验实际发生于入库版本日，**本次为补登记**——日期列填「2026-09-05（补登记）」，核验方式保留入库时实际采用的方法；段落级 ⚠️ 注记仍以 REFERENCES 为唯一真相源。
 > - 任何条目核验状态变化（升级/降级/来源替换）须同步更新本表并写入 CHANGELOG——这是 evidence-correction 机制的落地配套。
 
@@ -114,3 +114,23 @@
 | AgentAbstain（arXiv:2607.10059） | LLM 弃权能力 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2607.10059（伊利诺伊大学厄巴纳-香槟分校）；263 组配对任务 / 42 个沙箱 / 8 类弃权场景 |
 | When Autonomy Goes Rogue（arXiv:2507.14660） | 多 Agent 共谋仿真 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验 + GitHub API 核验 | arXiv:2507.14660（上海交通大学 + 上海人工智能实验室，Qibing Ren 等）；github.com/renqibing/MultiAgent4Collusion（Apache-2.0） |
 | Zaidi | OpenAI-HF 事故案例研究 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验（SSRN DOI 核实） | DOI 10.2139/ssrn.7181179（SSRN Electronic Journal）；⚠️ 三项限定：事实基础与本体系同一批来源不得作独立佐证 / 9 页工作论文未经同行评审 / 监管框架判断为作者个人分析 |
+
+## B 类（B-grade，可核查期刊或预印本）— 第 2 批 15 条 / 共 58 条
+
+| 条目键 | 类别 | 入库版本 | 核验日期 | 核验方式 | 一手来源（官方渠道） |
+|---|---|---|---|---|---|
+| Cyber-Capable AI Agents（arXiv:2607.25379） | 评估环境即安全边界 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2607.25379（Abu Bakar Siddik）；⚠️ 综述非一手测量，两份事故记录作者自陈为「preliminary」，只引共有系统性命题 |
+| Off-Support Barrier（arXiv:2608.11243） | 语义安全约束 off-support | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 + GitHub API 核验 | arXiv:2608.11243（Yoshinori Watanabe）；github.com/xiangze/Preventing_Jailbreak_as_regularization；⚠️ 预印本未同行评审、单作者、Lean 证明未机器检查 |
+| Teichmann | Agent 责任归因 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验（期刊 DOI 核实） | *Law Innovation and Technology*，DOI 10.1080/17579961.2026.2718578（London School of Economics）；注：卷期页码待补 |
+| GPT-5.6 | OpenAI-HF 事故一手博客 | v2.8.0 | 2026-09-05（补登记） | 官方原文核验 | openai.com/index/hugging-face-model-evaluation-security-incident/（OpenAI 官方博客，含 7/28 + 7/29 两次更新） |
+| claude-code-65961 | Claude 过度注释 issue | v2.6.0 | 2026-09-05（补登记） | GitHub API 核验 | anthropics/claude-code issue #65961（2026-06-07，state=open，+189 reactions）；⚠️ 只引 issue 正文实测内容（定性 + +189 计数），评论页未独立核验 |
+| Weinberger | 提示词诱发浪费 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2608.01347 v5（Sarel Weinberger、Amir Hohez）；⚠️ 含预注册 + 冻结 holdout；三项限定：倍数不可外推为生产预期 / 论文反对方案泄漏到产物 / 证明的是浪费不是污染 |
+| 898 题 | OpenAI-HF 技术报告 | v2.8.0 | 2026-09-05（补登记） | 官方原文核验（PDF 直连核实） | cdn.openai.com PDF（38 页，2026-08-26 发布）；ExploitGym 898 题中 198 题无解 / 约 1,200 Agent / ~7% 伪造工具调用 |
+| METR | METR-Redwood 独立调查 | v2.8.0 | 2026-09-05（补登记） | 官方原文核验 | redwoodresearch.org + metr.org（91 页，2026-08-26）；Ed25519 ≥19 公钥 / 429 条签名消息 |
+| Anatomy of a Frontier Lab Agent Intrusion | HF 受害方技术时间线 | v2.8.0 | 2026-09-05（补登记） | 官方原文核验 | huggingface.co/blog/agent-intrusion-technical-timeline；⚠️ HF 同时为受害方/调查方/发布方，数字为自身法医重建非中立第三方核验；具体发布日期未能直连核实（站点两次拒绝抓取） |
+| LongHorizon-Harness（arXiv:2608.01964） | 状态外置 + MEA 三角色 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2608.01964（2026-08）；⚠️ COI：作者团队隶属 Alibaba，主模型 Qwen；跨模型结果（Claude Opus 4.7）无利害冲突、优先引用 |
+| AI Harness Engineering（arXiv:2605.13357） | harness 11 职责 + H0–H3 | v2.6.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2605.13357（2026-05）；⚠️ 每个成熟度级别仅 n=1，只能作框架依据，不得作实证引用 |
+| HarnessRisk（arXiv:2608.17597） | harness 生命周期基准 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2608.17597（2026-08）；128 例六阶段；⚠️ 基准构造场景，攻击成功率绝对数值不可外推 |
+| Self-Harness（arXiv:2606.09498） | harness 自我改进 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2606.09498 v3（2026-08）；⚠️ 单作者预印本，不引用增益数值作为生产预期 |
+| From Prompts to Contracts（arXiv:2607.08028） | 企业级 harness 可审计 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 + GitHub API 核验 | arXiv:2607.08028（Joongho Ahn、Moonsoo Kim）；github.com/hammerbaki/enterprise-llm-agent-harness + Zenodo 10.5281/zenodo.21269426；⚠️ 单机构实现 / 单一领域 / 120 分制自设打分 |
+| AutoHarness（arXiv:2603.03329） | harness 自动合成 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2603.03329（Xinghua Lou 等 6 位作者，**2026-02-10** 原登记 2026-03 已订正）；⚠️ 78% 为败局中归因非法走子的比例非全部走子比例，TextArena 游戏环境具备完备可判定规则集 |
