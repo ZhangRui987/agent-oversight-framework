@@ -1225,8 +1225,11 @@ export class ResourceLedger {
       const variance = intervals.reduce((a, b) => a + (b - mean) ** 2, 0) / intervals.length;
       // 标定阈值：间隔方差 ≤ 10000ms²（毫秒平方）即判定为周期性——
       // v2.15.0 自复现实验标定（AOE-CALIB-002）：ROC + Youden's J 最优 7639ms²（5s 心跳+50ms 抖动场景），
-      // 跨参数敏感性分析取保守默认 10000ms²（覆盖 ≥5s 心跳 + ≤200ms 抖动）。
-      // 详见 CALIBRATION-REPORT-PERIODIC.md；生产实现须升级为自相关 + 频谱分析（spec/10 原文）。
+      // 跨参数敏感性分析取保守默认 10000ms²。
+      // ⚠️ v2.15.6 覆盖边界订正（calibrate-periodic-coverage-bound.mts, N=200）：默认 10000ms² 在 5s 心跳
+      // 场景下 P95 检出率 ≥95% 的覆盖上界为 ≤75ms 抖动；5s+100ms 检出率 71%、5s+200ms 仅 6.5%。
+      // 生产环境若心跳抖动可能超过 75ms，不应直接使用默认值——须升级为自相关 + 频谱分析（spec/10 原文）。
+      // 详见 CALIBRATION-REPORT-PERIODIC.md §5.4。
       const periodicThreshold = 10000; // ms²
       if (variance <= periodicThreshold && mean > 0) {
         const sig: LedgerSignal = {
