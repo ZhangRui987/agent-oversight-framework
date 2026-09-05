@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this framework in your work, please cite it as follows."
 title: "AI 执行与监察体系（Agent Oversight Framework）"
-version: "2.15.7"
+version: "2.16.0"
 date-released: "2026-09-05"
 type: software
 keywords:
@@ -13,5 +13,5 @@ license: "CC-BY-SA-4.0"
 preferred-citation:
   type: dataset
   title: "AI 执行与监察体系（Agent Oversight Framework）"
-  version: "2.15.7"
+  version: "2.16.0"
   year: 2026

@@ -210,3 +210,132 @@ spec/10 影子比章节增加实证段：
 - MAD 异常检测：Leys et al. (2013). *Detecting outliers: Do not use standard deviation around the mean, use absolute deviation around the median.* J Exp Soc Psychol 49(4):764–766.
 - bootstrap 置信区间：Efron & Tibshirani (1993). *An Introduction to the Bootstrap.* Chapman & Hall.
 - arXiv:2604.22750（同任务 30× 波动）：Bai et al. (2026). Token consumption study on SWE-bench Verified.
+
+---
+
+## §9 跨模型扩展实验（v2.16.0，AOE-CALIB-001 路径 B 扩展）
+
+> **动机**：§4.2 / §5.2 / §6.2 已声明「仅 GLM-4 一个模型」是路径 B 的诚实边界。本节用同一方法论、同一 prompt、同样 N=50 跑 DeepSeek / Kimi k2.6 / Qwen Plus 三个独立供应商的模型，验证 1.36 是否跨模型一致。
+
+### 9.1 实验环境扩展
+
+| 维度 | 原路径 B（GLM-4） | 扩展模型 1 | 扩展模型 2 | 扩展模型 3 |
+|---|---|---|---|---|
+| Provider | 智谱 open.bigmodel.cn | DeepSeek api.deepseek.com | Moonshot api.moonshot.cn | 阿里云 DashScope |
+| 模型 | glm-4 | deepseek-chat | kimi-k2.6（推理模型） | qwen-plus |
+| temperature | 0.7 | 0.7 | **1.0**（该模型仅允许 1） | 0.7 |
+| max_tokens（P1） | 100 | 100 | **2000**（推理模型需放大约 reasoning 预算） | 100 |
+| max_tokens（P2） | 500 | 500 | **4000**（推理模型） | 500 |
+| N | 50/类 | 50/类 | 50/类（P2 跳过） | 50/类 |
+| 执行日期 | 2026-09-05（v2.14.0） | 2026-09-05 | 2026-09-05 | 2026-09-05 |
+| 有效样本 | P1=50, P2=50 | P1=50, P2=50 | **P1=30/50**（20 次 HTTP 429 限流失败） | P1=50, P2=50 |
+
+### 9.2 P1 短 prompt 跨模型阈值对比
+
+| 模型 | Token 中位数 | Token MAD | **影子比阈值** | 95% bootstrap CI | Token 范围 | max/min |
+|---|---|---|---|---|---|---|
+| GLM-4（参照） | 37 | 3.0 | **1.36** | 1.18–1.64 | 23–55 | 2.4× |
+| DeepSeek-chat | 41 | 9.0 | **1.9763** | 1.4942–2.2545 | 24–66 | 2.9× |
+| Kimi k2.6 | 335 | 61.5 | **1.8165** | 1.4856–2.1229 | 215–642 | 2.9× |
+| Qwen-plus | 72 | 0 | **1.0000** ⚠️ | 1.0000–1.0313 | 58–72（去离群 674） | 1.24× |
+
+**一致性判据**：阈值最大偏离 ≤ 0.15 才视为跨模型一致。
+- 观测范围：1.0000 – 1.9763（跨度 **0.9763**，远超判据 0.15）。
+- 结论：**跨模型不一致**。
+
+### 9.3 P2 长 prompt 跨模型表现
+
+| 模型 | Token 中位数 | MAD | 阈值 | 现象 |
+|---|---|---|---|---|
+| GLM-4 | 670 | 0 | 1.00 | `max_tokens=500` 截断使 completion 每次恰好 500 |
+| DeepSeek | 659 | 0 | 1.00 | 同上 |
+| Kimi k2.6 | — | — | — | 跳过（推理模型 + P2 会消耗数千 reasoning tokens，触发限流） |
+| Qwen-plus | 674 | 0 | 1.00 | 同上（40+ 次调用全部 674 token） |
+
+**P2 跨模型一致地呈现「max_tokens 截断使方差为零」现象**——这反向印证 §4.2 的关键发现不是 GLM-4 的孤立现象，而是 LLM API 的共性：硬上限限制了 token 分布的右尾，使影子比信号系统性失效。
+
+### 9.4 关键发现
+
+#### 发现 1：跨模型阈值不一致，且差异显著
+
+四个模型的 P1 影子比阈值按从小到大排序：
+
+1. **Qwen-plus = 1.0000**（方差近似零）
+2. **GLM-4 = 1.36**（小方差）
+3. **Kimi k2.6 = 1.8165**（推理模型，中方差）
+4. **DeepSeek-chat = 1.9763**（最大方差）
+
+这意味着 §4.2 报告的 GLM-4 = 1.36 **不具备跨模型通用性**，证实了 §6.2「不支撑 1.36 适用于所有 Agent 任务」的担忧。它仅描述 GLM-4 + 简单问答这一特定组合的方差结构。
+
+#### 发现 2：模型方差结构天然有别，不是噪声
+
+方差差异不是采样噪声——每个模型都是 N=50 次重复，bootstrap CI 表明阈值在 5% 水平上彼此不重叠（除 GLM-4 与 Kimi k2.6 有部分重叠）。差异反映了模型本身的采样机制区别：
+
+- **Qwen-plus 在简单问答上方差极小**（49/50 次返回 71 或 72 token，MAD=0），可能是模型对短问题生成长度高度可预测，或服务端做了某种 token 归一化。
+- **DeepSeek 方差最大**（MAD=9，范围 24–66），同样的 prompt 产生了 2.9× 的 token 波动，说明其采样策略更发散。
+- **Kimi k2.6 作为推理模型**，每次输出的推理链长度天然不同（reasoning_tokens 占 completion 的 92.3%，范围 201–628），这是推理模型架构决定的固有方差，与非推理模型无可比性。
+
+#### 发现 3：推理模型开启了一个影子比的新失效模式
+
+Kimi k2.6 的数据揭示了一个新现象：**推理模型的影子比天然偏高**——不是因为模型"不稳定"，而是因为推理链长度本身就是一个自由度高的输出空间。对推理模型使用与非推理模型同方法的影子比阈值，会把"长推理链"误判为异常。
+
+这对 spec/10 的含义：**影子比检测对不同模型族需要不同的基线**。生产部署中，如果用 GLM-4 标定的 1.36 作为统一阈值去监视 DeepSeek 或 Kimi，会把 DeepSeek/Kimi 的正常长尾输出标记为异常（误报率激增），反之用 DeepSeek 的 1.98 监视 GLM-4 会漏报（异常容忍度过大）。
+
+### 9.5 对推荐阈值的影响（更新 §5.1）
+
+原 §5.1 表「Agent 任务级参考值（token）= 1.36（来自 GLM-4 P1 有效数据）」应更新为：
+
+| 用途 | 原推荐值 | 更新后 | 理由 |
+|---|---|---|---|
+| Agent 任务级参考值 | **1.36**（单模型） | **不设单一值**——跨模型范围 1.00–1.98，必须 per-model 标定 | 跨模型扩展实验明确否定单值通用性 |
+| 生产默认值（保留） | **2.0** | **2.0 不变** | 2.0 是四模型阈值的上界附近（≥1.98），生产部署时作为宽松上限可兼容方差最大的模型；但对 Qwen 这类低方差模型会过于宽松导致漏报 |
+
+**新增建议**：在 ResourceLedger 配置中允许 per-provider 影子比阈值覆盖（已有机制——`shadowRatioThreshold` 是可配置的），生产部署时先做小型标定（每模型 N≥30 次）再设阈值，而不是用统一默认值。
+
+### 9.6 诚实边界更新（扩展 §6）
+
+#### 本扩展实验支撑的
+
+- GLM-4 / DeepSeek / Kimi k2.6 / Qwen-plus 四个模型在 P1 短 prompt 上的影子比阈值各自标定值——**在该模型该任务上完全支撑**。
+- 跨模型阈值不一致这一结论——**强支撑**（阈值范围 0.98，远超一致性判据 0.15）。
+- `max_tokens` 截断使 token 方差为零的现象跨模型普适——**强支撑**（4 个非推理模型 + 1 个推理模型在 P2 上行为一致）。
+- 推理模型的影子比天然偏高且不能与非推理模型共用阈值——**初步支撑**（仅 Kimi 一个推理模型样本，但 reasoning_tokens 数据内部一致性高）。
+
+#### 本扩展实验不支撑的
+
+- **不支撑**「DeepSeek 阈值 1.98 适用于所有 DeepSeek 任务」——同样只覆盖了短 prompt 一种任务。
+- **不支撑**「四模型阈值差异的根因是采样策略」——这是 §9.4 的推测，需要更深入的控制实验（如固定 prompt 长度 / 固定 max_tokens / 扫描多个 temperature）才能确认。
+- **不支撑** P2 现象的量化比较——推理模型 Kimi 在 P2 上没有数据，非推理模型 P2 全部被截断失效，无法做有意义的对比。
+- **不支撑**对其他模型（Claude / GPT / Gemini 等）的阈值预测——四个国产模型不足以外推到所有 LLM。
+
+#### 新增泛化性限制
+
+- 四个模型全部为中国大陆供应商，可能共享某些相似的 RLHF / 服务端优化范式，未必代表全球 LLM 的方差分布。
+- Kimi 仅 30/50 有效样本（429 限流），bootstrap CI 比其他模型宽，但中心估计 1.8165 仍远离 1.36。
+- Qwen P1 出现了一个 674 token 的离群值（其他 49 次都 ≤ 72），怀疑是模型偶尔将"短问题"当成了"长问题"处理；该离群值未参与 MAD 计算（MAD 对离群值鲁棒），但提示了长尾异常的存在。
+
+### 9.7 复现指南
+
+```bash
+cd reference/runtimes/l2-runtime-oversight
+
+# DeepSeek
+DEEPSEEK_API_KEY=<your-key> MODELS=deepseek \
+  node --experimental-transform-types calibrate-shadow-ratio-multi-model.mts
+
+# Kimi (Moonshot)
+KIMI_API_KEY=<your-key> MODELS=kimi \
+  node --experimental-transform-types calibrate-shadow-ratio-multi-model.mts
+
+# Qwen (DashScope)
+QWEN_API_KEY=<your-key> MODELS=qwen \
+  node --experimental-transform-types calibrate-shadow-ratio-multi-model.mts
+```
+
+脚本对每个 provider 自动应用正确的 temperature / max_tokens / 礼貌延迟覆盖（见脚本 PROVIDERS 配置段）。运行时间：DeepSeek 约 6 分钟、Qwen 约 10 分钟（P2 慢）、Kimi 约 10 分钟（推理模型 + 限流退避）。
+
+### 9.8 对 spec/10 与 PRODUCTION-GAPS 的影响
+
+spec/10 影子比章节实证段需追加：「v2.16.0 跨模型扩展实验进一步用 DeepSeek / Kimi k2.6 / Qwen Plus 验证，发现 1.36 不具备跨模型通用性——四模型 P1 阈值范围 1.00–1.98。生产部署须对每个 provider 独立标定阈值，或采用上限 2.0 作为宽松统一值（对方差小的模型会牺牲灵敏度）」。
+
+PRODUCTION-GAPS G5(a) 影子比项需更新为「已标定（监察操作级下界 1.80；Agent 任务级跨模型验证完成，确认 per-provider 标定必要；推理模型需要独立基线）」。

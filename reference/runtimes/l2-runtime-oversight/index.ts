@@ -1104,7 +1104,12 @@ export interface TaskBudget {
    * 影子比阈值——实际消耗 / 基线 的比例超过此值触发偏离信号。
    * 默认 2.0（v2.14.0 自复现实验标定：监察操作级下界 1.80，Agent 任务级参考值 1.36；
    * 生产默认值保留 2.0 因 arXiv:2604.22750 实测同任务 30× 波动提示阈值不可低于此值）。
-   * 完整标定报告见 CALIBRATION-REPORT.md，复现脚本见 calibrate-shadow-ratio.mts。
+   * ⚠️ v2.16.0 跨模型扩展实验：用 DeepSeek / Kimi k2.6 / Qwen-plus 各 N=50 次验证，
+   * 1.36 不具备跨模型通用性——四模型 P1 短 prompt 阈值范围 1.00（Qwen-plus）至 1.98
+   * （DeepSeek），推理模型 Kimi k2.6 阈值天然偏高至 1.82。**生产部署须对每个 provider
+   * 独立标定阈值，或采用 2.0 作为宽松统一值**（对方差小的模型会牺牲灵敏度）。
+   * 完整标定报告见 CALIBRATION-REPORT.md §4–§9，
+   * 复现脚本见 calibrate-shadow-ratio.mts / -llm.mts / -multi-model.mts。
    */
   shadowRatioThreshold?: number;
   /**

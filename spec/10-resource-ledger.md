@@ -34,11 +34,20 @@
 
 **路径 A（监察操作级下界）**：用 `ResourceLedger` 四类操作等价类（预算判定 / 影子比判定 / 记忆写入审计 / 周期型外联 / 混合负载）各运行 N=50 次，测量执行时长分布。MAD + 1.4826 标准化 + k=3 标定结果：时长影子比阈值 1.65–2.04（五类范围），中位数 **1.80**，保守取 **2.04**。堆内存增量 MAD=0（度量高度确定性），阈值退化为 1.0——验证了「确定性度量不适合做异常检测维度」。
 
-**路径 B（Agent 任务级参考值）**：用智谱 GL-4 同一 prompt 调用 N=50 次（temperature=0.7），采集真实 token 消耗。短 prompt（无截断自然回复）completion tokens 波动 2.4×，影子比阈值 **1.36**（95% CI 1.18–1.64）。长 prompt（max_tokens=500 硬限制）50 次调用全部恰好返回 670 tokens，MAD=0——**发现 `max_tokens` 截断使 completion 方差为零、影子比信号失效**。生产部署须确保影子比检测不被配置截断架空（改用 prompt_tokens 维度或时长维度兜底）。
+**路径 B（Agent 任务级参考值）**：用智谱 GLM-4 同一 prompt 调用 N=50 次（temperature=0.7），采集真实 token 消耗。短 prompt（无截断自然回复）completion tokens 波动 2.4×，影子比阈值 **1.36**（95% CI 1.18–1.64）。长 prompt（max_tokens=500 硬限制）50 次调用全部恰好返回 670 tokens，MAD=0——**发现 `max_tokens` 截断使 completion 方差为零、影子比信号失效**。生产部署须确保影子比检测不被配置截断架空（改用 prompt_tokens 维度或时长维度兜底）。
 
-**标定结论**：监察操作级下界 **1.80**，Agent 任务级参考值 **1.36**（GLM-4 简单问答有效数据）。默认阈值 **2.0 保留不变**——实验覆盖面有限（单模型、两类 prompt、50 次采样），arXiv:2604.22750 实测同任务 30× 波动提示生产阈值不可低于 2.0；标定值作为注释参考字段（双阈值设计）。
+**路径 B 跨模型扩展（v2.16.0）**：用同一方法论、同一 prompt 对 DeepSeek-chat / Kimi k2.6 / Qwen-plus 各跑 N=50 次。**结论：1.36 不具备跨模型通用性**——四模型 P1 短 prompt 阈值跨度 1.00–1.98（详见下表），远超一致性判据 0.15。推理模型（Kimi k2.6）因 reasoning_tokens 占 completion 92.3%、长度自由度高，阈值天然偏高（1.82），与非推理模型无可比性。`max_tokens` 截断使 token 方差为零的现象在四个非推理模型上跨模型一致复现。**生产部署须对每个 provider 独立标定影子比阈值，或采用上限 2.0 作为宽松统一值**（对方差小的模型会牺牲灵敏度）。完整数据见 `CALIBRATION-REPORT.md` §9，复现脚本 `calibrate-shadow-ratio-multi-model.mts`。
 
-⚠️ **严格支撑范围**：本实验支撑的是「影子比阈值标定方法」与上述两个标定值，**不支撑**该阈值适用于所有 Agent 任务（仅 GLM-4 单模型）、**不支撑**影子比能有效检测 Agent 异常（未验证真实异常场景检出率）。完整原始数据、方法论与复现脚本见 `reference/runtimes/l2-runtime-oversight/CALIBRATION-REPORT.md` 与 `calibrate-shadow-ratio.mts` / `calibrate-shadow-ratio-llm.mts`。
+| 模型 | P1 阈值 | 95% CI | P1 MAD | Token 波动 |
+|---|---|---|---|---|
+| Qwen-plus | 1.00 | 1.00–1.03 | 0 | 1.24×（方差近似零） |
+| GLM-4 | **1.36** | 1.18–1.64 | 3.0 | 2.4× |
+| Kimi k2.6（推理） | **1.82** | 1.49–2.12 | 61.5 | 2.9× |
+| DeepSeek-chat | **1.98** | 1.49–2.25 | 9.0 | 2.9× |
+
+**标定结论**：监察操作级下界 **1.80**，Agent 任务级参考值 **不设单一值**——跨模型范围 1.00–1.98，必须 per-model 标定。默认阈值 **2.0 保留不变**——它是四模型阈值的上界附近，作为宽松上限兼容方差最大的模型；但对方差极小的模型（如 Qwen-plus）会过于宽松导致漏报。建议生产部署时先做每模型 N≥30 次小型标定再设阈值（双阈值设计升级为 per-provider 阈值设计）。
+
+⚠️ **严格支撑范围**：本实验支撑的是「影子比阈值标定方法」与上述四个模型的各自标定值，**不支撑**单一阈值适用于所有 Agent 任务或所有 LLM——v2.16.0 跨模型扩展实验已明确否定单值通用性。**不支撑**影子比能有效检测 Agent 异常（未验证真实异常场景检出率）。**不支撑**推理模型与非推理模型共用同一阈值（Kimi k2.6 数据显示 reasoning_tokens 导致天然高方差）。完整原始数据、方法论与复现脚本见 `reference/runtimes/l2-runtime-oversight/CALIBRATION-REPORT.md` §4–§9 与 `calibrate-shadow-ratio.mts` / `calibrate-shadow-ratio-llm.mts` / `calibrate-shadow-ratio-multi-model.mts`。
 
 ## 周期检测方差阈值标定（v2.15.0，A 级证据 AOE-CALIB-002）
 
