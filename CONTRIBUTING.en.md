@@ -21,6 +21,16 @@ Once enabled, every `git commit` runs it automatically, and a failing check bloc
 python scripts/verify_consistency.py
 ```
 
+### After committing: automatic annotated tag (post-commit, from v2.15.6)
+
+The same `git config core.hooksPath .githooks` also enables a post-commit hook. It fires only when **all** of the following hold:
+
+1. The current commit modified the `VERSION` file;
+2. `VERSION` content matches `X.Y.Z` (semantic-version three-component);
+3. No tag named `vX.Y.Z` exists yet.
+
+Behavior: extracts the matching section from `CHANGELOG.md` as the tag message and creates an annotated tag anchored to the current commit. **Motivation**: eliminate "VERSION bumped but tag forgotten" drift — before v2.15.6 every tag had to be created manually, and tags were occasionally missed. Skip for debugging: `SKIP_AUTO_TAG=1 git commit ...`.
+
 ## Hard Requirements
 
 ### 1. Evidence grading (mandatory for every mechanism)

@@ -1,0 +1,75 @@
+#!/bin/sh
+# post-commit 钩子：自动为本仓库的版本发布提交打 annotated git tag。
+#
+# 触发条件（同时满足才触发）：
+#   1. 本次 commit 修改了 VERSION 文件；
+#   2. VERSION 文件内容形如 X.Y.Z（语义化版本三段数字）；
+#   3. 尚不存在同名 tag（vX.Y.Z）。
+#
+# 行为：
+#   - 解析 VERSION 文件，构造 vX.Y.Z tag 名；
+#   - 从 CHANGELOG.md 抽取对应版本条目的首段作为 tag message；
+#   - 用 annotated tag（git tag -a -m）建 tag，锚定到当前 commit；
+#   - 失败一律只打印警告，绝不阻断 commit（post-commit 本身已无法阻断）。
+#
+# 启用（仓库根目录执行一次）：
+#   git config core.hooksPath .githooks
+#
+# 跳过本次自动建 tag（如调试场景）：设置环境变量 SKIP_AUTO_TAG=1。
+#
+# 背景教训：v2.15.6 之前所有 annotated tag 均需手动打，偶发遗忘；此 hook 让
+# 「commit + tag」成为单一动作，避免版本号与 commit 无锚点。
+
+cd "$(dirname "$0")/.." || exit 0
+
+# 跳过开关
+if [ -n "$SKIP_AUTO_TAG" ]; then
+    exit 0
+fi
+
+# 仅当 VERSION 在本次 commit 被修改时触发
+if ! git diff-tree --no-commit-id --name-only -r HEAD -- VERSION | grep -q '^VERSION$'; then
+    exit 0
+fi
+
+# 读取 VERSION 并校验格式
+VERSION=$(cat VERSION 2>/dev/null | tr -d '[:space:]')
+if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+    echo "⚠ post-commit: VERSION 文件内容 \"$VERSION\" 不符合 X.Y.Z 格式，跳过自动建 tag" >&2
+    exit 0
+fi
+
+TAG="v${VERSION}"
+
+# 已存在同名 tag 则跳过（防止意外覆盖）
+if git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null 2>&1; then
+    echo "ℹ post-commit: tag ${TAG} 已存在，跳过" >&2
+    exit 0
+fi
+
+# 从 CHANGELOG.md 抽取对应版本条目的首段（直到下一个 ## 之前的内容）作为 message
+# CHANGELOG.md 顶部格式约定：## vX.Y.Z（YYYY-MM-DD）— 标题
+MSG=""
+if [ -f CHANGELOG.md ]; then
+    # awk：定位以 "## v${VERSION}" 开头的标题行，输出从该行起直到下一个 "## " 开头的行之前的内容；
+    # 第二个 "## " 标志下一版本条目，不输出该行；最后清理尾部空行。
+    MSG=$(awk -v ver="## v${VERSION}" '
+        $0 ~ "^" ver { in_sec = 1; print; next }
+        in_sec && /^## / { exit }
+        in_sec { print }
+    ' CHANGELOG.md | sed -e '/^$/N;/^\n$/D')
+fi
+
+# 兜底：抽不到就用通用文案
+if [ -z "$MSG" ]; then
+    MSG="Release ${TAG}"
+fi
+
+# 建 annotated tag。失败只警告，不阻断流程。
+if git tag -a -m "$MSG" "$TAG" HEAD 2>/dev/null; then
+    echo "✓ post-commit: 已自动创建 annotated tag ${TAG}（用 git push origin ${TAG} 推送）" >&2
+else
+    echo "⚠ post-commit: 自动创建 tag ${TAG} 失败，请手动执行：git tag -a ${TAG} -m '...'" >&2
+fi
+
+exit 0

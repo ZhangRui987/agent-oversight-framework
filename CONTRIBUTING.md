@@ -21,6 +21,16 @@ git config core.hooksPath .githooks
 python scripts/verify_consistency.py
 ```
 
+### 提交后自动打 tag（post-commit，v2.15.6 起）
+
+同一 `git config core.hooksPath .githooks` 已一并启用 post-commit 钩子。触发条件（同时满足才触发）：
+
+1. 本次 commit 修改了 `VERSION` 文件；
+2. `VERSION` 内容形如 `X.Y.Z`（语义化版本三段数字）；
+3. 尚不存在同名 tag（`vX.Y.Z`）。
+
+行为：从 `CHANGELOG.md` 抽取对应版本条目作为 tag message，建 annotated tag 锚定到当前 commit。**目的**：杜绝「VERSION 已更新但 tag 忘打」的版本号与 commit 脱锚事故（v2.15.6 之前所有 tag 均需手动打，偶发遗忘）。调试场景跳过自动建 tag：`SKIP_AUTO_TAG=1 git commit ...`。
+
 ## 硬性要求
 
 ### 1. 证据分级（每条机制必须）
