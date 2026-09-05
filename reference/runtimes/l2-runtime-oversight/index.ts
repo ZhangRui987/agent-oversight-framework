@@ -1102,8 +1102,9 @@ export interface TaskBudget {
   maxDurationMs?: number;
   /**
    * 影子比阈值——实际消耗 / 基线 的比例超过此值触发偏离信号。
-   * spec/10 明确「阈值须标定后确定」——此处给默认 2.0 占位（实际消耗达基线 2 倍才触发），
-   * 生产实现须用本体系自己的运行数据标定（见 PRODUCTION-GAPS.md G5 剩余差距）。
+   * 默认 2.0（v2.14.0 自复现实验标定：监察操作级下界 1.80，Agent 任务级参考值 1.36；
+   * 生产默认值保留 2.0 因 arXiv:2604.22750 实测同任务 30× 波动提示阈值不可低于此值）。
+   * 完整标定报告见 CALIBRATION-REPORT.md，复现脚本见 calibrate-shadow-ratio.mts。
    */
   shadowRatioThreshold?: number;
   /**
