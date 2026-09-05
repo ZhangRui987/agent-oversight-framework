@@ -1223,9 +1223,11 @@ export class ResourceLedger {
       for (let i = 1; i < list.length; i++) intervals.push(list[i]! - list[i - 1]!);
       const mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
       const variance = intervals.reduce((a, b) => a + (b - mean) ** 2, 0) / intervals.length;
-      // 占位阈值：间隔方差 ≤ 1ms²（毫秒平方）即判定为周期性——
-      // 这是非常宽松的占位，生产实现须根据实际流量特征标定（spec/10「阈值须标定后确定」）。
-      const periodicThreshold = 1; // ms²
+      // 标定阈值：间隔方差 ≤ 10000ms²（毫秒平方）即判定为周期性——
+      // v2.15.0 自复现实验标定（AOE-CALIB-002）：ROC + Youden's J 最优 7639ms²（5s 心跳+50ms 抖动场景），
+      // 跨参数敏感性分析取保守默认 10000ms²（覆盖 ≥5s 心跳 + ≤200ms 抖动）。
+      // 详见 CALIBRATION-REPORT-PERIODIC.md；生产实现须升级为自相关 + 频谱分析（spec/10 原文）。
+      const periodicThreshold = 10000; // ms²
       if (variance <= periodicThreshold && mean > 0) {
         const sig: LedgerSignal = {
           kind: 'periodic-egress',

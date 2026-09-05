@@ -39,3 +39,15 @@ The shadow-ratio section above explicitly states "thresholds to be calibrated." 
 **Calibration conclusion**: oversight-operation-level lower bound **1.80**, agent-task-level reference value **1.36** (GLM-4 short Q&A, effective data). Default threshold **2.0 unchanged** — experimental coverage is limited (single model, two prompt types, 50 samples), and arXiv:2604.22750's measured 30× same-task volatility suggests production thresholds should not go below 2.0; calibrated values serve as annotated reference fields (dual-threshold design).
 
 ⚠️ **Strictly supported scope**: this experiment supports the "shadow-ratio threshold calibration method" and the two stated values, **not** that the threshold applies to all agent tasks (GLM-4 only), **not** that shadow ratio effectively detects agent anomalies (no real-anomaly-scenario detection-rate validation). Full raw data, methodology, and reproduction scripts at `reference/runtimes/l2-runtime-oversight/CALIBRATION-REPORT.md` and `calibrate-shadow-ratio.mts` / `calibrate-shadow-ratio-llm.mts`.
+
+## Periodic-egress variance threshold calibration (v2.15.0, grade-A evidence AOE-CALIB-002)
+
+The periodic-egress detection above specifies "autocorrelation and spectral analysis." v2.13.0's interval-variance check (variance ≤ threshold → periodic) is a placeholder, with threshold 1ms² uncalibrated. v2.15.0 performs the first calibration using synthetic interval sequences:
+
+**Main experiment**: 5 classes of interval characteristics (true periodic / jittered periodic / Poisson random / burst / mixed), N=50 sequences per class (8-timestamp windows each), calibrated via ROC + Youden's J. Result: optimal threshold **7,639ms²** for 5s heartbeat + 50ms jitter (AUC=0.985, TPR=100%, FPR=0%, bootstrap 95% CI 4,472–9,031ms²). **Discovery: default 1ms² is severely over-tight** — true periodic sequences have ~1.3ms² intrinsic variance from `Date.now()` resolution (only 38% trigger), and jittered periodic (~1657ms²) is 100% missed.
+
+**Sensitivity analysis**: sweep over period lengths (1s–60s) × jitter amplitudes (1ms–500ms). Most parameter combinations are highly separable (separation ratio >10); the only failure zone is short period + large jitter (period ≤1s and jitter ≥20% of period length) — where the signal is no longer genuinely "periodic" and requires more advanced detection.
+
+**Calibration conclusion**: recommended default **10,000ms²** (covers ≥5s heartbeat + ≤200ms jitter, ≥12× safety margin against Poisson traffic); production implementations must upgrade to autocorrelation + spectral analysis for more stealthy jittered periodic patterns.
+
+⚠️ **Strictly supported scope**: this experiment supports the interval-variance threshold calibration method and the recommended value of 10,000ms², **not** short-period + large-jitter scenarios, **not** that interval variance can replace autocorrelation + spectral analysis. Full raw data and reproduction scripts at `CALIBRATION-REPORT-PERIODIC.md` and `calibrate-periodic-threshold.mts` / `calibrate-periodic-sensitivity.mts`.
