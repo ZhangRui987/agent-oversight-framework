@@ -21,7 +21,7 @@
 | us-waymo-bus-2025 | US 监管 | v2.7.0 | 2026-09-04 | 官方原文核验 | NHTSA 召回报告 25E084 |
 | us-ai-comply-2024 | US 执法 | v2.7.0 | 2026-09-04 | 官方原文核验 | FTC「Operation AI Comply」新闻稿 |
 | eu-garante-openai-2024 | EU 执法 | v2.7.0 | 2026-09-04 | 官方原文核验 | 意大利 Garante 处罚决定 |
-| eu-ai-act-2026 | EU 立法 | v2.7.0 | 2026-09-04 | 官方原文核验 | EUR-Lex Regulation (EU) 2024/1689 |
+| eu-ai-act-2026 | EU 立法 | v2.7.0 | 2026-09-04 / 2026-09-06 修正 | 官方原文核验 + Digital Omnibus 推迟更新 | EUR-Lex Regulation (EU) 2024/1689 + OJ L 2026/1744 |
 | sg-mgf-aa-2026 | SG 政策 | v2.7.0 | 2026-09-04 | 官方原文核验 | 新加坡 IMDA Model AI Governance Framework |
 | kr-ai-act-2026 | KR 立法 | v2.7.0 入库 / v2.11.0 来源升级 | 2026-09-04 | 官方原文核验 + 来源升级（二手商业翻译 → law.go.kr 官方法文 + CSET 官方授权英译） | law.go.kr Act No. 20676 + CSET Georgetown 英译 PDF |
 | kr-dmpa-2025 | KR 立法 | v2.11.0 | 2026-09-04 | 官方原文核验 | law.go.kr 官方法文 + MFDS IMDRF 监管更新 PDF |
@@ -35,17 +35,17 @@
 | us-workado-2025 | US 执法 | v2.8.0 | 2026-09-04 | 官方原文核验 | FTC v. Workado（ftc.gov 法律库） |
 | us-ngl-2024 | US 执法 | v2.8.0 | 2026-09-04 | 官方原文核验 | FTC v. NGL Labs 和解（ftc.gov） |
 | us-eeoc-workday-2024 | US 执法 | v2.8.0 | 2026-09-04 | 官方原文核验 | EEOC v. Workday 法庭之友意见书 |
-| us-colorado-2024 | US 州立法 | v2.8.0 | 2026-09-04 | 官方原文核验 | Colorado SB 24-205（leg.colorado.gov） |
-| us-illinois-2026 | US 州立法 | v2.8.0 | 2026-09-04 | 官方原文核验 + v2.10.1 来源升级 | ilga.gov Public Act 103-0804 |
+| us-colorado-2024 | US 州立法 | v2.8.0 / v2.19.0 修正 | 2026-09-04 / 2026-09-06 修正 | 官方原文核验 + 生效日期订正 | Colorado SB 24-205（leg.colorado.gov）；⚠️ 原记录生效日 2026-06-01 及"高风险条款 2027-01-01 生效"经核为虚构——实际生效日 2026-02-01，"2027-01-01"对应替代法 SB 26-189 |
+| us-illinois-2026 | US 州立法 | v2.8.0 / v2.19.0 修正 | 2026-09-04 / 2026-09-06 修正 | 官方原文核验 + v2.10.1 来源升级 + v2.19.0 法益描述订正 | ilga.gov Public Act 103-0804；⚠️ 原描述"完成偏见影响评估"经核法文无此强制要求——法案禁止 AI 歧视性使用并要求通知，鼓励但不强制 bias assessment |
 | us-illinois-frontier-2026 | US 州立法 | v2.8.0 | 2026-09-04 | 官方原文核验 | Illinois 前沿 AI 治理法案 |
 | eu-rome-annul-2026 | EU 司法 | v2.8.0 | 2026-09-04 | 官方原文核验 | 罗马法院撤销判决 |
-| eu-replika-2025 | EU 执法 | v2.8.0 | 2026-09-04 | 官方原文核验 | 意大利 Garante v. Replika 罚款决定 |
-| uk-clearview-2025 | UK 执法 | v2.8.0 | 2026-09-04 | 官方原文核验 | 英国 ICO v. Clearview 罚款 |
-| uk-blueprint-2025 | UK 政策 | v2.8.0 | 2026-09-04 | 官方原文核验 | GOV.UK AI 监管蓝图公告 |
+| eu-replika-2025 | EU 执法 | v2.8.0 / v2.19.0 修正 | 2026-09-04 / 2026-09-06 修正 | 官方原文核验 + 决定日期订正 | 意大利 Garante v. Replika Provvedimento del 10 aprile 2025 [10130115]；⚠️ 原记录"罚款决定 2025-05-21"经核为 EDPB 新闻发布日——实际决定日为 2025-04-10（EDPB 页面"Date of final decision"+ KU Leuven EDPL 2025-2 学术论文双源确认） |
+| uk-clearview-2025 | UK 执法 | v2.8.0 / v2.19.0 修正 | 2026-09-04 / 2026-09-06 修正 | 官方原文核验 + 法律状态订正 | 英国 ICO v. Clearview（[2025] UKUT 319 (AAC)）；⚠️ 原记录"UT 维持"经核为误——UT 推翻 FTT 裁定、确认 ICO 管辖权并发回 FTT 重审，Clearview 已获准上诉至 Court of Appeal，罚款尚未最终执行 |
+| uk-blueprint-2025 | UK 政策 | v2.8.0 / v2.19.0 修正 | 2026-09-04 / 2026-09-06 修正 | 官方原文核验 + AISI 归因订正 | GOV.UK Blueprint for AI Regulation 公告（2025-10-21）；⚠️ 原记录"设立 AISI"经核为归因错误——AISI 于 2023-11 设立、2025-02 更名，与本次蓝图是独立事件；蓝图核心内容为 AI Growth Lab 监管沙盒 |
 | ca-thaler-dabus-2025 | CA 司法 | v2.8.0 | 2026-09-04 | 官方原文核验 | 加拿大专利上诉委员会裁决 |
-| int-oecd-unesco | 国际组织 | v2.8.0 | 2026-09-04 | 官方原文核验 | OECD AI Principles（2019/2024）+ UNESCO 文件 |
+| int-oecd-unesco | 国际组织 | v2.8.0 / v2.19.0 修正 | 2026-09-04 / 2026-09-06 修正 | 官方原文核验 + adherents 数量订正 | OECD AI Principles（2019-05-22 采用，2024-05-03 更新，47 adherents）+ UNESCO Recommendation on the Ethics of AI（2021-11-23 通过，193 成员国一致）；⚠️ 原记录"60+ 国家采纳"经核为误——OECD 官方确认 47 adherents 含欧盟 |
 | int-gpai-2020 | 国际组织 | v2.8.0 | 2026-09-04 | 官方原文核验 | GPAI 官方文件 |
-| jp-ai-promotion-2025 | JP 立法 | v2.8.0 | 2026-09-04 | 官方原文核验 | 日本官报法文 |
+| jp-ai-promotion-2025 | JP 立法 | v2.8.0 / v2.19.0 修正 | 2026-09-04 / 2026-09-06 修正 | 官方原文核验 + 来源订正 | e-Gov 法令検索 laws.e-gov.go.jp/law/507AC0000000053；⚠️ 原记录"日本官_method厅法文"为乱码占位符，已订正为一手法文链接；补充公布施行日 2025-06-04 |
 | au-robodebt-2023 | AU 调查 | v2.10.0 | 2026-09-04 | WebSearch 追溯至一手 | robodebt.royalcommission.gov.au 最终报告 |
 | int-g7-hiroshima-2023 | 国际组织 | v2.10.0 | 2026-09-04 | WebSearch 追溯至一手 | G7 领导人声明 + soumu.go.jp 官方 PDF |
 | int-imdrf-n67-n88 | 国际标准 | v2.10.0 | 2026-09-04 | WebSearch 追溯至一手 | imdrf.org N67（2022）/ N88（2025） |
@@ -55,7 +55,7 @@
 | us-fda-pccp-2024 | US 监管 | v2.10.0 | 2026-09-04 | WebSearch 追溯至一手 | fda.gov PCCP 指南（2024-08/12） |
 | us-kadrey-v-meta-2023 | US 诉讼 | v2.10.0 | 2026-09-04 | WebSearch 追溯至一手 | N.D. Cal. 3:23-cv-03417 |
 | us-nhtsa-waymo-2024 | US 监管 | v2.10.0 | 2026-09-04 | WebSearch 追溯至一手 | nhtsa.gov 召回 24E-049 / 25E-034 |
-| us-nyc-ll144-2021 | US 市立法 | v2.10.0 | 2026-09-04 | WebSearch 追溯至一手 | legistar.council.nyc.gov Local Law 144 |
+| us-nyc-ll144-2021 | US 市立法 | v2.10.0 / v2.19.0 修正 | 2026-09-04 / 2026-09-06 修正 | WebSearch 追溯至一手 + 日期细化 | legistar.council.nyc.gov Local Law 144（Int 1894-A）；⚠️ 原记录"Int 1894-2020"与"规则 2023-07-05 effective"经核为模糊——法文 2023-01-01 生效，DCWP 规则 2023-07-05 开始执行 |
 | us-nyt-v-openai-2023 | US 诉讼 | v2.10.0 | 2026-09-04 | WebSearch 追溯至一手 | SDNY 1:23-cv-11195 |
 | us-sec-ai-washing-2024 | US 执法 | v2.10.0 | 2026-09-04 | WebSearch 追溯至一手 | sec.gov 执法公告 + 和解令 |
 | us-tx-traiga-2025 | US 州立法 | v2.10.0 | 2026-09-04 | WebSearch 追溯至一手 | Texas Legislature Online HB 149 |
