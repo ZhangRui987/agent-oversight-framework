@@ -1,5 +1,55 @@
 # 变更日志
 
+## v2.18.0（2026-09-06）— 外部报告启发回灌：awareness 建模 + SR/UR/IRR 联合三元 + NIST 数学支撑
+
+**证据总数：119 → 124（A:3 / B:60 / C:9 / D:1 / G:51）。** 本版把外部参照研究报告（《agent-oversight-external-research-report》）映射表 §三 的 P0 三条启发落地到 spec 正文，闭合或缓解三个未解问题。
+
+### 落地的三条 P0 启发
+
+**启发 10（NIST 数学支撑，闭合开放性立场）**
+
+- 新增 spec/13 §「数学支撑：开放作弊集合只能持续对抗」：NIST Apostol Vassilev 在 IEEE Security & Privacy（2026 May-June）发表论文，把 Gödel 1931 不完备性定理推广到 AI 安全——不存在能对任意对抗提示普遍稳健的有限护栏集合。其三段式应对（持续红队 + 连续更新 + 运营韧性）与本体系 L2 看门狗 + L3 离线重审 + evidence-correction 持续回灌机制结构同构。
+- 新增 spec/13 §「持续证据供给侧：AIID 与 AVID」：两个外部数据库（AIID 1,600+ 事件、AVID 漏洞知识库）作为本体系持续证据供给的候选基础设施。
+- 新增 REFERENCES 三个 G 级条目：【键: us-nist-godel-2026】【键: int-aiid】【键: int-avid】。
+
+**启发 7（awareness 建模，缓解未解问题 #19）**
+
+- 新增 spec/09 §「被监察方 awareness 假设：监察有效性以「不知」为前提」：SHADE-Arena（arXiv:2506.15740 / arXiv:2601.21112）测量到 CoT 监察器在 Agent 知道监察存在时对数 AUROC 下降超过 0.4（接近失效），动作级监察器变动小于 0.02（基本不受影响）。三号公证机双盲考核必须维持蜜罐样本的 awareness。
+- 同步至 spec/02 L3 部分、spec/13 #19 缓解列（增加 awareness 假设声明要求）。
+- 新增 REFERENCES 一个 B 级条目：【键: shade-arena】。
+
+**启发 2（SR/UR/IRR 联合三元，缓解未解问题 #25）**
+
+- 升级 spec/04 §「白卷率校准」为「SR/UR/IRR 联合三元 + 配对安全对照组」：Designing for Doubt（arXiv:2606.02965v2，AIES 2026）把弃权校准分解为 SR/UR/IRR 三个联合定义的量，并提出配对安全对照组构造方法（取同一动作构造仅在授权状态上不同的两个变体）。IRR 100% 是结构保证而非经验测量。
+- 同步至 spec/13 #25 缓解列（标注外部配对方法作为代理测量路径）。
+- 新增 REFERENCES 一个 B 级条目：【键: designing-for-doubt】。
+
+### 计数变更
+
+| 项 | v2.17.0 | v2.18.0 | 变化 |
+| --- | --- | --- | --- |
+| 证据总数 | 119 | 124 | +5 |
+| B 级 | 58 | 60 | +2（shade-arena、designing-for-doubt） |
+| G 级 | 48 | 51 | +3（us-nist-godel-2026、int-aiid、int-avid） |
+| 去重唯一键 | 50 | 53 | +3 |
+| 门禁项 | 35 | 35 | 不变 |
+
+### 受影响文件
+
+- spec/04-credit-abstention.md（升级白卷率校准节）
+- spec/09-oversight.md（新增 awareness 假设节）
+- spec/02-architecture.md（L3 新增 awareness 子节）
+- spec/13-boundaries.md（#19、#25 缓解列升级 + 数学支撑 + AIID/AVID 两节）
+- spec/01-principles.md（G 类引用键表 +2 行 + 唯一键计数 50→53）
+- REFERENCES.md（+5 条目、注脚 B:58→60 / G:48→51 / 合计 119→122）
+- README.md / README.en.md（badge、分布、结构偏差披露、版本、APA、仓库结构表共 7 处）
+- VERSION / CITATION.cff（2.17.0 → 2.18.0）
+- scripts/verify_consistency.py（门禁阈值 8/9/10/13/14 + docstring）
+
+### 诚实边界
+
+三条启发均来自外部研究报告的核验映射工作，已按证据纪律逐条标注限定语。SHADE-Arena 与 Designing for Doubt 均为预印本（B 级），其绝对数值不可外推，可外推的只是方向性结论（awareness 量级差异、配对方法结构）。NIST 数学支撑为形式逻辑推广而非经验测量。AIID 与 AVID 为社区维护数据库，引用时仍须逐条核验。
+
 ## v2.17.0（2026-09-06）— evidence-correction：owasp-six-nation-2026 条目拆分 + 发布主体订正
 
 **证据总数：118 → 119（A:3 / B:58 / C:9 / D:1 / G:48）。** 本版为 evidence-correction 流程第二次实地演练（首次为 v2.15.7 Hohez → Hozez 拼写订正）。
