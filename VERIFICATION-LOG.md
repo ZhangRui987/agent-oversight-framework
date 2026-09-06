@@ -5,7 +5,7 @@
 > **口径**：
 > - 核验方法统一用五档（与 REFERENCES 注脚同口径）：**官方原文核验**（监管文件/法文/判决原文经官方渠道可达并核对）、**WebSearch 追溯至一手**（二手线索经检索定位官方原始来源）、**GitHub API 核验**（issue/仓库元数据实测）、**arXiv 全文核验**（HTML 全文逐段核对引用）、**浏览器实测**（存档/数据集页面实地打开）。
 > - 「入库版本」= 该条目进入 REFERENCES 的版本（v2.7.0 / v2.8.0 / v2.10.0 / v2.11.0）。
-> - **回填进度**：本表当前回填 **G 类 47 条** + **A 类 3 条** + **D 类 1 条** + **C 类 9 条** + **B 类 58 条** = **118 条（全部完成）**。豆包审查建议 4 全部落地。
+> - **回填进度**：本表当前回填 **G 类 48 条** + **A 类 3 条** + **D 类 1 条** + **C 类 9 条** + **B 类 58 条** = **119 条（全部完成）**。豆包审查建议 4 全部落地。
 > - 回填日期口径：核验实际发生于入库版本日，**本次为补登记**——日期列填「2026-09-05（补登记）」，核验方式保留入库时实际采用的方法；段落级 ⚠️ 注记仍以 REFERENCES 为唯一真相源。
 > - 任何条目核验状态变化（升级/降级/来源替换）须同步更新本表并写入 CHANGELOG——这是 evidence-correction 机制的落地配套。
 
@@ -26,7 +26,8 @@
 | kr-ai-act-2026 | KR 立法 | v2.7.0 入库 / v2.11.0 来源升级 | 2026-09-04 | 官方原文核验 + 来源升级（二手商业翻译 → law.go.kr 官方法文 + CSET 官方授权英译） | law.go.kr Act No. 20676 + CSET Georgetown 英译 PDF |
 | kr-dmpa-2025 | KR 立法 | v2.11.0 | 2026-09-04 | 官方原文核验 | law.go.kr 官方法文 + MFDS IMDRF 监管更新 PDF |
 | iso-42001-2023 | 国际标准 | v2.7.0 | 2026-09-04 | 官方原文核验 | ISO/IEC 42001:2023 标准文本 |
-| owasp-six-nation-2026 | 国际指南 | v2.7.0 | 2026-09-04 | 官方原文核验 | OWASP Agentic Security Top 10 + 六国联合指南 |
+| owasp-agentic-top10-2026 | 国际指南 | v2.17.0（由 owasp-six-nation-2026 拆分） | 2026-09-06 | 官方原文核验 | OWASP Agentic Security Top 10（owasp.org 社区维护清单） |
+| int-fiveeyes-agentic-2026 | 国际指南 | v2.17.0（由 owasp-six-nation-2026 拆分 + 发布主体订正） | 2026-09-06 | 五源交叉核验（cyber.gc.ca / ncsc.govt.nz / CISA GovDelivery / Crowell / CSA） | Five Eyes 六机构联合指南《Careful adoption of agentic AI services》（CISA + NSA + ASD's ACSC + Canadian Centre for Cyber Security + NCSC-NZ + NCSC-UK，2026-05-01）；⚠️ 原条目 owasp-six-nation-2026 把发布主体误写为「韩国 KISA / 新加坡 CSA 与 IMDA / 荷兰 NCSC / 德国 BSI / 日本 IPA」，实际六机构全部不符——正确主体为 Five Eyes 五国网络安全机构 |
 | cn-wuhan-ai-news-2025 | CN 执法 | v2.8.0 | 2026-09-04 | 官方原文核验 | 武汉市公安局官方通告 |
 | cn-chongqing-2024 | CN 执法 | v2.8.0 | 2026-09-04 | 官方原文核验 | 重庆市网信办官方通告 |
 | cn-qingyun-80w | CN 司法 | v2.8.0 | 2026-09-04 | 官方原文核验（判决） | 庆余年案法院判决 |
@@ -173,4 +174,4 @@
 | Trace-Economic Underwriting（arXiv:2606.16465） | agent 可保性定价 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 + GitHub API 核验 | arXiv:2606.16465 v2（Binyan Xu 等 4 位）；代码、标签与审计表已公开；⚠️ 承保前提是有界权限的明确角色，trace-to-loss 规则需按行业定制 |
 | Authority Frontier（arXiv:2605.25632） | 精算动作接口定价 | v2.8.0 | 2026-09-05（补登记） | arXiv 全文核验 | arXiv:2605.25632（Hao-Hsuan Chen，台湾政治大学，单作者）；配套数学基础见 SSRN 6761960；⚠️ 单作者评估框架非社区基准 |
 
-✅ **B 类 58 条回填完结。VERIFICATION-LOG 全部 118 条核验状态公示完成。**
+✅ **B 类 58 条回填完结。VERIFICATION-LOG 全部 119 条核验状态公示完成。**

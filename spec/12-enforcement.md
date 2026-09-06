@@ -59,7 +59,8 @@
 
 **L3 离线重审：跨国趋同的安全风险审慎采纳建议**：
 
-- 【键: owasp-six-nation-2026】OWASP Agentic Security Top 10 + 六国联合指南《Careful adoption of agentic AI services》（韩国 KISA / 新加坡 CSA 与 IMDA / 荷兰 NCSC / 德国 BSI / 日本 IPA 联合发布）：针对 Agent 安全风险与审慎采纳给出跨国趋同建议。该条支撑 L3 的「离线重审」在 Agent 场景下的必要性——六国监管机构趋同认定 Agent 服务须经过审慎评估后采纳，与本体系 L3「双盲考核 + 离线重放」同构。
+- 【键: owasp-agentic-top10-2026】OWASP Agentic Security Top 10（OWASP 官方社区维护）：针对 Agent 安全风险（提示注入、工具滥用、权限蔓延、供应链、数据外泄等十大类别）给出风险分类与缓解建议。该条支撑本章「L2 运行监察」层对 Agent 安全风险分类的社区共识基线——风险分类本身不依赖单一监管机构认定，而是社区趋同的认知基础设施。
+- 【键: int-fiveeyes-agentic-2026】Five Eyes 六机构联合指南《Careful adoption of agentic AI services》（2026-05-01 联合发布；美国 CISA + 美国 NSA + 澳大利亚 ASD's ACSC + 加拿大 Canadian Centre for Cyber Security + 新西兰 NCSC-NZ + 英国 NCSC-UK）：针对 Agent 服务审慎采纳给出跨国趋同建议。该条支撑 L3 的「离线重审」在 Agent 场景下的必要性——五国六机构趋同认定 Agent 服务须经过审慎评估后采纳（涵盖风险评估、最小权限、分层防御、人类监督），与本体系 L3「双盲考核 + 离线重放」同构。⚠️ 该指南与 OWASP Agentic Security Top 10 是两份独立文件，本版（v2.17.0）已将其从原 `owasp-six-nation-2026` 错误合并条目中拆分出来；原条目误将发布主体写成「韩国 KISA / 新加坡 CSA 与 IMDA / 荷兰 NCSC / 德国 BSI / 日本 IPA」——实际六国机构全部不符，正确主体为 Five Eyes 五国网络安全机构。
 
 **L0 准入 + L4 问责：生物识别数据 + 司法制衡对执法决定的复核**：
 

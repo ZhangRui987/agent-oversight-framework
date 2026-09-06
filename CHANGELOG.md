@@ -1,5 +1,52 @@
 # 变更日志
 
+## v2.17.0（2026-09-06）— evidence-correction：owasp-six-nation-2026 条目拆分 + 发布主体订正
+
+**证据总数：118 → 119（A:3 / B:58 / C:9 / D:1 / G:48）。** 本版为 evidence-correction 流程第二次实地演练（首次为 v2.15.7 Hohez → Hozez 拼写订正）。
+
+**触发**：外部参照研究报告一手核验环节发现 AOF 仓库既有引用 `owasp-six-nation-2026`（v2.7.0 入库）存在两处事实错误：
+
+1. **发布主体全部错误**：该条目声称《Careful adoption of agentic AI services》由「韩国 KISA / 新加坡 CSA 与 IMDA / 荷兰 NCSC / 德国 BSI / 日本 IPA」联合发布——实际发布主体为 **Five Eyes 五国六机构**：美国 CISA + 美国 NSA + 澳大利亚 ASD's ACSC + 加拿大 Canadian Centre for Cyber Security + 新西兰 NCSC-NZ + 英国 NCSC-UK（2026-05-01 联合发布）。六个机构全部不符，且错误方向一致地指向非 Five Eyes 国家，已构成事实错误而非措辞偏差。经五个独立信源交叉核验（cyber.gc.ca 一手公告 + ncsc.govt.nz 一手页面 + CISA GovDelivery 官方公告 + Crowell 律所快报 + Cloud Security Alliance 研究快报）。
+
+2. **两份独立文件被错误合并**：OWASP Agentic Security Top 10（OWASP 社区自维护清单）与 Five Eyes 联合指南是**两份独立文件**——前者由 OWASP 社区发布，后者由五国政府网络安全机构联合发布，发布主体、发布渠道、规范效力均不同。原条目把它们合并为一条引用键，混淆了两份文件的来源属性。
+
+**修正**：
+
+- **拆分为两条独立引用键**：
+  - `owasp-agentic-top10-2026`（owasp- 前缀）：OWASP 社区维护的 Agent 安全风险十大类别清单，落点 L2 运行监察——风险分类的社区共识基线
+  - `int-fiveeyes-agentic-2026`（int- 前缀）：Five Eyes 六机构联合指南，落点 L3 离线重审——Agent 服务审慎采纳的跨国趋同建议
+- **发布主体订正**：从错误的「韩国 KISA / 新加坡 CSA 与 IMDA / 荷兰 NCSC / 德国 BSI / 日本 IPA」改为正确的 Five Eyes 六机构
+- **发布日期补齐**：2026-05-01（原条目未标日期）
+- **同步更新**：spec/01-principles 表、spec/12-enforcement 正文、VERIFICATION-LOG（含订正理由与五源核验记录）、README 双语计数声明与偏置声明、CITATION.cff、VERSION、门禁脚本（A:3 / B:58 / C:9 / D:1 / **G:48** / 合计 **119**）
+
+**门禁更新**：
+
+- 第 8 项：G 类计数 47 → 48
+- 第 9 项：合计 118 → 119
+- 第 10 项：README 声明「119 条来源」
+- 第 13 项：REFERENCES 注脚「48 条 G 级（合计 119 条来源）」
+- 第 14 项：README 双语全文总数 == 119
+- G 类引用键前缀校验：新增 `int-fiveeyes-agentic-2026` 自动落入 `int-` 前缀合法集合
+
+**计数变更明细**：
+- G 类计数校验 47 → 48
+- REFERENCES 注脚「47 条 G 级（合计 118）」→「48 条 G 级（合计 119）」
+- README badge `evidence-B_58/118` → `evidence-B_58/119`
+- README 「可核查文献」118 → 119、G 级 47 → 48
+- README 「当前分布」G:47 → G:48
+- README 「结构性偏置声明」47/118 → 48/119（B 级占比 58/118→58/119、G 级占比 47/118→48/119）
+- VERIFICATION-LOG「G 类 47 条…合计 118 条」→「G 类 48 条…合计 119 条」
+- spec/01-principles「去重后唯一键仍为 47 条」→「48 条」
+- VERSION、CITATION.cff、README 双语 APA 引用 + 「当前版本」行升版 v2.17.0
+
+**诚实边界**：
+
+- 本条修正纯为事实错误订正（发布主体全部错误 + 两份独立文件被合并），不新增任何机制设计内容
+- 拆分后 `owasp-agentic-top10-2026` 与 `int-fiveeyes-agentic-2026` 的落点表述已分别写入 spec/12 对应章节，机制论证结构未变
+- 五个核验信源均为 2026-09-06 当日访问的一手或可信二手页面，已在 VERIFICATION-LOG 记录
+
+---
+
 ## v2.16.0（2026-09-05）— 影子比路径 B 跨模型扩展：确认 1.36 不具备跨模型通用性
 
 **证据总数不变（118）。** 落地豆包审查建议 6（多模型扩展影子比路径 B）。
