@@ -1,5 +1,36 @@
 # 变更日志
 
+## v2.25.0（2026-09-08）— 启发 4 落地：证据完整性新增行为账本参考实现（OpenExecution）
+
+**证据总数 131 → 132（A:3 / B:68 / C:9 / D:1 / G:51 = 132 条）。** 本版落地外部参照研究报告启发 4——证据完整性章新增「行为账本参考实现」节，引入 OpenExecution Provenance Spec（github.com/Open-Execution/openexecution-provenance-spec，Apache-2.0）+ AEGIS 论文（Zenodo DOI 10.5281/zenodo.18955103）的三层架构（哈希链 + JCS 规范化 + Ed25519 签名证书），作为 E3 固化外抛与 E4 交叉验证的已落地开源工程参考标准。关键贡献：把 E3/E4 从「规范层要求」推进到「有已落地开源参考实现」；引入 attestation_source 四级置信表与 ARMO 信任分级同构，`cross_verified` 一档即「互为证人」的工程化形态。**关键边界**：OpenExecution 的 attestation 依赖平台可信（私钥由平台独占、证书签发权由平台独占保留），其 gateway_observed 相当于 ARMO Tier 2 而非 Tier 1 内核侧信任根——平台侧方案 ≠ 内核侧证据，二者上下游互补不可混用。spec/11 溯源表新增 CAE 三段行。**证据 +1 条 B 级**：【键: OPENEXECUTION】（规范 + 论文 + 参考实现属同一作者群 `crabsatellite` / Li, Alex，按「同一作者、同一条证据线不得加总为两条」规则合并为一条；六项限定全部保留）。
+
+### 新增
+
+- **spec/08-evidence-integrity.md（双语同步）** 新增「行为账本参考实现：E3/E4 的工程化标准（本轮新增）」节：
+  - OpenExecution 三层架构与本体系 E 子组件对应表（L1 Behavior Recording ↔ E3 数据格式 / L2 Tamper-Proof Causality ↔ E3 防篡改实现 / L3 Independent Accountability ↔ E4 密码学支撑）
+  - 三个值得注意的工程细节：① JCS（RFC 8785）规范化防 JSONB 键重排假阳性；② Ed25519 签名与 HMAC 本质不同（不可抵赖 + 第三方可验证）；③ attestation_source 四级置信表（gateway_observed / platform_verified / cross_verified / agent_reported）与 ARMO 信任分级同构
+  - ⚠️ **粒度与信任域边界声明**（显式三条）：① 平台侧 vs 内核侧——OpenExecution 解决平台侧证据规范化 / 防篡改 / 第三方可验证，不覆盖 E1 内核侧信任根；② 上下游互补——E1–E5 管采集是否可信、OpenExecution 管已采集证据的账本化与外部可验证，不可混用；③ 签名只保证「签的就是当时记的」、不保证「当时记的就是真实发生的」
+  - ⚠️ 六项限定一并保留：Zenodo preprint 未经同行评审 / 同一作者群合并为一条 / 多数适配器 PLANNED 不得宣称覆盖主流平台 / 开源的是规范不是治理权 / JCS 是唯一规范化方法 / 签名法律可采信性是 OpenExecution 的法律分析不构成法律意见
+- **spec/11-traceability.md / spec/11-traceability.en.md（双语同步）** 溯源表新增「E3/E4 行为账本工程化标准」行，带完整 CAE 三段（**主张** / **论证**含信任域边界 / **证据**含合并声明与六项限定）
+
+### 变更
+
+- **REFERENCES.md** 新增【键: OPENEXECUTION】（B 级 +1，合并 github.com/Open-Execution/openexecution-provenance-spec + AEGIS 论文 DOI 10.5281/zenodo.18955103）；注脚统计从「67 条 B 级 / 合计 131 条」更新为「68 条 B 级 / 合计 132 条」
+- **README.md / README.en.md（双语同步）** badge 从 B (67/131) → B (68/132)；分布从 B:67 → B:68；总数从 131 → 132；结构性偏置声明从 51%(67/131) → 52%(68/132)、G 级从 39%(51/131) → 39%(51/132)；文件表 REFERENCES.md 行 131 → 132
+- **scripts/verify_consistency.py** 硬编码计数同步（B:67→B:68 / 合计 131→132 / README 声明 / README 分布 / REFERENCES 注脚 共 6 处）
+- **VERSION** `2.24.0` → `2.25.0`
+
+### 关联
+
+- 落地外部参照研究报告启发 4；10 条启发整体进度 8/10 → **9/10 完全闭合**（启发 1/2/3/4/5/7/8/9/10），仅剩启发 6（Sigstore/RATS 接入，高工作量独立版本）
+- **未新增门禁项**——启发 4 落地不引入新结构（三层架构、四级置信表是对已有 E3/E4 的工程化参考补充），门禁仍 36 项，36/36 PASS
+- 与上版的衔接：启发 3（v2.24.0）把「互为证人」从采集路径扩展到检测通道（行为层 × 表征层），本版把它进一步落地为工程化字段值（`cross_verified`），并把 E3 的「固化外抛」从原则推进到有已落地开源参考实现
+
+### 教训
+
+- **一手核验发现作者重叠至关重要**：WebFetch OpenExecution GitHub 与 AEGIS Zenodo 论文页后发现，规范仓库主要贡献者 `crabsatellite` 与论文参考实现 github.com/crabsatellite/aegis-protocol 同一人，论文署名 Li, Alex 也是规范理论基础提出者——若不核验，极易把规范 + 论文当作两条独立证据线加总，违反「同一作者、同一条证据线不得加总为两条」规则。按规则合并为一条 B 级，注脚显式声明合并依据。
+- **平台信任域边界必须显式声明**：OpenExecution 的 attestation 设计是「平台可信」模型——私钥由平台独占、证书签发权由平台独占保留、公钥经平台 API 发布。其 `gateway_observed` 相当于 ARMO Tier 2（进程外但应用可触达），不是 Tier 1（内核级信任根）。若不显式声明这一边界，部署方可能误以为 OpenExecution 可以替代 E1 内核侧采集——这是危险的混用。spec/08 新增节用三条显式声明钉死这一边界：平台侧方案 ≠ 内核侧证据 / 二者上下游互补 / 若采集层不可信签名保证不成立。
+
 ## v2.24.0（2026-09-08）— 启发 3 落地：蜂群治理新增模型内部表征探针通道（NARCBENCH）+ 证据完整性双证人范式
 
 **证据总数 129 → 131（A:3 / B:67 / C:9 / D:1 / G:51 = 131 条）。** 本版落地外部参照研究报告启发 3——蜂群治理章新增「模型内部表征探针通道」节，引入 NARCBENCH（arXiv:2604.01151，牛津；代码开源 Apache-2.0）的内部表征探针，作为行为层（第七信号「协同效能异常」）与表征层的 E4 式双证人落地。证据完整性章同步新增「行为层 × 表征层双证人」范式——把「互为证人」原则从采集路径扩展到跨层正交的检测通道。未解问题 #1（蜂群归因粒度——表征探针组级判定绕开归因死结）、#15（去中心化蜂群——表征通道独立于蜂群拓扑）、#19（对抗适应——行为层规避策略不能直接触达表征层）三条均获缓解但未闭合。**证据 +2 条 B 级**：【键: NARCBENCH】arXiv:2604.01151 + 【键: steganographic-collusion】arXiv:2402.07510（隐写共谋威胁模型，独立支撑 NARCBENCH 隐写场景检测回应与未解问题 #15）。
