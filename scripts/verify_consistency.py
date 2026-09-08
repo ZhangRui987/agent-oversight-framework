@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """发布一致性校验（推送前 / pre-commit 用）。
 
-校验项（共 35 项，按运行顺序）：
+校验项（共 36 项，按运行顺序）：
   1. 全仓库无 [TABLE START/END] 伪标记
   2. 所有 Markdown 表格表头后都有 |---| 分隔行
   3. 表格每行列数与分隔行一致
@@ -558,6 +558,61 @@ check(
     "README 法域枚举与计数和 REFERENCES G 键前缀一致（防法域计数漂移）",
     not _jp_fail,
     "; ".join(_jp_fail),
+)
+
+# ── 17. spec/11 机制溯源表 CAE 三段齐全（v2.23.0 新增） ──────
+# 启发 9 第二步落地后，spec/11 的每行数据行的「教训/来源」字段须同时含
+# **主张**、**论证**、**证据**（中文）/ **Claim**、**Argument**、**Evidence**（英文）。
+# 跳过：表头行、分隔行、## 结构迁移声明 / Structure migration 声明节内的全部行、
+#       ## 标准引注 / Standard citations 节及其后全部行（非表格内容）。
+_cae_bad = []
+for _fn in ("spec/11-traceability.md", "spec/11-traceability.en.md"):
+    _fp = os.path.join(ROOT, _fn)
+    if not os.path.isfile(_fp):
+        continue
+    _is_en = _fn.endswith(".en.md")
+    _markers = ("**Claim**", "**Argument**", "**Evidence**") if _is_en else (
+        "**主张**", "**论证**", "**证据**")
+    _skip_header_zh = "## 结构迁移声明"
+    _skip_header_en = "## Structure migration declaration"
+    _skip_header2_zh = "## 标准引注"
+    _skip_header2_en = "## Standard citations"
+    _lines = read(_fp).splitlines()
+    _in_skip_zone = False
+    _in_skip_zone2 = False
+    for _i, _line in enumerate(_lines, 1):
+        if _skip_header_zh in _line or _skip_header_en in _line:
+            _in_skip_zone = True
+            continue
+        if _skip_header2_zh in _line or _skip_header2_en in _line:
+            _in_skip_zone2 = True
+            continue
+        if _in_skip_zone2:
+            continue
+        if _in_skip_zone:
+            # 跳到表格表头行（含 "机制" 或 "Mechanism" 且以 "|" 分隔）
+            if "|" in _line and ("机制" in _line or "Mechanism" in _line):
+                _in_skip_zone = False
+                continue
+            else:
+                continue
+        # 只检查表格数据行（含 "|" 且不是分隔行、不是表头）
+        _s = _line.strip()
+        if not _s or "|" not in _s:
+            continue
+        if SEP_RE.match(_line):
+            continue  # 分隔行
+        # 表头行跳过
+        if _s.startswith("机制") or _s.startswith("Mechanism"):
+            continue
+        # 检查三个标记词都在
+        _missing = [m for m in _markers if m not in _line]
+        if _missing:
+            _cae_bad.append(f"{_fn} L{_i}: 缺 {'/'.join(_missing)}")
+check(
+    "spec/11 机制溯源表 CAE 三段齐全（每行含 主张/论证/证据）",
+    not _cae_bad,
+    "; ".join(_cae_bad[:5]),
 )
 
 # ── 汇总 ─────────────────────────────────────
