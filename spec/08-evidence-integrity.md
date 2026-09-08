@@ -195,3 +195,51 @@ OpenExecution Provenance Spec（【键: OPENEXECUTION】仓库 github.com/Open-E
 - 二者是**上下游互补关系**而非替代：E1–E5 管采集是否可信（记录真不真、有没有被伪造），OpenExecution 管已采集证据的账本化、规范化与第三方可验证（证据能不能被外部独立核验）。**若采集层不可信，OpenExecution 的任何签名保证都不成立——签名只能保证「签的就是当时记的」，不能保证「当时记的就是真实发生的」。**
 
 ⚠️ 证据等级 B。六项限定必须一并引用：① AEGIS 论文是 **Zenodo preprint**（单作者 Li, Alex，ORCID 0009-0008-4516-8946），**未经同行评审**；② 论文的参考实现 github.com/crabsatellite/aegis-protocol 与 OpenExecution 规范仓库 github.com/Open-Execution/openexecution-provenance-spec 的主要贡献者同为 `crabsatellite`，论文署名作者 Li, Alex 也是规范的理论基础提出者——**规范 + 论文 + 实现属同一作者群，按本体系「同一作者、同一条证据线不得加总为两条」规则合并为一条 B 级**；③ 论文评估经 202 项测试与 M1–M6 / S1–S5 场景完成，但**适配器大多数处于 PLANNED 状态**——LIVE 适配器仅 GitHub 与 OpenClaw 两个，**不得**把覆盖广度宣称为已覆盖主流平台；④ 规范本身是开放实现，但证书签发、责任账本写入与裁定权限由 OpenExecution 平台**独占保留**——其开源的是规范与参考实现，不是治理权；⑤ JCS（RFC 8785）规范化是 OpenExecution 当前唯一支持的规范化方法，若未来出现 RFC 8785 不覆盖的边缘情况（如非标准 JSON 扩展），本体系不预判其处置；⑥ Ed25519 / Ed448 / ECDSA 签名满足 eIDAS「高级电子签名」要求并兼容中国《电子签名法》第 13 条的说法是 **OpenExecution 的法律分析**，**不构成法律意见**——在具体司法管辖区内的可采信性须由部署方法律顾问独立确认。
+
+## E5 采集点自校验的标准化接入路径：Sigstore + RATS（本轮新增）
+
+上文给出 E3/E4 的工程化参考（OpenExecution 行为账本），但 E5（采集点自身完整性）的工程化对接尚未给出。E5 要求「采集模块签名校验、独立信任域运行、其启动与配置变更本身纳入审计」——这引出两个标准化问题：**用什么签名生态**与**用什么证据格式**。若每个部署方自造一套，既无法互操作，也会重蹈 OpenExecution 节里指出的「内部调试日志与法庭可用证据」之分界困境。本节给出两条已标准化的对接路径。
+
+### Sigstore 无密钥签名：E5 的「采集模块签名校验」工程化
+
+sigstore-a2a（【键: SIGSTORE-A2A】github.com/sigstore/sigstore-a2a，Apache-2.0）给出了一套**无密钥签名**方案，使 Agent Card 与采集模块的签名绑定到 CI/CD 来源而非长期私钥。其核心流程：CI/CD 环境（如 GitHub Actions）生成 OIDC token → Sigstore Fulcio CA 据此签发**短期 X.509 证书**（分钟级过期）→ 证书内嵌 OIDC claims（仓库、工作流、commit SHA、触发者）→ 签名 + 证书 + Rekor 透明日志条目打包为可验证bundle。落地含义：
+
+- **采集模块签名校验**（E5 第一项）：采集模块的构建产物经 Sigstore 签名后，其来源（哪个仓库、哪个 commit、哪个 CI 工作流）与签名身份密码学绑定；部署方在加载采集模块前用 Sigstore 公钥验证签名，无需管理长期私钥。短期证书过期后即使被泄露也无法被利用。
+- **Agent Card = harness 披露卡的机器可验证版本**（连接 spec/07）：Agent Card 声明 Agent 的能力与约束，经 Sigstore 签名后构成「源码 → 构建 → 部署 Agent」的可验证链（SLSA 溯源）；这把 spec/07「签名即认领」从治理原则落地为有密码学支撑的工程机制——签名不再是「自发引入」，而是 CI/CD 流水线的标配。
+- **Rekor 透明日志提供公共可审计性**：所有签名写入 Rekor 公共透明日志（append-only Merkle tree），任何人可独立查询某个 Agent / 采集模块何时被谁签名——这给 E5「其启动与配置变更本身纳入审计」提供了公共基础设施。
+
+⚠️ sigstore-a2a 仓库 README 顶部明确标注「**Prototype code — not for production use. Code is not reviewed and has not undergone a security audit**」——本体系引用其**架构与流程设计**作为 E5 的标准化对接路径参考，**不引用其当前代码状态**。Sigstore 生态本身（Fulcio CA、Rekor 透明日志）是 CNCF 毕业项目，生产可用；sigstore-a2a 是其上层封装，成熟度低于底层基础设施。
+
+### RATS（RFC 9334）：E5 的证据格式标准化
+
+RATS（Remote ATtestation procedureS）架构（【键: RATS】RFC 9334，IETF，2023-01，Informational）定义了远程证明的角色、概念消息与拓扑。它与 E5 的对接点是：**把 E 子系统的证据格式从自造格式对接到 IETF 标准生态**，避免自造格式造成的互操作壁垒与重复造轮子。角色映射如下：
+
+| RATS 角色 | 定义 | E 子系统映射 |
+| --- | --- | --- |
+| Attester（证明者） | 产生关于自身 Evidence 的实体 | E1 采集模块（在被观测进程之外采集 Claims） |
+| Verifier（验证者） | 评估 Evidence 有效性，产出 Attestation Results | L2 看门狗（对照评估策略比较 Evidence 与 Reference Values） |
+| Relying Party（依赖方） | 依据 Attestation Results 做应用层决策 | L3 离线重审 / 审计方 / 问责流程 |
+| Endorser（背书者） | 为 Attester 的 Claims 采集与 Evidence 签名能力担保 | 采集模块的构建方（Sigstore 签名即一种 Endorsement） |
+| Reference Value Provider | 提供 Reference Values 供比较 | 基线标定实验（影子比、阻断率等「known-good values」的来源） |
+
+RATS 的两种拓扑模式给出 E 子系统的两种部署形态：
+- **Passport 模式**（Attester 先从 Verifier 获得 Attestation Result，再出示给多个 Relying Party）：适合 E 子系统向多个审计方 / 监管方出示证据的场景——采集模块在启动时从看门狗获得 Attestation Result，缓存后出示给任何有权的审计方。
+- **Background-Check 模式**（Relying Party 收到 Evidence 后转发给 Verifier 评估）：适合集中问责场景——审计方收到证据后转发给看门狗评估，由看门狗返回 Attestation Result。
+
+⚠️ RATS 的 Evidence 定义包含一条与本体系高度契合的原则——原文：「Claims need to be collected in a manner that is reliable such that a Target Environment cannot lie to the Attesting Environment about its trustworthiness properties」（Claims 须以可靠方式采集，使目标环境无法对证明环境就其可信性说谎）。这与 E1「采集点在被观测进程的用户态路径之外」是同一命题的不同表述——RATS 用抽象角色语言，E 子系统用 Linux 内核工程语言。
+
+### IETF ATN 草案：Agent 信任协商的四制品绑定
+
+IETF Agent Trust Negotiation 草案（draft-somoza-dmsc-atn-agent-trust-negotiation-00，2026-05-29，作者 Enrique Somoza）把 Sigstore 签名与 RATS 证据组合为**四制品绑定的握手协议**：① Capability Manifest（能力宣言，声明 Agent 愿做什么）；② Delegation Chain（委托链，证明授权范围与撤销路径）；③ Provenance Attestation（溯源证明，证明构建期与运行期完整性）；④ Session Receipt（会话收据，记录协商后的范围）。ATN 的 Provenance Attestation 即 RATS 的 Evidence 格式，签名采用 JWS（RFC 7515），透明日志采用 SCITT（IETF Supply Chain Integrity）。
+
+⚠️ **ATN 草案状态限定**：该草案为**个人提交的 Internet-Draft**，IETF 明确声明「This I-D is not endorsed by the IETF and has no formal standing in the IETF standards processes」——**不得**引用为 IETF 标准。单作者（Enrique Somoza），有效期至 2026-11-18。本体系只取其四制品绑定的**架构参考**，不取其握手状态机的细节实现。
+
+### 粒度与信任域边界（必须显式声明，不得混用）
+
+Sigstore 与 RATS 给出的是**采集模块自身**的签名与证据格式标准化——它们解决的是「采集模块是否可信」（E5 第一项：签名校验），而非「采集到的内容是否真实」（E1–E4）。二者是**正交关系**：
+
+- 一个经 Sigstore 正确签名的采集模块，仍可能因内核漏洞或侧信道而被绕过——签名保证的是「这就是那个仓库的那个 commit 构建的模块」，不保证「该模块运行时没被攻破」。
+- RATS 的 Attestation Result 评估的是 Attester 的运行时状态（配置、测量值、遥测），但它**依赖 Endorser 的 Endorsement** 来保证 Attester 的 Claims 采集能力——若 Endorser 被攻陷，整个信任链失效。本体系的 Endorser 是采集模块的构建方，其可信性取决于 CI/CD 流水线的安全性。
+- 二者与 OpenExecution 的关系：OpenExecution 签名的是**已采集证据**（事后），Sigstore 签名的是**采集模块本身**（事前），RATS 规范的是**采集模块运行时状态**的证明格式——三者覆盖 E 子系统的三个不同阶段，**不可互相替代**。
+
+⚠️ 证据等级 B（SIGSTORE-A2A）+ B（RATS）。综合限定：① sigstore-a2a 是原型代码，明确标注 not for production use，本体系只引其架构与流程设计；② RFC 9334 是 Informational RFC（非标准跟踪），代表 IETF 社区共识但非正式标准；③ ATN 草案是个人 Internet-Draft，无 IETF 正式地位，有效期至 2026-11-18，不得引用为标准；④ Sigstore 生态依赖 Fulcio CA 与 Rekor 透明日志的可用性——若 Fulcio 停摆，新的签名无法签发（已签名的旧签名仍可验证，因为证书与透明日志条目已持久化）；⑤ RATS 架构是格式无关的（支持 JWT / CWT / X.509 / TPM 等），本体系不指定具体编码格式——部署方按其既有基础设施选型。

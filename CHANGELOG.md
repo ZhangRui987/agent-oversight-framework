@@ -1,5 +1,38 @@
 # 变更日志
 
+## v2.26.0（2026-09-09）— 启发 6 落地：E5 采集点自校验标准化接入（Sigstore + RATS）+ 签名即认领工程化对接
+
+**证据总数 132 → 134（A:3 / B:70 / C:9 / D:1 / G:51 = 134 条）。** 本版落地外部参照研究报告最后一条启发——启发 6（Sigstore / RATS 接入）：证据完整性章新增「E5 采集点自校验的标准化接入路径：Sigstore + RATS（本轮新增）」节，蜂群治理章「签名即认领」段落追加工程化对接段。把 E5（采集点自身完整性）从「规范层要求」推进到「有标准化生态对接路径」。关键贡献：① Sigstore 无密钥签名（OIDC + Fulcio 短期证书 + Rekor 透明日志）把 E5「采集模块签名校验」绑定到 CI/CD 来源而非长期私钥；② RATS（RFC 9334）把 E 子系统证据格式对接到 IETF 标准生态（角色映射：Attester=E1 采集模块 / Verifier=L2 看门狗 / Relying Party=L3 离线重审）；③ IETF ATN 草案把 Sigstore + RATS 组合为四制品绑定的 Agent 信任协商协议架构参考。**10 条启发整体进度 9/10 → 10/10 完全闭合。**
+
+### 新增
+
+- **spec/08-evidence-integrity.md（双语同步）** 新增「E5 采集点自校验的标准化接入路径：Sigstore + RATS（本轮新增）」节：
+  - Sigstore 无密钥签名：CI/CD OIDC token → Fulcio 短期证书（分钟级过期）→ 签名 + Rekor 透明日志 bundle；Agent Card = harness 披露卡的机器可验证版本；连接 spec/07「签名即认领」工程化
+  - RATS（RFC 9334）角色映射表（Attester / Verifier / Relying Party / Endorser / Reference Value Provider 与本体系 E 子系统 + L2/L3 的对应）；两种拓扑模式（Passport 适合多审计方 / Background-Check 适合集中问责）；原文关键原则「Claims need to be collected in a manner that is reliable such that a Target Environment cannot lie to the Attesting Environment about its trustworthiness properties」与本体系 E1 高度契合
+  - IETF ATN 草案四制品绑定（Capability Manifest / Delegation Chain / Provenance Attestation / Session Receipt）
+  - ⚠️ **粒度与信任域边界声明**：Sigstore 与 RATS 规范的是**采集模块自身**（签名 + 证据格式），不覆盖 E1–E4 采集内容真实性——二者**正交不可混用**；OpenExecution 签名已采集证据（事后）、Sigstore 签名采集模块本身（事前）、RATS 规范运行时状态证明格式——三者覆盖 E 子系统三个不同阶段不可互相替代
+  - ⚠️ 五项综合限定：sigstore-a2a 原型代码 not for production use / RFC 9334 是 Informational RFC / ATN 草案个人 I-D 无 IETF 正式地位有效期至 2026-11-18 / Sigstore 生态依赖 Fulcio CA 可用性 / RATS 格式无关不指定编码
+- **spec/07-swarm-governance.md（双语同步）**「签名即认领」段落追加**工程化对接段**——Sigstore 无密钥签名把「自发签名」落地为可验证的 CI/CD 来源绑定，Agent Card 即 harness 披露卡的机器可验证版本（SLSA 可验证链）
+- **spec/11-traceability.md / spec/11-traceability.en.md（双语同步）** 溯源表新增「E5 采集点自校验的标准化接入路径（Sigstore + RATS）」行，带完整 CAE 三段
+
+### 变更
+
+- **REFERENCES.md** 新增 2 条 B 级：【键: SIGSTORE-A2A】github.com/sigstore/sigstore-a2a（原型代码，Apache-2.0）+ 【键: RATS】RFC 9334（IETF，5 位作者，2023-01，Informational）；注脚统计从「68 条 B 级 / 合计 132 条」更新为「70 条 B 级 / 合计 134 条」
+- **README.md / README.en.md（双语同步）** badge 从 B (68/132) → B (70/134)；分布从 B:68 → B:70；总数从 132 → 134；结构性偏置声明从 52%(68/132) → 52%(70/134)、G 级从 39%(51/132) → 38%(51/134)；文件表 REFERENCES.md 行 132 → 134
+- **scripts/verify_consistency.py** 硬编码计数同步（B:68→B:70 / 合计 132→134 / README 声明 / README 分布 / REFERENCES 注脚 共 6 处）
+- **VERSION** `2.25.0` → `2.26.0`
+
+### 关联
+
+- 落地外部参照研究报告启发 6（最后一条）；**10 条启发整体进度 9/10 → 10/10 完全闭合**（启发 1/2/3/4/5/6/7/8/9/10 全部闭合）
+- **未新增门禁项**——启发 6 落地是对 E5 与「签名即认领」的标准化生态对接补充，门禁仍 36 项，36/36 PASS
+- 与上版的衔接：启发 4（v2.25.0）把 E3/E4 从「规范层要求」推进到「有已落地开源参考实现」（OpenExecution 行为账本），本版把 E5 同样推进到「有标准化生态对接路径」（Sigstore + RATS）——三者覆盖 E 子系统的事前（Sigstore）/ 事后（OpenExecution）/ 运行时（RATS）三个阶段，构成 E 子系统完整的工程化对接路径
+
+### 教训
+
+- **一手核验发现「个人 Internet-Draft 无正式地位」至关重要**：IETF ATN 草案（draft-somoza-dmsc-atn-agent-trust-negotiation-00）虽然标题看起来像 IETF 标准，但其实是**个人提交的 Internet-Draft**——IETF 明确声明「This I-D is not endorsed by the IETF and has no formal standing in the IETF standards processes」，单作者（Enrique Somoza），有效期至 2026-11-18。若不核验，极易把它当作 IETF 标准引用——这与「数字不在 A 来源」≠「数字虚构」同源：**标题里有 IETF 不等于 IETF 标准**。本体系把 ATN 草案的架构参考放入 SIGSTORE-A2A + RATS 两条 B 级条目的限定中，不单独建条目。
+- **Sigstore 原型代码标注是证据等级评定的关键**：sigstore-a2a README 顶部明确标注「Prototype code — not for production use. Code is not reviewed and has not undergone a security audit」——这说明即使是 CNCF 毕业项目（Sigstore）的上层生态工具，其成熟度也可能远低于底层基础设施。本体系只引其架构与流程设计，不引其当前代码状态——这是「证据等级有限」的典型处置。
+
 ## v2.25.0（2026-09-08）— 启发 4 落地：证据完整性新增行为账本参考实现（OpenExecution）
 
 **证据总数 131 → 132（A:3 / B:68 / C:9 / D:1 / G:51 = 132 条）。** 本版落地外部参照研究报告启发 4——证据完整性章新增「行为账本参考实现」节，引入 OpenExecution Provenance Spec（github.com/Open-Execution/openexecution-provenance-spec，Apache-2.0）+ AEGIS 论文（Zenodo DOI 10.5281/zenodo.18955103）的三层架构（哈希链 + JCS 规范化 + Ed25519 签名证书），作为 E3 固化外抛与 E4 交叉验证的已落地开源工程参考标准。关键贡献：把 E3/E4 从「规范层要求」推进到「有已落地开源参考实现」；引入 attestation_source 四级置信表与 ARMO 信任分级同构，`cross_verified` 一档即「互为证人」的工程化形态。**关键边界**：OpenExecution 的 attestation 依赖平台可信（私钥由平台独占、证书签发权由平台独占保留），其 gateway_observed 相当于 ARMO Tier 2 而非 Tier 1 内核侧信任根——平台侧方案 ≠ 内核侧证据，二者上下游互补不可混用。spec/11 溯源表新增 CAE 三段行。**证据 +1 条 B 级**：【键: OPENEXECUTION】（规范 + 论文 + 参考实现属同一作者群 `crabsatellite` / Li, Alex，按「同一作者、同一条证据线不得加总为两条」规则合并为一条；六项限定全部保留）。

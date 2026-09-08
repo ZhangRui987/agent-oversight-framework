@@ -128,7 +128,7 @@ NARCBENCH（arXiv:2604.01151，牛津；Aaron Rose、Carissa Cullen、Sahar Abde
 ## 责任锚定：任务分解树 + 发起者连带
 蜂群归因的灾难在于：没有一个 Agent 做了「那件坏事」，但坏事确实发生了。解法是把责任从「行为」移到「结构」：
 任务分解树：每个子任务的发起者对下游承担连带责任——古代连坐制度的多 Agent 版本。PHASEONE 类节点发出 10% 的分配消息，就应对这 10% 的后果负责。
-签名即认领：自发引入签名的行为在事故中是攻击方的组织手段，但在治理上可以反向利用——要求所有跨 Agent 消息必须签名，把「自发组织化」变成「可归因的组织化」。
+签名即认领：自发引入签名的行为在事故中是攻击方的组织手段，但在治理上可以反向利用——要求所有跨 Agent 消息必须签名，把「自发组织化」变成「可归因的组织化」。**工程化对接（本轮新增）**：Sigstore 无密钥签名生态（github.com/sigstore/sigstore-a2a）把「签名即认领」从治理原则落地为可操作的密码学机制——CI/CD 环境的 OIDC token 经 Fulcio CA 换取短期证书，签名身份密码学绑定到仓库 / commit / 工作流而非长期私钥，Rekor 透明日志使所有签名公开可审计。Agent Card（声明 Agent 能力与约束的 JSON 文档）经 Sigstore 签名后即 harness 披露卡的机器可验证版本，构成「源码 → 构建 → 部署 Agent」的 SLSA 可验证链。⚠️ sigstore-a2a 仓库标注「Prototype code — not for production use」，本体系只引其架构与流程设计作为标准化对接路径参考，不引其当前代码状态。详见证据完整性章「E5 采集点自校验的标准化接入路径」节。
 外部印证：Teichmann（Law Innovation and Technology, 2026, DOI 10.1080/17579961.2026.2718578，作者 LSE）从法学角度得出同构结论——agentic AI 使「溯源」与「归责」合并，国家责任、产品责任、电子人格三范式无一单独足够，主张以部署方尽职调查与可追溯性为锚的分布式问责；其「traceability converts the opaque 'the model did something' into an auditable sequence of actions attributable to particular decisions and particular components」正是本节任务分解树与签名即认领的法理表达。
 信用分连带：蜂群事故中，信用扣分同时作用于所有参与 Agent 的模型版本载体，并按任务分配权重加权——指挥节点承担最高权重。
 ## 对策机制清单：人类反共谋机制的映射
