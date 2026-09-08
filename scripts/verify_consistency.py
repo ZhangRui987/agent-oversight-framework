@@ -163,25 +163,25 @@ c = sum(1 for g, _ in grades if g == "C")
 d = sum(1 for g, _ in grades if g == "D")
 g_count = sum(1 for g_, _ in grades if g_ == "G")
 check("REFERENCES 实测 A:3", a == 3, f"实测 A={a}")
-check("REFERENCES 实测 B:65", b == 65, f"实测 B={b}")
+check("REFERENCES 实测 B:67", b == 67, f"实测 B={b}")
 check("REFERENCES 实测 C:9", c == 9, f"实测 C={c}")
 check("REFERENCES 实测 D:1", d == 1, f"实测 D={d}")
 check("REFERENCES 实测 G:51", g_count == 51, f"实测 G={g_count}")
 total = a + b + c + d + g_count
-check("REFERENCES 合计 129 条", total == 129, f"实测合计={total}")
+check("REFERENCES 合计 131 条", total == 131, f"实测合计={total}")
 
 readme = read(os.path.join(ROOT, "README.md"))
 chg = read(os.path.join(ROOT, "CHANGELOG.md"))
-check("README 声明「129 条来源，其中 B 级 65 条」",
-      "129 条来源，其中 B 级 65 条" in readme)
-check("README 分布「A:3 / B:65 / C:9 / D:1」（含 A 级来源标注）",
-      "A:3" in readme and "B:65 / C:9 / D:1" in readme)
+check("README 声明「131 条来源，其中 B 级 67 条」",
+      "131 条来源，其中 B 级 67 条" in readme)
+check("README 分布「A:3 / B:67 / C:9 / D:1」（含 A 级来源标注）",
+      "A:3" in readme and "B:67 / C:9 / D:1" in readme)
 # CHANGELOG 取最近版本声明——门禁只校验字符串存在，数值一致性由第 14-15 项覆盖
 # v2.11.0 条目含「新增 1 条 G 级」字样
 check("CHANGELOG 声明「新增 1 条 G 级」（v2.11.0）",
       "新增 1 条 G 级" in chg)
-check("REFERENCES 注脚「65 条 B 级、9 条 C 级、1 条 D 级、51 条 G 级（合计 129 条来源）」",
-      "65 条 B 级、9 条 C 级、1 条 D 级、51 条 G 级（合计 129 条来源）" in refs)
+check("REFERENCES 注脚「67 条 B 级、9 条 C 级、1 条 D 级、51 条 G 级（合计 131 条来源）」",
+      "67 条 B 级、9 条 C 级、1 条 D 级、51 条 G 级（合计 131 条来源）" in refs)
 
 # ── 3b. README 全文证据计数一致性 ─────────────
 # 教训：v2.1.0 之前门禁只锁了 README 顶部声明与 REFERENCES 注脚两个固定字符串，
