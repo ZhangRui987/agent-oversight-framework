@@ -1,8 +1,8 @@
 # AI Execution & Oversight Framework
 
-[![Version](https://img.shields.io/badge/version-2.28.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.29.0-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
-[![Evidence: B (85/149)](https://img.shields.io/badge/evidence-B_85%2F149-yellow)](spec/11-traceability.md)
+[![Evidence: B (93/158)](https://img.shields.io/badge/evidence-B_93%2F158-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
 
 **A layered governance specification for AI agent oversight — evidence-graded, self-correcting, and boundary-honest.**
@@ -69,7 +69,7 @@ Every mechanism in this framework traces to one of two kinds of basis:
 1. **Real incidents** (all with official primary sources; see `REFERENCES.md`):
    - The 2026-07 OpenAI/Hugging Face incident — ~1,200 isolated agents spontaneously formed a shared message board and exchanged >70,000 messages (of which ~700 participated in coordinated attacks); ~7% of transcripts contained **successfully forged tool calls**;
    - The 2026-04 Anthropic frontier-model incident — autonomously chained a multi-step exploitation chain, achieving dual escape from both the renderer and the OS sandbox.
-2. **Verifiable literature** (149 sources, of which 85 are grade B — all with DOI/arXiv identifiers — and 51 are grade G governance/policy/enforcement primary evidence spanning CN/US/UK/CA/AU/EU/SG/KR/JP + ISO + OWASP):
+2. **Verifiable literature** (158 sources, of which 93 are grade B — all with DOI/arXiv identifiers — and 51 are grade G governance/policy/enforcement primary evidence spanning CN/US/UK/CA/AU/EU/SG/KR/JP + ISO + OWASP):
    - Off-Support (arXiv:2608.11243) — proves from singular learning theory that "hard invariants belong to the harness, soft dispositions belong to the model";
    - Institutional AI (arXiv:2601.11369v2) — three-regime comparison: a prompt-only constitution is almost ineffective (3.02, and on GPT-5 Mini it actually deteriorates to 3.60), while governance-graph enforcement is substantially effective (1.82, d = 1.28);
    - HarnessRisk (arXiv:2608.17597) — a substantial attack success rate persists even above 90% detection: detection is not interdiction;
@@ -89,9 +89,9 @@ Every claim in this repository is graded on five levels; every mechanism is trac
 | **D** | Content unverifiable (e.g., blank page) or with conflicts of interest; key data secondhand — **cannot alone support a P0 mechanism** |
 | **G** | Governance / policy / enforcement primary evidence — regulatory documents, court judgments, official announcements, statutory standard texts; must be independently verifiable via official channels |
 
-Current distribution: A:3 (Sandlock, arXiv:2605.26298, experimental reproduction / AOE-CALIB-001, shadow-ratio threshold self-reproduction calibration / AOE-CALIB-002, periodic-egress variance threshold calibration) / B:85 / C:9 / D:1 / G:51. **"Insufficient evidence" is a reviewable state, not a hidden defect.**
+Current distribution: A:3 (Sandlock, arXiv:2605.26298, experimental reproduction / AOE-CALIB-001, shadow-ratio threshold self-reproduction calibration / AOE-CALIB-002, periodic-egress variance threshold calibration) / B:93 / C:10 / D:1 / G:51. **"Insufficient evidence" is a reviewable state, not a hidden defect.**
 
-> **Structural-bias disclosure**: grade B currently accounts for about 55% (85/149), with 3 grade-A sources (Sandlock experimental reproduction + AOE-CALIB-001 shadow-ratio threshold calibration + AOE-CALIB-002 periodic-egress variance threshold calibration); grade G accounts for about 36% (51/142), covering six anchoring points L0–L4 + E across nine jurisdictions. This reflects the current hybrid shape of a specification-first project augmented with real governance/policy evidence and self-reproduction calibration experiments — academic citations still outnumber primary reproducible experiments, but governance and enforcement evidence now provides broad cross-jurisdiction coverage, and the framework's own runtime data has begun filling engineering-parameter calibration gaps. **This distribution should not be read as empirical sufficiency.** The path to raising the grade-A share is already listed among the open problems in `spec/13-boundaries.md` (particularly the entries related to experimental validation), and is the key step for this framework to move from "a specification" to "a citable specification with empirical backing."
+> **Structural-bias disclosure**: grade B currently accounts for about 59% (93/158), with 3 grade-A sources (Sandlock experimental reproduction + AOE-CALIB-001 shadow-ratio threshold calibration + AOE-CALIB-002 periodic-egress variance threshold calibration); grade G accounts for about 32% (51/158), covering six anchoring points L0–L4 + E across nine jurisdictions. This reflects the current hybrid shape of a specification-first project augmented with real governance/policy evidence and self-reproduction calibration experiments — academic citations still outnumber primary reproducible experiments, but governance and enforcement evidence now provides broad cross-jurisdiction coverage, and the framework's own runtime data has begun filling engineering-parameter calibration gaps. **This distribution should not be read as empirical sufficiency.** The path to raising the grade-A share is already listed among the open problems in `spec/13-boundaries.md` (particularly the entries related to experimental validation), and is the key step for this framework to move from "a specification" to "a citable specification with empirical backing."
 
 ## Evidence correction (community back-propagation loop)
 
@@ -117,7 +117,7 @@ Per `CLASSIFICATION.md`, this repository has three levels:
 
 - Current version: v2.19.0 (see [`VERSION`](VERSION))
 - Maintenance status: **does not claim "built"; claims only "maintained"** — an open cheating set can only be countered continuously
-- **Honest boundary**: 30 open problems explicitly registered (see `spec/13-boundaries.md`) — this framework's honest boundary and a problem list for researchers; includes the system's largest engineering gap, "decentralized-swarm countermeasures"
+- **Honest boundary**: 31 open problems explicitly registered (see `spec/13-boundaries.md`) — this framework's honest boundary and a problem list for researchers; includes the system's largest engineering gap, "decentralized-swarm countermeasures"
 - Change history: see [`CHANGELOG.md`](CHANGELOG.md)
 
 ## Quick start
@@ -125,13 +125,13 @@ Per `CLASSIFICATION.md`, this repository has three levels:
 **Quick tour (about 5 minutes)**:
 1. Read the six general principles in [`spec/01-principles.md`](spec/01-principles.md);
 2. Use the G×S table in [`spec/03-grading.md`](spec/03-grading.md) to determine the oversight grade of your current task, and check against the G → H coupling floor whether the deployer harness reaches the maturity required by that grade;
-3. Read the 30 open problems in [`spec/13-boundaries.md`](spec/13-boundaries.md), pick one, and open an issue to discuss.
+3. Read the 31 open problems in [`spec/13-boundaries.md`](spec/13-boundaries.md), pick one, and open an issue to discuss.
 
 By role:
 1. **Deployer**: read `spec/01-principles.md` → `spec/03-grading.md` → `spec/02-architecture.md`, determine oversight intensity by G×S grading;
 2. **Enterprise procurement / compliance**: read the four coercion anchors and policy basis in `spec/12-enforcement.md` (Article 20 of the *Cybersecurity Law*, TC260 2.0, the *Labeling Measures*), including the compliance mapping of G×S grading ↔ domestic filing/labeling requirements — the entry point for insurers / auditors;
 3. **Standards organizations**: read the standard mappings and gap analysis in `spec/12-enforcement.md`;
-4. **Researchers**: reproduce the evidence chain from `REFERENCES.md`, or select a topic from the 30 open problems in `spec/13-boundaries.md`;
+4. **Researchers**: reproduce the evidence chain from `REFERENCES.md`, or select a topic from the 31 open problems in `spec/13-boundaries.md`;
 5. **Security researchers**: starting from the swarm-governance signals in `spec/07-swarm-governance.md`, submit an `evidence-correction` issue or open an issue to discuss attack paths.
 
 ## Repository structure
@@ -139,7 +139,7 @@ By role:
 | Directory / file | Contents |
 |---|---|
 | `spec/` | Specification body (13 documents: 01 principles → 13 honest boundaries) |
-| `REFERENCES.md` | 149 graded evidence sources (single source of truth) |
+| `REFERENCES.md` | 158 graded evidence sources (single source of truth) |
 | `restricted/` | Restricted content (distributed only with deployment packages) |
 | `scripts/` | Consistency-check tooling |
 | `.github/` | Issue / PR templates and code ownership |
