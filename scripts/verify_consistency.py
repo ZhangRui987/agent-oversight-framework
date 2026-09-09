@@ -8,17 +8,17 @@
      —— 两种表头风格都覆盖：带首竖线（| 表头 | ... |）与不带首竖线（表头 | ...）
         （后者曾长期未被校验，导致 11-traceability 出现「6 列 vs 表头 5 列」而漏检）
   4. REFERENCES 实测 A:3
-  5. REFERENCES 实测 B:78
+  5. REFERENCES 实测 B:85
   6. REFERENCES 实测 C:9
   7. REFERENCES 实测 D:1
   8. REFERENCES 实测 G:51
-  9. REFERENCES 合计 142 条
-  10. README 声明「142 条来源，其中 B 级 78 条」
-  11. README 分布「A:3 / B:78 / C:9 / D:1」（含 A 级来源标注）
+  9. REFERENCES 合计 149 条
+  10. README 声明「149 条来源，其中 B 级 85 条」
+  11. README 分布「A:3 / B:85 / C:9 / D:1」（含 A 级来源标注）
   12. CHANGELOG 声明「新增 1 条 G 级」（v2.11.0，历史锚点防回退）
-  13. REFERENCES 注脚「78 条 B 级、9 条 C 级、1 条 D 级、51 条 G 级（合计 142 条来源）」
-  14. README 双语全文「证据总数」一致（所有出现的总数 == 142）
-  15. README 双语全文「B 级数」一致（所有出现的 B 级数 == 78）
+  13. REFERENCES 注脚「85 条 B 级、9 条 C 级、1 条 D 级、51 条 G 级（合计 149 条来源）」
+  14. README 双语全文「证据总数」一致（所有出现的总数 == 149）
+  15. README 双语全文「B 级数」一致（所有出现的 B 级数 == 85）
   16. README 事故数字（1,200 留言板）
   17. README 事故数字（700 参与攻击）
   18. REFERENCES 一手材料（1,200 留言板 / 700 攻击）
@@ -27,9 +27,9 @@
   21. STYLE 允许 P0 优先级标记
   22. spec/ 无 14-references.md（唯一真相源 = 根 REFERENCES.md）
   23. 引用红线：正文无禁止引用的数字（GAIE 84–97%）
-  24. 13-boundaries 实测未解问题条数 = 29
-  25. README 声明「29 条未解问题」
-  26. README.en 声明「29 open problems」
+  24. 13-boundaries 实测未解问题条数 = 30
+  25. README 声明「30 条未解问题」
+  26. README.en 声明「30 open problems」
   27. REFERENCES 无悬空引用：条目的登记键须在 spec/ 正文出现；
      若确系有意登记而未回灌，须在落点列显式标注【登记备用】
      —— 备用清单逐条打印公示，无法静默堆积
@@ -170,25 +170,25 @@ c = sum(1 for g, _ in grades if g == "C")
 d = sum(1 for g, _ in grades if g == "D")
 g_count = sum(1 for g_, _ in grades if g_ == "G")
 check("REFERENCES 实测 A:3", a == 3, f"实测 A={a}")
-check("REFERENCES 实测 B:78", b == 78, f"实测 B={b}")
+check("REFERENCES 实测 B:85", b == 85, f"实测 B={b}")
 check("REFERENCES 实测 C:9", c == 9, f"实测 C={c}")
 check("REFERENCES 实测 D:1", d == 1, f"实测 D={d}")
 check("REFERENCES 实测 G:51", g_count == 51, f"实测 G={g_count}")
 total = a + b + c + d + g_count
-check("REFERENCES 合计 142 条", total == 142, f"实测合计={total}")
+check("REFERENCES 合计 149 条", total == 149, f"实测合计={total}")
 
 readme = read(os.path.join(ROOT, "README.md"))
 chg = read(os.path.join(ROOT, "CHANGELOG.md"))
-check("README 声明「142 条来源，其中 B 级 78 条」",
-      "142 条来源，其中 B 级 78 条" in readme)
-check("README 分布「A:3 / B:78 / C:9 / D:1」（含 A 级来源标注）",
-      "A:3" in readme and "B:78 / C:9 / D:1" in readme)
+check("README 声明「149 条来源，其中 B 级 85 条」",
+      "149 条来源，其中 B 级 85 条" in readme)
+check("README 分布「A:3 / B:85 / C:9 / D:1」（含 A 级来源标注）",
+      "A:3" in readme and "B:85 / C:9 / D:1" in readme)
 # CHANGELOG 取最近版本声明——门禁只校验字符串存在，数值一致性由第 14-15 项覆盖
 # v2.11.0 条目含「新增 1 条 G 级」字样
 check("CHANGELOG 声明「新增 1 条 G 级」（v2.11.0）",
       "新增 1 条 G 级" in chg)
-check("REFERENCES 注脚「78 条 B 级、9 条 C 级、1 条 D 级、51 条 G 级（合计 142 条来源）」",
-      "78 条 B 级、9 条 C 级、1 条 D 级、51 条 G 级（合计 142 条来源）" in refs)
+check("REFERENCES 注脚「85 条 B 级、9 条 C 级、1 条 D 级、51 条 G 级（合计 149 条来源）」",
+      "85 条 B 级、9 条 C 级、1 条 D 级、51 条 G 级（合计 149 条来源）" in refs)
 
 # ── 3b. README 全文证据计数一致性 ─────────────
 # 教训：v2.1.0 之前门禁只锁了 README 顶部声明与 REFERENCES 注脚两个固定字符串，
