@@ -113,6 +113,22 @@ Fault-tolerance bandwidth (to prevent the defense mechanism itself from causing 
 
 (3) Graded handling chain: record (inconsistency rate below the threshold) → sample-review (near the threshold; No. 2 draws samples for manual/automatic comparison) → isolate (persistently above the threshold and unexplainable by clock/buffer/race). Isolation is triggered only at the third level; at the same time, both parties' raw evidence is retained, the kernel side prevails, and the event is escalated to an evidence-layer event.
 
+## Claim-provenance verification gate: the runtime mechanism of CPV Gate (added this round)
+
+The previous section established the "behavioral-layer × representation-layer dual-witness" complementarity of detection channels. This section adds a **communication-layer** runtime verification mechanism: before a **claim** passed between agents is reused downstream, its provenance is forcibly verified — upgrading spec/07 7.6's "external corroboration" principle from a normative requirement to a runtime gate.
+
+*When Coordination Becomes a Threat: Communication Attacks in LLM-Controlled Multi-Robot Systems* (arXiv:2608.06830, see spec/07 for the interface) proposes **CPV Gate (Claim Provenance and Verification Gate)** — verifying the provenance of communicated claims before downstream reuse, reducing the violation rate from 70.0% to 36.6%.
+
+Implication for this chapter: the eight-dimension checklist requires evidence to answer the "authority" and "decision basis" dimensions; CPV Gate upgrades these two dimensions from **post-hoc review** to **runtime interdiction** — unverified claims never enter the downstream reuse pathway, so even retrospective tracing will not produce the failure mode "downstream agent trusted a claim of unknown provenance."
+
+⚠️ **Key limitation — the residual risk must not be hidden**: CPV Gate's 70.0%→36.6% is the result of a **single gate** in a controlled experiment (see spec/07 for figure qualifications), and the **residual violation rate is still 36.6%** — nearly four in ten communication attacks still succeed under the gate. This is a residual risk that the original paper explicitly discloses. This framework accordingly establishes two points:
+
+① CPV Gate is a **runtime front-end of the evidence-integrity subsystem** and does not replace any of E1–E5 — the former governs "whether the claim's provenance is verified," the latter governs "whether the verification record itself is trustworthy." The two are **complementary, not substitutive**.
+
+② CPV Gate's residual violation rate means it must not serve as the **sole** communication-governance mechanism — under this framework's current clauses, CPV Gate must be used in combination with spec/07's "coordination protocol emergence," "self-introduced cryptography," and other signals, not alone.
+
+⚠️ Evidence grade B. The four limitations are consistent with the spec/07 interface: ① the 70.0%→36.6% figures all come from a controlled multi-robot task evaluation and must not be extrapolated; ② the paper has no public code / data artifacts; ③ the cumulative effect of CPV Gate (stacked with other mitigations) is not quantified; ④ multi-robot systems are a specific sub-domain of LLM-driven multi-agent systems, and the conclusions of this section must not be automatically extrapolated to all LLM-agent swarms.
+
 ## Audit as a query: turning review from a periodic human activity into a query
 The preceding section requires that rule changes be logged and diffable, which answers "what to compare against." A prior question remains: **the act of comparison itself is usually a periodic human activity** — sampling, retrieval, manual comparison. Its cost grows with scale, so frequency drops and latency lengthens; and latency is itself an opening.
 A workable counter-example already exists. *Quipu: A Governed Bitemporal Knowledge Graph Store* (arXiv:2608.16813, Steve Brown, 2026-08-17; 15 pages, source and all benchmark/census artifacts behind every reported number archived at Zenodo, DOI 10.5281/zenodo.21878428; development repository github.com/scbrown/quipu) is an embeddable knowledge-graph store whose central design move is this: **the governance specification Σ, the trace, and signed verdicts are themselves facts in the store they govern** — so "does this trace satisfy the specification" ceases to be an external review procedure and becomes **a query against the store** (T ⊨ Σ).

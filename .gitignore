@@ -2,6 +2,7 @@
 .workbuddy/
 .workbuddy_commit_msg.txt
 .commit_msg_*.txt
+.commit-msg-*.txt
 
 # ── 备份与临时文件 ──────────────────────────────────
 *.backup*
