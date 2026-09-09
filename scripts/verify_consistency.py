@@ -1,48 +1,55 @@
 # -*- coding: utf-8 -*-
 """发布一致性校验（推送前 / pre-commit 用）。
 
-校验项（共 36 项，按运行顺序）：
+校验项（共 39 项 = 39 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
   1. 全仓库无 [TABLE START/END] 伪标记
   2. 所有 Markdown 表格表头后都有 |---| 分隔行
   3. 表格每行列数与分隔行一致
      —— 两种表头风格都覆盖：带首竖线（| 表头 | ... |）与不带首竖线（表头 | ...）
         （后者曾长期未被校验，导致 11-traceability 出现「6 列 vs 表头 5 列」而漏检）
   4. REFERENCES 实测 A:3
-  5. REFERENCES 实测 B:58
+  5. REFERENCES 实测 B:70
   6. REFERENCES 实测 C:9
   7. REFERENCES 实测 D:1
   8. REFERENCES 实测 G:51
-  9. REFERENCES 合计 124 条
-  10. README 声明「124 条来源，其中 B 级 60 条」
-  11. README 分布「A:3 / B:58 / C:9 / D:1」（含 A 级来源标注）
-  12. CHANGELOG 声明参考文献条数（取最近一轮变更后的值）
-  13. REFERENCES 注脚「60 条 B 级、9 条 C 级、1 条 D 级、51 条 G 级（合计 124 条来源）」
-  14. README 双语全文「证据总数」一致（所有出现的总数 == 124）
- 15. README 双语全文「B 级数」一致（所有出现的 B 级数 == 58）
- 16. README 事故数字（1,200 留言板）
- 17. README 事故数字（700 参与攻击）
- 18. REFERENCES 一手材料（1,200 留言板 / 700 攻击）
- 19. ANTITRUST 指第十二章
- 20. STYLE 禁 P0-x 审阅编号
- 21. STYLE 允许 P0 优先级标记
- 22. spec/ 无 14-references.md（唯一真相源 = 根 REFERENCES.md）
- 23. 引用红线：正文无禁止引用的数字（GAIE 84–97%）
- 24. 13-boundaries 实测未解问题条数 = 28
- 25. README 声明「28 条未解问题」
- 26. README.en 声明「28 open problems」
- 27. REFERENCES 无悬空引用：条目的登记键须在 spec/ 正文出现；
+  9. REFERENCES 合计 134 条
+  10. README 声明「134 条来源，其中 B 级 70 条」
+  11. README 分布「A:3 / B:70 / C:9 / D:1」（含 A 级来源标注）
+  12. CHANGELOG 声明「新增 1 条 G 级」（v2.11.0，历史锚点防回退）
+  13. REFERENCES 注脚「70 条 B 级、9 条 C 级、1 条 D 级、51 条 G 级（合计 134 条来源）」
+  14. README 双语全文「证据总数」一致（所有出现的总数 == 134）
+  15. README 双语全文「B 级数」一致（所有出现的 B 级数 == 70）
+  16. README 事故数字（1,200 留言板）
+  17. README 事故数字（700 参与攻击）
+  18. REFERENCES 一手材料（1,200 留言板 / 700 攻击）
+  19. ANTITRUST 指第十二章
+  20. STYLE 禁 P0-x 审阅编号
+  21. STYLE 允许 P0 优先级标记
+  22. spec/ 无 14-references.md（唯一真相源 = 根 REFERENCES.md）
+  23. 引用红线：正文无禁止引用的数字（GAIE 84–97%）
+  24. 13-boundaries 实测未解问题条数 = 28
+  25. README 声明「28 条未解问题」
+  26. README.en 声明「28 open problems」
+  27. REFERENCES 无悬空引用：条目的登记键须在 spec/ 正文出现；
      若确系有意登记而未回灌，须在落点列显式标注【登记备用】
      —— 备用清单逐条打印公示，无法静默堆积
- 28. 反向悬空：spec/ 正文引用的每个 arXiv 号，均须在 REFERENCES 有条目登记
+  28. 反向悬空：spec/ 正文引用的每个 arXiv 号，均须在 REFERENCES 有条目登记
      —— 与第 27 项对称，双向都查才闭合
- 29. 无 arXiv 号的条目均已在文献列声明【键: XXX】
+  29. 无 arXiv 号的条目均已在文献列声明【键: XXX】
      —— 让第 27 项的覆盖从「有号条目」扩展到全部条目
- 30. 引用键全局唯一（不同条目不得共用同一键）
- 31. 引用键非通用词（不在黑名单且长度 ≥ 4）
- 32. G 类引用键前缀合法（cn- / us- / eu- / uk- / ca- / au- / jp- / kr- / sg- / int- / iso- / owasp-）
- 33. G 类条目须声明【键: XXX】且键含管辖前缀（G 类无 arXiv 号，强制声明键以防漏检）
- 34. VERIFICATION-LOG 与 REFERENCES 键集双向一致（G 键全覆盖 + 无幽灵键，防核验公示漂移）
- 35. README 法域枚举与计数和 REFERENCES G 键前缀一致（九法域 / 九个法域 / L0–L4 + E 六落点 / nine jurisdictions，防法域计数漂移）
+  30. 引用键全局唯一（不同条目不得共用同一键）
+  31. 引用键非通用词（不在黑名单且长度 ≥ 4）
+  32. G 类引用键前缀合法（cn- / us- / eu- / uk- / ca- / au- / jp- / kr- / sg- / int- / iso- / owasp-）
+  33. G 类条目须声明【键: XXX】且键含管辖前缀（G 类无 arXiv 号，强制声明键以防漏检）
+  34. VERIFICATION-LOG 覆盖全部 G 类键（REFERENCES G 键 ⊆ LOG 键）
+  35. VERIFICATION-LOG 无幽灵键（LOG 键 ⊆ REFERENCES 全部条目键）
+     —— ⚠️ 历史注记：旧清单曾把 34/35 合写为一个编号项，导致「门禁项数」声明
+        长期比实际 check 调用数少 1（v2.12.1–v2.26.0 声明 35/36、实际 36/37）；
+        v2.26.1 起清单按实际调用数逐条编号，并由第 39 项防复发
+  36. README 法域枚举与计数和 REFERENCES G 键前缀一致（九法域，防法域计数漂移）
+  37. spec/11 机制溯源表 CAE 三段齐全（每行含 主张/论证/证据；v2.23.0 新增）
+  38. 版本元数据同步（VERSION / CITATION.cff / README 双语 badge；v2.26.1 新增）
+  39. 门禁项数声明一致（README 双语 / CONTRIBUTING / ci.yml / 本清单 == 实际调用数；v2.26.1 新增）
 
 用法：
   python scripts/verify_consistency.py [仓库根目录，默认脚本所在目录的上级]
@@ -613,6 +620,67 @@ check(
     "spec/11 机制溯源表 CAE 三段齐全（每行含 主张/论证/证据）",
     not _cae_bad,
     "; ".join(_cae_bad[:5]),
+)
+
+# ── 18. 版本元数据同步（v2.26.1 新增，防版本号漂移） ──────────
+# 教训来源：v2.17.0–v2.26.0 期间 README 双语 Version badge 停在 2.17.0、
+# CITATION.cff 停在 2.19.0，而 VERSION 已到 2.26.0——门禁此前不覆盖版本元数据。
+# 校验：VERSION / CITATION.cff（全部 version 字段）/ README 双语 badge 三处一致。
+_version = read(os.path.join(ROOT, "VERSION")).strip()
+_citation = read(os.path.join(ROOT, "CITATION.cff"))
+_cit_versions = re.findall(r'version:\s*"([^"]+)"', _citation)
+_v_bad = []
+if not _cit_versions:
+    _v_bad.append("CITATION.cff 未找到 version 字段")
+else:
+    _mismatch = [v for v in _cit_versions if v != _version]
+    if _mismatch:
+        _v_bad.append(f"CITATION.cff version {_mismatch} != VERSION {_version}")
+for _rn in ("README.md", "README.en.md"):
+    _rm = re.search(r"badge/version-([0-9.]+)-blue", read(os.path.join(ROOT, _rn)))
+    _badge_v = _rm.group(1) if _rm else None
+    if _badge_v != _version:
+        _v_bad.append(f"{_rn} badge version {_badge_v} != VERSION {_version}")
+check(
+    "版本元数据同步（VERSION / CITATION.cff / README 双语 badge）",
+    not _v_bad,
+    "; ".join(_v_bad),
+)
+
+# ── 19. 门禁项数声明一致（v2.26.1 新增，防项数漂移） ──────────
+# 教训来源：v2.23.0 门禁 35→36 项时，README 双语 / CONTRIBUTING / ci.yml 共 5 处
+# 「35 项」声明漏更新（v2.12.1 的 34→35 曾同步，v2.23.0 却漏）。
+# 校验：实际 check( 调用数（读本脚本源码统计行首 check( ）与全部声明处的数字一致。
+_self_src = read(os.path.abspath(__file__))
+_n_checks = len(re.findall(r"^check\(", _self_src, re.M))
+_DECL_SITES = [
+    ("README.md", r"(\d+) 项发布一致性校验"),
+    ("README.en.md", r"(\d+) release-consistency checks"),
+    ("CONTRIBUTING.md", r"verify_consistency\.py`，(\d+) 项："),
+    (".github/workflows/ci.yml", r"发布一致性校验（(\d+) 项）"),
+    (".github/workflows/ci.yml", r"(\d+) 项门禁"),
+    ("scripts/verify_consistency.py", r"校验项（共 (\d+) 项"),
+]
+_declared = set()
+_missing_sites = []
+for _fn, _pat in _DECL_SITES:
+    _fp2 = os.path.join(ROOT, _fn)
+    if not os.path.isfile(_fp2):
+        _missing_sites.append(_fn)
+        continue
+    for _m2 in re.finditer(_pat, read(_fp2)):
+        _declared.add(int(_m2.group(1)))
+_decl_bad = []
+if _missing_sites:
+    _decl_bad.append(f"声明文件缺失: {_missing_sites}")
+if not _declared:
+    _decl_bad.append("未在任何声明处找到门禁项数")
+elif _declared != {_n_checks}:
+    _decl_bad.append(f"声明项数 {sorted(_declared)} != 实际 check 数 {_n_checks}")
+check(
+    "门禁项数声明一致（README 双语 / CONTRIBUTING / ci.yml / 本脚本头注释）",
+    not _decl_bad,
+    "; ".join(_decl_bad),
 )
 
 # ── 汇总 ─────────────────────────────────────

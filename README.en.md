@@ -1,6 +1,6 @@
 # AI Execution & Oversight Framework
 
-[![Version](https://img.shields.io/badge/version-2.17.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.26.1-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (70/134)](https://img.shields.io/badge/evidence-B_70%2F134-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -189,7 +189,7 @@ See [`CITATION.cff`](CITATION.cff).
 
 ## Quality assurance (self-referential verification)
 
-This repository governs itself with itself: `scripts/verify_consistency.py` provides 35 release-consistency checks (table format / evidence-grade counts / incident-number conventions / section numbering / terminology / bidirectional reference checks / citation-key quality / G-grade jurisdictional-prefix validity / verification-log key-set sync / jurisdiction-enumeration consistency), mounted as a pre-commit hook (`.githooks/`). See `CONTRIBUTING.md` for enabling; every commit runs it automatically and blocks on failure. Manual run: `python scripts/verify_consistency.py` (pure standard library, no dependencies to install).
+This repository governs itself with itself: `scripts/verify_consistency.py` provides 39 release-consistency checks (table format / evidence-grade counts / incident-number conventions / section numbering / terminology / bidirectional reference checks / citation-key quality / G-grade jurisdictional-prefix validity / verification-log key-set sync / jurisdiction-enumeration consistency), mounted as a pre-commit hook (`.githooks/`). See `CONTRIBUTING.md` for enabling; every commit runs it automatically and blocks on failure. Manual run: `python scripts/verify_consistency.py` (pure standard library, no dependencies to install).
 
 This is not a document maintained by good faith alone; it is a specification with an automated gate.
 

@@ -5,7 +5,7 @@
 > **口径**：
 > - 核验方法统一用五档（与 REFERENCES 注脚同口径）：**官方原文核验**（监管文件/法文/判决原文经官方渠道可达并核对）、**WebSearch 追溯至一手**（二手线索经检索定位官方原始来源）、**GitHub API 核验**（issue/仓库元数据实测）、**arXiv 全文核验**（HTML 全文逐段核对引用）、**浏览器实测**（存档/数据集页面实地打开）。
 > - 「入库版本」= 该条目进入 REFERENCES 的版本（v2.7.0 / v2.8.0 / v2.10.0 / v2.11.0）。
-> - **回填进度**：本表当前回填 **G 类 51 条** + **A 类 3 条** + **D 类 1 条** + **C 类 9 条** + **B 类 60 条** = **124 条（全部完成）**。豆包审查建议 4 全部落地。
+> - **回填进度**：本表当前回填 **G 类 51 条** + **A 类 3 条** + **D 类 1 条** + **C 类 9 条** + **B 类 70 条** = **134 条（全部完成）**。豆包审查建议 4 全部落地。（⚠️ v2.19.0–v2.26.0 期间新增的 10 条 B 级曾漏登记——门禁第 34 项当时只强制 G 键覆盖，构成盲区；v2.26.1 已补登，见文末段落。）
 > - **v2.20.0 G 类系统性审查完成（2026-09-07）**：51/51 条全部经 WebSearch 一手来源核验，覆盖率 100%。12 条已在前版显式日志（v2.17.0 拆分 2 + v2.19.0 修正 9 + v2.7.0/v2.11.0 来源升级 1），本轮新审查 39 条；共发现问题 25 条（10 P0 + 8 P1 + 7 P2），已验证正确 14 条。全部 25 条修正已同步写入 REFERENCES.md 与本表。
 > - 回填日期口径：核验实际发生于入库版本日，**本次为补登记**——日期列填「2026-09-05（补登记）」，核验方式保留入库时实际采用的方法；段落级 ⚠️ 注记仍以 REFERENCES 为唯一真相源。
 > - 任何条目核验状态变化（升级/降级/来源替换）须同步更新本表并写入 CHANGELOG——这是 evidence-correction 机制的落地配套。
@@ -197,3 +197,24 @@
 | designing-for-doubt | SR/UR/IRR 联合校准 + 配对安全对照组 | v2.18.0 | 2026-09-06 | arXiv 全文核验 | arXiv:2606.02965v2（AIES 2026）；⚠️ IRR 100% 是结构保证而非经验测量；Checkpoint 强制层属启发 1 运行时强制层，本体系只采纳校准口径与配对方法 |
 
 ✅ **v2.18.0 新增 5 条核验状态公示完成。VERIFICATION-LOG 全部 124 条。**
+
+---
+
+## v2.19.0–v2.26.0 新增 B 类条目核验登记（10 条，v2.26.1 补登）
+
+> ⚠️ **漏登记订正（v2.26.1）**：v2.19.0–v2.26.0 期间 REFERENCES 新增的 10 条 B 级条目此前未在本表登记——门禁第 34 项当时只强制「G 键全覆盖」，对 B 类新增条目无约束，构成人工纪律同步点盲区。本段补登，核验方式与一手来源取自各条目入库时（v2.21.0–v2.26.0 CHANGELOG 所载）实际执行的核验记录；其中 RATS 条目在 v2.26.1 又做了一次作者栏订正核验（详见该行）。防复发配套：自本版起新增条目（不分等级）一律须在本表登记核验状态。
+
+| 条目键 | 类别 | 入库版本 | 核验日期 | 核验方式 | 一手来源（官方渠道） |
+|---|---|---|---|---|---|
+| ARMO-observability | Agent 可观测性信号分层 | v2.21.0 | 2026-09-08（补登记） | 原文核验（厂商博客） | armosec.io/blog/what-to-instrument-for-ai-agents（2026-05-22）；⚠️ 工程研究博文非同行评审，Tier 1–4 分层为作者框架 |
+| MIT-AI-Risk-Repository | AI 风险元综述数据库 | v2.21.0 | 2026-09-08（补登记） | arXiv 全文核验 + 期刊 DOI 核验 | arXiv:2408.12622（v3 2026-05-05）+ Patterns (Cell Press) DOI 10.1016/j.patter.2026.101517；CC BY 4.0 |
+| safety-cases-justification | CAE 三层结构方法论来源 1 | v2.22.0 | 2026-09-08（补登记） | arXiv 全文核验 | arXiv:2403.10462（v2 2024-03-18） |
+| safety-cases-frontier-ai | CAE 三层结构方法论来源 2 | v2.22.0 | 2026-09-08（补登记） | 原文核验（机构发布页） | governance.ai/research-paper/safety-cases-for-frontier-ai（2024-10-28） |
+| assurance-framework-aies | CAE 三层结构方法论来源 3 | v2.22.0 | 2026-09-08（补登记） | arXiv 全文核验 + 会议论文集核验 | arXiv:2504.16937（MITRE / JHU APL，SPIE Defense + Commercial Sensing 2025 Proceedings） |
+| NARCBENCH | 多 Agent 表征探针基准 | v2.24.0 | 2026-09-08（补登记） | arXiv 全文核验 + 代码仓与数据集页核验 | arXiv:2604.01151（v2 2026-05-09，牛津）+ github.com/aaronrose227/narcbench（Apache-2.0）+ huggingface.co/datasets/aaronrose227/narcbench |
+| steganographic-collusion | 隐写共谋威胁模型 | v2.24.0 | 2026-09-08（补登记） | arXiv 全文核验 | arXiv:2402.07510（2024-02-12） |
+| OPENEXECUTION | E3/E4 行为账本参考实现 | v2.25.0 | 2026-09-08（补登记） | 仓库核验 + Zenodo 存档核验 | github.com/Open-Execution/openexecution-provenance-spec（Apache-2.0）+ Zenodo DOI 10.5281/zenodo.18955103（2026-03-11 v1）+ github.com/crabsatellite/aegis-protocol（202 tests） |
+| SIGSTORE-A2A | E5 标准化接入（Sigstore 侧） | v2.26.0 | 2026-09-09（补登记） | 仓库核验（README 原型声明实测） | github.com/sigstore/sigstore-a2a（Apache-2.0）；⚠️ README 顶部自陈 prototype / not for production use |
+| RATS | E5 标准化接入（RATS 侧） | v2.26.0 | 2026-09-09（v2.26.1 订正） | RFC 官方原文核验 + datatracker draft 版本对照 | rfc-editor.org/rfc/rfc9334（作者栏 3 位：Birkholz / Thaler / Richardson；2023-01；Informational）+ datatracker.ietf.org/doc/draft-ietf-rats-architecture/22/（前身 draft 列 5 位作者，含 Ned Smith、Wei Pan）；⚠️ v2.26.1 订正原条目「共 5 位作者 / William Pan」错误——5 人名单为 draft-22 作者栏，RFC 9334 作者栏仅 3 位，且 draft 署名为 Wei Pan |
+
+✅ **v2.19.0–v2.26.0 新增 10 条 B 级核验状态补登完成（v2.26.1）。VERIFICATION-LOG 覆盖全部 134 条。**

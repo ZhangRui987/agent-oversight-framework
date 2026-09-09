@@ -1,5 +1,37 @@
 # 变更日志
 
+## v2.26.1（2026-09-09）— 全面一致性审计修复：RFC 9334 作者栏订正 + 门禁项数声明长期漂移订正 + 版本元数据同步 + 核验日志补登
+
+**证据总数 134（不变；A:3 / B:70 / C:9 / D:1 / G:51 = 134 条）。** 本版为 evidence-correction 订正版（patch），不新增任何证据与机制。起因：对仓库做全面一致性审计（门禁实测 + 独立计数复算 + 引用一手核验），发现 1 个 P0 引用事实错误与多处声明漂移——全部订正如下。
+
+### 订正（事实错误）
+
+- **RFC 9334 作者栏订正（P0）**：REFERENCES.md【键: RATS】原写「Ned Smith (Intel)、William Pan (Huawei) 共 5 位作者」——经 RFC 官方原文核验（rfc-editor.org/rfc/rfc9334），**RFC 9334 作者栏仅 3 位**（Henk Birkholz / David Thaler / Michael Richardson）；5 人名单实为前身 draft-ietf-rats-architecture-22 的作者栏，且 draft 官方署名为 **Wei Pan** 非「William Pan」。同步订正 spec/11 双语溯源表对应行的证据段与 v2.26.0 CHANGELOG 条目（沿用 v2.20.0 对 CHANGELOG 作事实订正的先例）。标题「The RATs」亦订正为官方写法「The RATS」。教训：核验了 RFC 类别与 I-D 地位，却没核 RFC 头部作者栏——引用元数据每个字段都要过一遍原文。
+
+### 订正（声明漂移）
+
+- **门禁项数声明长期漂移订正**：实际 `check(` 调用数与声明数从 v2.12.1 起就不一致——根因是旧清单把「VERIFICATION-LOG 键集双向一致」（实为 2 个 check 调用）合写为一个编号项。实际数：v2.12.1–v2.22.0 为 36（声明 35）、v2.23.0–v2.26.0 为 37（声明 36）。本版起清单按实际调用数逐条编号（39 项），README 双语 / CONTRIBUTING / ci.yml / 脚本头注释全部同步为 39。
+- **spec/11 行数表述更新**：结构迁移声明限定③「论证链补全工作量与本表行数（49 行）成正比」更新为「（49 行；v2.24.0–v2.26.0 各新增一行，现为 52 行）」（中英同步）——溯源表现有 52 行数据行，中英一致。
+
+### 补登
+
+- **VERIFICATION-LOG**：补登 v2.19.0–v2.26.0 新增的 10 条 B 级条目核验状态（ARMO-observability / MIT-AI-Risk-Repository / safety-cases-justification / safety-cases-frontier-ai / assurance-framework-aies / NARCBENCH / steganographic-collusion / OPENEXECUTION / SIGSTORE-A2A / RATS）——此前门禁第 34 项只强制 G 键覆盖，B 类新增条目漏登记构成盲区。头部回填进度声明同步更新为「B 类 70 条 = 134 条（全部完成）」。自本版起新增条目（不分等级）一律须登记核验状态。
+
+### 门禁（防复发配套）
+
+- **新增第 38 项「版本元数据同步」**：VERSION / CITATION.cff（全部 version 字段）/ README 双语 badge 三处必须一致——此前 README badge 停在 2.17.0（落后 9 版）、CITATION.cff 停在 2.19.0（落后 7 版）均无门禁可拦。本版已同步至 2.26.1。
+- **新增第 39 项「门禁项数声明一致」**：脚本读取自身源码统计实际 `check(` 调用数，与 README 双语 / CONTRIBUTING / ci.yml / 头注释清单的声明数比对，不一致即 FAIL——把「改门禁须同步声明」从人工纪律钉死为脚本校验。
+- **门禁 37 → 39 项**（新增 2 项），39/39 PASS。
+
+### 变更
+
+- **VERSION** `2.26.0` → `2.26.1`；**CITATION.cff** version/date 同步（2.26.1 / 2026-09-09）；**README 双语** Version badge 同步（2.17.0 → 2.26.1）。
+
+### 关联
+
+- 审计实测确认无误的部分：git 干净且与远程一致、31 tag 双端一致、36→39 项门禁全 PASS、L2 demo 136 断言 + otel 14 自检 PASS、证据计数独立复算 A:3 / B:70 / C:9 / D:1 / G:51 = 134 与全部声明一致、证据算术链（126→129→131→132→134）自洽、未解问题 28 条编号连续、13 个双语根文件结构一致。
+- semver patch（纯订正 + 防复发门禁配套，无新特性，沿用 v2.12.1 先例）。
+
 ## v2.26.0（2026-09-09）— 启发 6 落地：E5 采集点自校验标准化接入（Sigstore + RATS）+ 签名即认领工程化对接
 
 **证据总数 132 → 134（A:3 / B:70 / C:9 / D:1 / G:51 = 134 条）。** 本版落地外部参照研究报告最后一条启发——启发 6（Sigstore / RATS 接入）：证据完整性章新增「E5 采集点自校验的标准化接入路径：Sigstore + RATS（本轮新增）」节，蜂群治理章「签名即认领」段落追加工程化对接段。把 E5（采集点自身完整性）从「规范层要求」推进到「有标准化生态对接路径」。关键贡献：① Sigstore 无密钥签名（OIDC + Fulcio 短期证书 + Rekor 透明日志）把 E5「采集模块签名校验」绑定到 CI/CD 来源而非长期私钥；② RATS（RFC 9334）把 E 子系统证据格式对接到 IETF 标准生态（角色映射：Attester=E1 采集模块 / Verifier=L2 看门狗 / Relying Party=L3 离线重审）；③ IETF ATN 草案把 Sigstore + RATS 组合为四制品绑定的 Agent 信任协商协议架构参考。**10 条启发整体进度 9/10 → 10/10 完全闭合。**
@@ -17,7 +49,7 @@
 
 ### 变更
 
-- **REFERENCES.md** 新增 2 条 B 级：【键: SIGSTORE-A2A】github.com/sigstore/sigstore-a2a（原型代码，Apache-2.0）+ 【键: RATS】RFC 9334（IETF，5 位作者，2023-01，Informational）；注脚统计从「68 条 B 级 / 合计 132 条」更新为「70 条 B 级 / 合计 134 条」
+- **REFERENCES.md** 新增 2 条 B 级：【键: SIGSTORE-A2A】github.com/sigstore/sigstore-a2a（原型代码，Apache-2.0）+ 【键: RATS】RFC 9334（IETF，3 位作者，2023-01，Informational；⚠️ 本处「5 位作者」已于 v2.26.1 经 RFC 官方原文核验订正——5 人名单实为前身 draft-22 的作者栏）；注脚统计从「68 条 B 级 / 合计 132 条」更新为「70 条 B 级 / 合计 134 条」
 - **README.md / README.en.md（双语同步）** badge 从 B (68/132) → B (70/134)；分布从 B:68 → B:70；总数从 132 → 134；结构性偏置声明从 52%(68/132) → 52%(70/134)、G 级从 39%(51/132) → 38%(51/134)；文件表 REFERENCES.md 行 132 → 134
 - **scripts/verify_consistency.py** 硬编码计数同步（B:68→B:70 / 合计 132→134 / README 声明 / README 分布 / REFERENCES 注脚 共 6 处）
 - **VERSION** `2.25.0` → `2.26.0`
