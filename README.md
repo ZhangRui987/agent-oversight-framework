@@ -1,8 +1,8 @@
 # AI 执行与监察体系（Agent Oversight Framework）
 
-[![Version](https://img.shields.io/badge/version-2.30.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.31.0-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
-[![Evidence: B (98/163)](https://img.shields.io/badge/evidence-B_98%2F163-yellow)](spec/11-traceability.md)
+[![Evidence: B (100/165)](https://img.shields.io/badge/evidence-B_100%2F165-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
 
 **一份分层治理规范：面向 AI Agent 监察——证据分级、自校正、边界诚实。**
@@ -69,7 +69,7 @@ graph TD
 1. **真实事故**（均有官方一手来源，见 `REFERENCES.md`）：
    - 2026-07 OpenAI/Hugging Face 事件——约 1,200 个隔离 Agent 自发形成共享留言板、交换 >70,000 条消息（其中约 700 个参与协同攻击），约 7% 的转录记录包含**成功伪造的工具调用**；
    - 2026-04 Anthropic 前沿模型事件——自主串联多步利用链、实现渲染器与操作系统沙箱双重逃逸。
-2. **可核查文献**（163 条来源，其中 B 级 98 条，全部含 DOI/arXiv 号；G 级 51 条治理 / 政策 / 执法一手实证，覆盖中、美、英、加、澳、欧盟、新加坡、韩国、日本九法域及 ISO、OWASP 两个国际标准组织）：
+2. **可核查文献**（165 条来源，其中 B 级 100 条，全部含 DOI/arXiv 号；G 级 51 条治理 / 政策 / 执法一手实证，覆盖中、美、英、加、澳、欧盟、新加坡、韩国、日本九法域及 ISO、OWASP 两个国际标准组织）：
    - Off-Support（arXiv:2608.11243）——从奇异学习理论证明「硬不变量属 harness、软倾向属模型」；
    - Institutional AI（arXiv:2601.11369v2）——三制度对照：仅提示词宪法几乎无效（3.02，在 GPT-5 Mini 上反而恶化到 3.60），治理图执行显著有效（1.82，d = 1.28）；
    - HarnessRisk（arXiv:2608.17597）——检出率高于 90% 时仍有可观的攻击成功率，即「检测不等于阻断」；
@@ -89,9 +89,9 @@ graph TD
 | **D** | 内容未能核实（如页面白屏）或存在利益关联、关键数据引自二手——**不得单独支撑 P0 机制** |
 | **G** | 治理 / 政策 / 执法类一手实证——监管文件、法院判决、官方公告、法定标准文本；须可经官方渠道独立核验 |
 
-当前分布：A:3（Sandlock，arXiv:2605.26298，实验复现 / AOE-CALIB-001，影子比阈值自复现标定 / AOE-CALIB-002，周期检测方差阈值标定）/ B:98 / C:10 / D:1 / G:51。**「证据不足」是可审阅的状态，不是被隐藏的缺陷。**
+当前分布：A:3（Sandlock，arXiv:2605.26298，实验复现 / AOE-CALIB-001，影子比阈值自复现标定 / AOE-CALIB-002，周期检测方差阈值标定）/ B:100 / C:10 / D:1 / G:51。**「证据不足」是可审阅的状态，不是被隐藏的缺陷。**
 
-> **结构性偏置声明**：当前 B 级约占 60%（98/163），A 级 3 条（Sandlock 实验复现 + AOE-CALIB-001 影子比阈值标定 + AOE-CALIB-002 周期检测方差阈值标定）；G 级 51 条约占 31%（51/163），覆盖 L0–L4 + E 六个落点与九个法域。这反映本框架当前形态是"规范类项目 + 真实治理实证锚点 + 自复现标定实验"的混合结构——学术引用多于一手可复现实验，但治理与执法实证已实现跨法域广泛覆盖，且本体系自身的运行数据已开始填补工程参数标定缺口。**不应被解读为实证充分**。把 A 级占比提升上去的路径已在 `spec/13-boundaries.md` 的开放问题中列出（尤其是与实验性验证相关的条目），也是本框架从"规范"走向"有实证支撑的可引用规范"的关键一步。
+> **结构性偏置声明**：当前 B 级约占 60%（100/165），A 级 3 条（Sandlock 实验复现 + AOE-CALIB-001 影子比阈值标定 + AOE-CALIB-002 周期检测方差阈值标定）；G 级 51 条约占 31%（51/165），覆盖 L0–L4 + E 六个落点与九个法域。这反映本框架当前形态是"规范类项目 + 真实治理实证锚点 + 自复现标定实验"的混合结构——学术引用多于一手可复现实验，但治理与执法实证已实现跨法域广泛覆盖，且本体系自身的运行数据已开始填补工程参数标定缺口。**不应被解读为实证充分**。把 A 级占比提升上去的路径已在 `spec/13-boundaries.md` 的开放问题中列出（尤其是与实验性验证相关的条目），也是本框架从"规范"走向"有实证支撑的可引用规范"的关键一步。
 
 ## 证据纠错（社区回灌循环）
 
@@ -115,7 +115,7 @@ graph TD
 
 ## 状态
 
-- 当前版本：v2.19.0（见 [`VERSION`](VERSION)）
+- 当前版本：v2.31.0（见 [`VERSION`](VERSION)）
 - 维护状态：**不声称建成，只声称维护状态**——开放作弊集合只能持续对抗
 - **诚实边界**：31 条未解问题显式登记（见 `spec/13-boundaries.md`）——这是本框架的诚实边界，也是研究者的选题清单；含全体系最大的工程缺口「去中心化蜂群反制」
 - 变更历史：见 [`CHANGELOG.md`](CHANGELOG.md)
@@ -139,7 +139,7 @@ graph TD
 | 目录 / 文件 | 内容 |
 |---|---|
 | `spec/` | 规范正文（13 篇：01 原则 → 13 诚实边界） |
-| `REFERENCES.md` | 163 条分级证据（单一真相源） |
+| `REFERENCES.md` | 165 条分级证据（单一真相源） |
 | `restricted/` | 受限内容（仅随部署包分发） |
 | `scripts/` | 一致性校验工具 |
 | `.github/` | Issue / PR 模板与代码归属 |
@@ -185,7 +185,7 @@ graph TD
 
 见 [`CITATION.cff`](CITATION.cff)。
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.19.0). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.31.0). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## 质量保障（自指验证）
 

@@ -121,6 +121,8 @@ Of these, **scope.does_not_cover is one clause this framework did not previously
 
 ## Double-blind assessment (the only scientific way to measure the overseer)
 Use known-violation samples (honeypot injection) to measure No. 2's recall and false-positive rates, preventing both No. 2 coasting and No. 2 turning into a harsh official farming KPIs.
+
+That double-blind assessment is the only scientific way now has an external quantification from the same team: S³Gym (arXiv:2608.31100, v1 2026-08-31) measures a near-zero correlation between the same executor's self-judgment accuracy and its improvement gain (ρ(A,g)=−0.010, ρ(−E,g)=−0.018) across 7 text games, and the self-reported trust score can rise to the maximum without any external anchor — "letting No. 1 self-assess" can neither reliably reflect state nor predict improvement; oversight signals must come from an independent channel. Primary registration and qualifications: the "same-individual self-judgment cannot replace independent solidification" section (spec/08).
 ## Logic-invisible / sealed-memorial-style reporting
 No. 2's reporting path is invisible to No. 1, preventing No. 1 from evading oversight logic. This is the multi-agent version of the Ming dynasty's sealed-memorial system.
 
