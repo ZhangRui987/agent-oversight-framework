@@ -27,6 +27,7 @@
  *   [18] SqliteLeaseAuthority（G1 闭合：租约权威 SQLite 持久化——崩溃后可恢复）
  *   [19] ConfigReviewer（spec/02 第四条：配置权即攻击面——五项配置内容审查，恶意配置注入被拦）
  *   [20] ResourceLedger（G5 闭合：spec/10 资源账本——预算比超阈审计 + 影子比偏离 + 记忆写入最高级审计 + 周期型外联检测）
+ *   [21] CreditEventStream（G7 事件流侧闭合：spec/04 信用分输入事件流——成功/失败/超时/违规四类投影 + 中性事件 + Overseer 集成）
  *
  * 运行：node --experimental-transform-types demo.ts
  * 退出码：0 = 全部 PASS，1 = 有 FAIL
@@ -41,6 +42,7 @@ import {
   EntryGuard,
   ExitGuard,
   InMemoryLeaseAuthority,
+  CreditEventStream,
   LeaseLostError,
   LifecycleTripwire,
   OrderedDurableChain,
@@ -1103,6 +1105,70 @@ function testResourceLedger(): void {
 }
 
 // ============================================================================
+// [21] CreditEventStream —— G7 演示级闭合（事件流侧，v2.36.0）
+//     spec/04 信用分章：信用分随历史行为演化，低于阈值须被信用回避。
+//     信用分公式与回避阈值判定属 L1；本实现提供结构化信用事件流：
+//     成功 / 失败 / 超时 / 违规四类投影 + 租约中断中性（不计入行为分母）。
+// ============================================================================
+function testCreditEventStream(): void {
+  console.log('\n[21] CreditEventStream（G7 事件流侧闭合：spec/04 信用分输入事件流）');
+  const cs = new CreditEventStream();
+
+  // 21a 四类事件投影（确定性规则）
+  cs.ingest('agent-A', 'sess-1', 1, 'session_end', { status: 'succeeded' });
+  cs.ingest('agent-A', 'sess-2', 2, 'session_end', { status: 'failed', error: 'Error: boom' });
+  cs.ingest('agent-A', 'sess-3', 3, 'session_end', { status: 'failed', error: 'Error: operation timed out after 30s' });
+  cs.ingest('agent-A', 'sess-4', 5, 'session_end', { status: 'failed', reason: 'over-attempt-cap' });
+  cs.ingest('agent-A', 'sess-5', 4, 'session_interrupted', { reason: 'lease lost' });
+  const sum = cs.summary('agent-A');
+  check('① 四类行为事件投影正确（success/failure/timeout/violation 各 1）',
+    sum.success === 1 && sum.failure === 1 && sum.timeout === 1 && sum.violation === 1);
+  check('  超尝试上限（over-attempt-cap）投影为 violation 而非 failure（信用回避的直接输入）',
+    sum.violation === 1);
+  check('② 租约中断为中性事件，不计入行为分母（totalBehavioral=4，neutral=1）',
+    sum.totalBehavioral === 4 && sum.neutral === 1);
+
+  // 21b 非 lifecycle 事件不投影
+  const before = cs.eventsFor('agent-A').length;
+  const ignored = cs.ingest('agent-A', 'sess-6', 5, 'tool_call', { tool: 'read_file' });
+  check('③ 非 lifecycle 事件（tool_call）不投影（返回 null 且事件数不变）',
+    ignored === null && cs.eventsFor('agent-A').length === before);
+
+  // 21c 按 agentId 过滤的消费接口（L1 信用分子系统按此拉取）
+  cs.ingest('agent-B', 'sess-7', 1, 'session_end', { status: 'succeeded' });
+  check('④ 消费接口按 agentId 隔离（A=5 条，B=1 条）',
+    cs.eventsFor('agent-A').length === 5 && cs.eventsFor('agent-B').length === 1);
+  check('  summary 不计算信用分值、不做回避判定（公式与阈值属 L1）',
+    typeof (sum as unknown as Record<string, unknown>).creditScore === 'undefined');
+}
+
+// RuntimeOverseer 集成：lifecycle 事件自动投影进信用事件流（creditStream 注入 deps 即生效）
+async function testCreditStreamOverseer(): Promise<void> {
+  console.log('\n[21b] CreditEventStream × RuntimeOverseer 集成（lifecycle 事件自动投影）');
+  const cs = new CreditEventStream();
+
+  // 健康完成 → success
+  const authA = new InMemoryLeaseAuthority(30_000);
+  authA.submit('c1', 'owner-C', 1);
+  const metaA = (await authA.claimNext('agent-C')) as ClaimedSession;
+  await new RuntimeOverseer({ authority: authA, heartbeatIntervalMs: 20, maxAttempts: 3, creditStream: cs })
+    .run(metaA, async () => { await sleep(5); });
+
+  // execute 抛错 → failure
+  const authB = new InMemoryLeaseAuthority(30_000);
+  authB.submit('c2', 'owner-C', 1);
+  const metaB = (await authB.claimNext('agent-C')) as ClaimedSession;
+  await new RuntimeOverseer({ authority: authB, heartbeatIntervalMs: 20, maxAttempts: 3, creditStream: cs })
+    .run(metaB, async () => { throw new Error('boom'); });
+
+  const sum = cs.summary('agent-C');
+  check('⑤ Overseer 注入 creditStream 后 lifecycle 事件自动投影（success=1, failure=1）',
+    sum.success === 1 && sum.failure === 1);
+  check('  事件绑定 agentId=workerId（抢占者身份）与 sessionId',
+    cs.eventsFor('agent-C').every((e) => e.agentId === 'agent-C' && e.sessionId !== ''));
+}
+
+// ============================================================================
 // main
 // ============================================================================
 async function main(): Promise<void> {
@@ -1129,6 +1195,8 @@ async function main(): Promise<void> {
   await testSqliteLease();
   testConfigReview();
   testResourceLedger();
+  testCreditEventStream();
+  await testCreditStreamOverseer();
 
   console.log(`\n=== 结果：${failures === 0 ? 'ALL PASS ✅' : `${failures} FAIL ❌`} ===`);
   process.exit(failures === 0 ? 0 : 1);

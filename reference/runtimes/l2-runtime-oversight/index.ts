@@ -18,10 +18,13 @@
  *     不能单独用作信任根。
  *   - 资源账本已演示级闭合（G5：ResourceLedger 预算比 / 影子比 / 记忆写入审计 +
  *     周期型外联检测占位，spec/10 三信号 + 第四类信号）；无三号公证机（spec/09 要求             ← G6
- *     独立硬件信任域 + 三号甲/乙拆分）、无信用分与信用回避（spec/04）、无群治理（spec/07）。        ← G7 / G8
+ *     独立硬件信任域 + 三号甲/乙拆分）、无群治理（spec/07）。                                      ← G8
+ *   - 信用分输入事件流已演示级闭合（G7 事件流侧：CreditEventStream 把 lifecycle 事件
+ *     投影为成功 / 失败 / 超时 / 违规四类结构化信用事件 + 中性事件；信用分公式、动态
+ *     衰减与回避阈值判定属 L1 信用分子系统，消费本事件流即可——spec/04）。
  *
- * G1、G2、G5、G9 已演示级闭合（SQLite 持久化 + SHA-256 + ResourceLedger + ConfigReviewer）；
- * G3、G4、G6、G7、G8 需外部系统配合。
+ * G1、G2、G5、G7（事件流侧）、G9 已演示级闭合（SQLite 持久化 + SHA-256 + ResourceLedger + CreditEventStream + ConfigReviewer）；
+ * G3、G4、G6、G8 需外部系统配合；G7 剩余差距（L1 信用分公式与回避阈值）需 L1 对接。
  * 完整说明见同目录 PRODUCTION-GAPS.md。
  *
  * 许可证：Apache License 2.0（代码路径，见 LICENSING.md 的路径 ↔ 许可证映射）。
@@ -485,6 +488,8 @@ export interface OverseerDeps {
   maxAttempts: number;
   /** 观测钩子：每次 emit 事件时回调（demo/审计用，不影响监察逻辑）。 */
   onEvent?: (type: string, data: unknown) => void;
+  /** G7 事件流侧（v2.36.0）：可选信用事件流——lifecycle 事件自动投影为信用事件。 */
+  creditStream?: CreditEventStream;
 }
 
 export class RuntimeOverseer {
@@ -510,6 +515,7 @@ export class RuntimeOverseer {
       }
       const seq = audit.append(type, data);
       if (seq === null) markLeaseLost();
+      this.deps.creditStream?.ingest(workerId, meta.id, meta.attempt, type, data);
       this.deps.onEvent?.(type, data);
     };
 
@@ -557,6 +563,70 @@ export interface RunContext {
   ownerId: string;
   attempt: number;
   abort: AbortController;
+}
+
+// ============================================================================
+// 7b. CreditEventStream —— G7 演示级闭合（事件流侧，v2.36.0）
+//     spec/04-credit-abstention.md：信用分随历史行为演化，低于阈值的 Agent
+//     须被信用回避（不允许接管高风险任务）。信用分公式、载体绑定、动态衰减
+//     与回避阈值判定属 L1 内生对齐层的信用分子系统；本实现的角色（PRODUCTION-GAPS
+//     G7 最小缓解路径）是提供可作为信用分输入的结构化事件流：
+//       success（session_end succeeded）/ failure（session_end failed）/
+//       timeout（failed 且 error 含 timeout）/ violation（over-attempt-cap——
+//       超尝试上限是违规信号而非普通失败）/ neutral（session_interrupted——
+//       租约丢失等环境故障不计入行为分母）。
+//     投影为确定性规则；信用分子系统按 agentId 拉取 eventsFor 即可消费。
+// ============================================================================
+
+export type CreditEventKind = 'success' | 'failure' | 'timeout' | 'violation' | 'neutral';
+
+export interface CreditEvent {
+  agentId: string;
+  sessionId: string;
+  kind: CreditEventKind;
+  attempt: number;
+  ts: number;
+  detail: Record<string, unknown>;
+}
+
+export class CreditEventStream {
+  private readonly events: CreditEvent[] = [];
+
+  /** 从 RuntimeOverseer 的 lifecycle 事件流投影信用事件（确定性规则）。非 lifecycle 事件返回 null。 */
+  ingest(agentId: string, sessionId: string, attempt: number, type: string, data: unknown): CreditEvent | null {
+    const d = (data ?? {}) as Record<string, unknown>;
+    let kind: CreditEventKind | null = null;
+    if (type === 'session_end') {
+      if (d.status === 'succeeded') kind = 'success';
+      else if (d.reason === 'over-attempt-cap') kind = 'violation';
+      else if (/timeout|timed\s*-?\s*out/i.test(String(d.error ?? ''))) kind = 'timeout';
+      else if (d.status === 'failed') kind = 'failure';
+    } else if (type === 'session_interrupted') {
+      kind = 'neutral';
+    }
+    if (kind === null) return null;
+    const ev: CreditEvent = { agentId, sessionId, kind, attempt, ts: Date.now(), detail: d };
+    this.events.push(ev);
+    return ev;
+  }
+
+  /** 消费接口：按 agentId 过滤（L1 信用分子系统按此拉取输入）。 */
+  eventsFor(agentId: string): CreditEvent[] {
+    return this.events.filter((e) => e.agentId === agentId);
+  }
+
+  /**
+   * 行为摘要。⚠️ 只做计数投影，不计算信用分值、不做回避阈值判定——
+   * 两者需要信用分公式（载体绑定 / 动态衰减 / 低努力-低能力区分），属 L1 职责。
+   */
+  summary(agentId: string): {
+    success: number; failure: number; timeout: number; violation: number; neutral: number;
+    totalBehavioral: number;
+  } {
+    const c = { success: 0, failure: 0, timeout: 0, violation: 0, neutral: 0 };
+    for (const e of this.eventsFor(agentId)) c[e.kind] += 1;
+    return { ...c, totalBehavioral: c.success + c.failure + c.timeout + c.violation };
+  }
 }
 
 // ============================================================================
