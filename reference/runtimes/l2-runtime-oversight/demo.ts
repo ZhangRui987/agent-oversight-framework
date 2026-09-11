@@ -43,6 +43,9 @@ import {
   ExitGuard,
   InMemoryLeaseAuthority,
   CreditEventStream,
+  SwarmMonitor,
+  type SwarmMsg,
+  type SwarmSnapshot,
   LeaseLostError,
   LifecycleTripwire,
   OrderedDurableChain,
@@ -1169,6 +1172,96 @@ async function testCreditStreamOverseer(): Promise<void> {
 }
 
 // ============================================================================
+// [22] SwarmMonitor —— G8 演示级闭合（告警侧，v2.38.0）
+//     spec/07：监察对象升级到交互图谱 + 涌现信号持续检测。本组断言展示：
+//     S1 白名单豁免（CALIB-003 设计输入）/ 区间阈值语义 / S2–S4 告警 /
+//     图谱采集摘要 / 熔断禁用（API 表面无阻断接口）。
+// ============================================================================
+function testSwarmMonitor(): void {
+  console.log('\n[22] SwarmMonitor（G8 告警侧闭合：交互图谱采集 + 涌现信号检测 + 熔断禁用）');
+
+  // 构造：scheduler 占 30% 任务分配消息（主从调度器形态），其余均衡
+  const mkSchedulerMsgs = (): SwarmMsg[] => {
+    const msgs: SwarmMsg[] = [];
+    for (let i = 0; i < 200; i++) {
+      const isAssign = i < 60; // 30%
+      msgs.push({
+        from: isAssign ? 'scheduler' : `agent-${String(i % 7).padStart(3, '0')}`,
+        to: 'sbx-main-worker',
+        fromSandbox: 'sbx-main',
+        toSandbox: 'sbx-main',
+        type: isAssign ? 'task_assign' : 'status',
+        signature: 'sig-' + i,
+        keyId: 'key-01',
+      });
+    }
+    return msgs;
+  };
+
+  // 22a S1 白名单豁免（CALIB-003 设计输入：S1 须与部署形态登记联合使用）
+  const withWl = new SwarmMonitor({ schedulerWhitelist: new Set(['scheduler']), registeredKeyIds: ['key-01'] });
+  withWl.ingestMsgs(mkSchedulerMsgs());
+  const wlAlerts = withWl.evaluate();
+  check('① S1 白名单豁免：scheduler 占 30% + 白名单 → 不告警（CALIB-003 设计输入落地）',
+    wlAlerts.length === 0);
+
+  const noWl = new SwarmMonitor({ registeredKeyIds: ['key-01'] });
+  noWl.ingestMsgs(mkSchedulerMsgs());
+  const noWlAlerts = noWl.evaluate();
+  check('② 同形态无白名单 → S1 告警（deploy 无形态登记时信号只作线索）',
+    noWlAlerts.length === 1 && noWlAlerts[0].signal === 'S1' && noWlAlerts[0].evidence.topSender === 'scheduler');
+
+  // 22b S1 区间阈值语义（CALIB-003 区间 [0.04, 0.12]，默认 0.10）
+  const th = new SwarmMonitor({ registeredKeyIds: ['key-01'] });
+  const lowMsgs: SwarmMsg[] = [];
+  for (let i = 0; i < 200; i++) {
+    lowMsgs.push({ from: i < 8 ? 'hub' : `agent-${String(i % 9).padStart(3, '0')}`, to: 'w', fromSandbox: 's', toSandbox: 's', type: i < 8 ? 'task_assign' : 'status', signature: 'x', keyId: 'key-01' });
+  }
+  th.ingestMsgs(lowMsgs);
+  check('③ S1 阈值语义：4% 占比（< 0.10 默认阈）不告警',
+    th.evaluate().filter((a) => a.signal === 'S1').length === 0);
+
+  // 22c S2 跨沙箱未签名
+  const s2 = new SwarmMonitor({ registeredKeyIds: ['key-01'] });
+  s2.ingestMsgs([{ from: 'a', to: 'b', fromSandbox: 'sbx-1', toSandbox: 'sbx-2', type: 'status' }]);
+  check('④ S2：跨沙箱未签名消息告警',
+    s2.evaluate().some((a) => a.signal === 'S2' && a.evidence.reason === 'unsigned'));
+
+  // 22d S3 规模突变 → 仅告警（level='record'），熔断禁用
+  const s3 = new SwarmMonitor();
+  s3.ingestWindows([{ windowId: 0, concurrentAgents: 10 }, { windowId: 1, concurrentAgents: 28 }]);
+  const s3Alerts = s3.evaluate();
+  check('⑤ S3：增速 180% 且增量 +18 → 告警，level 恒为 record（仅记录与告警）',
+    s3Alerts.length === 1 && s3Alerts[0].signal === 'S3' && s3Alerts[0].level === 'record' &&
+    String(s3Alerts[0].evidence.circuitBreaker).includes('disabled'));
+
+  // 22e S4 图谱连通性突变
+  const s4 = new SwarmMonitor();
+  const prevSnap: SwarmSnapshot = {
+    nodes: [{ nodeId: 'a1', sandbox: 'sbx-alpha' }, { nodeId: 'b1', sandbox: 'sbx-beta' }],
+    edges: [],
+  };
+  s4.ingestSnapshot(prevSnap);
+  s4.ingestSnapshot({ nodes: prevSnap.nodes, edges: [...prevSnap.edges, { a: 'a1', b: 'b1' }] });
+  check('⑥ S4：新增跨沙箱边 → 告警',
+    s4.evaluate().some((a) => a.signal === 'S4'));
+
+  // 22f 图谱采集摘要
+  const gs = s4.graphSummary();
+  check('⑦ 图谱采集摘要：2 节点 / 1 边 / 1 跨沙箱边 / 消息计数',
+    gs.nodes === 2 && gs.edges === 1 && gs.crossSandboxEdges === 1);
+
+  // 22g 熔断禁用：API 表面无阻断接口
+  const monitor = Object.getOwnPropertyNames(Object.getPrototypeOf(new SwarmMonitor()));
+  check('⑧ API 表面无阻断方法（evaluate 只输出告警，enforce 不存在）',
+    !monitor.some((m) => /enforce|block|halt|circuit/i.test(m)) && monitor.includes('evaluate'));
+
+  // 22h 全量告警留痕
+  check('  告警留痕可审计（allAlerts 与 evaluate 产出一致）',
+    noWl.allAlerts().length === 1 && s3.allAlerts().length === 1);
+}
+
+// ============================================================================
 // main
 // ============================================================================
 async function main(): Promise<void> {
@@ -1197,6 +1290,7 @@ async function main(): Promise<void> {
   testResourceLedger();
   testCreditEventStream();
   await testCreditStreamOverseer();
+  testSwarmMonitor();
 
   console.log(`\n=== 结果：${failures === 0 ? 'ALL PASS ✅' : `${failures} FAIL ❌`} ===`);
   process.exit(failures === 0 ? 0 : 1);

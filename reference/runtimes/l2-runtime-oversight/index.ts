@@ -1357,6 +1357,174 @@ export class ResourceLedger {
 // ============================================================================
 // 导出汇总
 // ============================================================================
+// 11. SwarmMonitor —— G8 演示级闭合（告警侧，v2.38.0）
+//     spec/07-swarm-governance.md：监察对象从行为日志升级到交互图谱，涌现信号
+//     须被持续检测。PRODUCTION-GAPS G8 最小缓解路径：本实现的角色是为每个
+//     Agent 提供行为级证据，交互图谱层在行为级证据之上构建——本组件把
+//     AOE-SWARM-001 的四个确定性信号搬进运行时：
+//       S1 指挥集中度——白名单豁免 + 区间阈值（v2.37.0 AOE-CALIB-003 设计输入：
+//         合法调度器节点入白名单；其余节点用 θ ∈ [0.04, 0.12]，默认 0.10）；
+//       S2 自引入密码学 / S3 规模突变 / S4 图谱连通性突变——沿 SWARM-001 冻结规格。
+//     ⚠️ 规模熔断禁用（spec/07 §阈值标定前置条件：真实多 Agent 业务标定完成前
+//     仅记录与告警）——本组件 API 表面无任何阻断接口，evaluate 只输出告警。
+// ============================================================================
+
+export interface SwarmMsg {
+  from: string;
+  to: string;
+  fromSandbox: string;
+  toSandbox: string;
+  type: string;
+  signature?: string;
+  keyId?: string;
+}
+
+export interface SwarmSnapshot {
+  nodes: { nodeId: string; sandbox: string }[];
+  edges: { a: string; b: string }[];
+}
+
+export type SwarmSignalId = 'S1' | 'S2' | 'S3' | 'S4';
+
+export interface SwarmAlert {
+  signal: SwarmSignalId;
+  /** spec/07 前置条件：标定完成前仅记录与告警——恒为 'record'。 */
+  level: 'record';
+  evidence: Record<string, unknown>;
+  ts: number;
+}
+
+const SWARM_ASSIGN_TYPES = new Set(['task_assign', 'dispatch', 'delegate', 'subtask_assign']);
+/** CALIB-003 建议区间 [0.04, 0.12] 的保守中位取值。 */
+const SWARM_CONCENTRATION_DEFAULT = 0.10;
+const SWARM_SPIKE_GROWTH = 1.00;
+const SWARM_SPIKE_ABS = 10;
+
+export interface SwarmMonitorOptions {
+  /** 合法调度器节点白名单（CALIB-003：S1 须与部署形态登记联合使用）。 */
+  schedulerWhitelist?: Set<string>;
+  /** S1 阈值，默认 0.10（CALIB-003 区间 [0.04, 0.12] 内）。 */
+  concentrationThreshold?: number;
+  /** 在册签名密钥（S2 检查跨 Agent 消息签名密钥是否在册）。 */
+  registeredKeyIds?: string[];
+}
+
+export class SwarmMonitor {
+  private readonly whitelist: Set<string>;
+  private readonly concentrationThreshold: number;
+  private readonly registeredKeys: Set<string>;
+  private readonly msgs: SwarmMsg[] = [];
+  private windows: { windowId: number; concurrentAgents: number }[] = [];
+  private snapshots: SwarmSnapshot[] = [];
+  private readonly alerts: SwarmAlert[] = [];
+
+  constructor(opts: SwarmMonitorOptions = {}) {
+    this.whitelist = opts.schedulerWhitelist ?? new Set();
+    this.concentrationThreshold = opts.concentrationThreshold ?? SWARM_CONCENTRATION_DEFAULT;
+    this.registeredKeys = new Set(opts.registeredKeyIds ?? []);
+  }
+
+  /** 交互图谱采集：累积跨 Agent 消息（S1/S2 输入）。 */
+  ingestMsgs(msgs: SwarmMsg[]): void {
+    this.msgs.push(...msgs);
+  }
+
+  /** 采集并发窗口序列（S3 输入——整批替换语义，最后一次 ingest 生效）。 */
+  ingestWindows(windows: { windowId: number; concurrentAgents: number }[]): void {
+    this.windows = [...windows];
+  }
+
+  /** 采集图快照（S4 输入——累积快照对，相邻两帧比较）。 */
+  ingestSnapshot(snap: SwarmSnapshot): void {
+    this.snapshots.push(snap);
+  }
+
+  /** 已采集的交互图谱摘要（节点 / 边计数——图谱层消费入口）。 */
+  graphSummary(): { nodes: number; edges: number; crossSandboxEdges: number; msgs: number } {
+    const last = this.snapshots[this.snapshots.length - 1];
+    let cross = 0;
+    if (last) {
+      const sandboxOf = new Map(last.nodes.map((n) => [n.nodeId, n.sandbox]));
+      for (const e of last.edges) {
+        if (sandboxOf.get(e.a) !== sandboxOf.get(e.b)) cross += 1;
+      }
+    }
+    return { nodes: last?.nodes.length ?? 0, edges: last?.edges.length ?? 0, crossSandboxEdges: cross, msgs: this.msgs.length };
+  }
+
+  /** 全量评估：扫描四信号，返回本轮新产生的告警（只告警，不阻断）。 */
+  evaluate(): SwarmAlert[] {
+    const out: SwarmAlert[] = [];
+    // S1 指挥集中度：非白名单节点的任务分配占比 > θ（CALIB-003 白名单豁免语义）
+    if (this.msgs.length > 0) {
+      const counts = new Map<string, number>();
+      for (const m of this.msgs) {
+        if (!SWARM_ASSIGN_TYPES.has(m.type)) continue;
+        if (this.whitelist.has(m.from)) continue; // 白名单豁免
+        counts.set(m.from, (counts.get(m.from) ?? 0) + 1);
+      }
+      let top = '', topC = 0;
+      for (const [s, c] of counts) {
+        if (c > topC) { top = s; topC = c; }
+      }
+      const share = topC / this.msgs.length;
+      if (share > this.concentrationThreshold) {
+        out.push(this.push('S1', { topSender: top, share: Math.round(share * 10000) / 10000, threshold: this.concentrationThreshold, whitelisted: [...this.whitelist] }));
+      }
+    }
+    // S2 自引入密码学：跨沙箱消息未签名或密钥未在册
+    for (const m of this.msgs) {
+      if (m.fromSandbox === m.toSandbox) continue;
+      if (!m.signature) { out.push(this.push('S2', { reason: 'unsigned', from: m.from, to: m.to })); break; }
+      if (!m.keyId || !this.registeredKeys.has(m.keyId)) { out.push(this.push('S2', { reason: 'key-not-registered', keyId: m.keyId, from: m.from })); break; }
+    }
+    // S3 规模突变：相邻窗口增速 ≥100% 且绝对增量 ≥10（仅告警——熔断禁用）
+    for (let i = 1; i < this.windows.length; i++) {
+      const prev = this.windows[i - 1].concurrentAgents;
+      const cur = this.windows[i].concurrentAgents;
+      if (prev > 0 && (cur - prev) / prev >= SWARM_SPIKE_GROWTH && cur - prev >= SWARM_SPIKE_ABS) {
+        out.push(this.push('S3', { from: prev, to: cur, growthPct: Math.round(((cur - prev) / prev) * 100), circuitBreaker: 'disabled (spec/07 precondition)' }));
+        break;
+      }
+    }
+    // S4 图谱连通性突变：相邻快照间新增跨沙箱边连接此前不同连通分量
+    for (let i = 1; i < this.snapshots.length; i++) {
+      const prev = this.snapshots[i - 1];
+      const cur = this.snapshots[i];
+      const prevEdges = new Set(prev.edges.map((e) => norm2(e.a, e.b)));
+      const parent = new Map(prev.nodes.map((n) => [n.nodeId, n.nodeId]));
+      const find = (x: string): string => { let r = x; while (parent.get(r) !== r) r = parent.get(r)!; return r; };
+      for (const e of prev.edges) parent.set(find(e.a), find(e.b));
+      const sandboxOf = new Map(cur.nodes.map((n) => [n.nodeId, n.sandbox]));
+      for (const e of cur.edges) {
+        if (prevEdges.has(norm2(e.a, e.b))) continue;
+        const sa = sandboxOf.get(e.a);
+        const sb = sandboxOf.get(e.b);
+        if (sa === undefined || sb === undefined || sa === sb) continue;
+        if (prev.nodes.some((n) => n.nodeId === e.a) && prev.nodes.some((n) => n.nodeId === e.b) && find(e.a) === find(e.b)) continue;
+        out.push(this.push('S4', { newEdge: `${e.a}(${sa})–${e.b}(${sb})` }));
+        break;
+      }
+    }
+    return out;
+  }
+
+  allAlerts(): SwarmAlert[] {
+    return [...this.alerts];
+  }
+
+  private push(signal: SwarmSignalId, evidence: Record<string, unknown>): SwarmAlert {
+    const a: SwarmAlert = { signal, level: 'record', evidence, ts: Date.now() };
+    this.alerts.push(a);
+    return a;
+  }
+}
+
+function norm2(a: string, b: string): string {
+  return a < b ? `${a}|${b}` : `${b}|${a}`;
+}
+
+// ============================================================================
 export const RuntimeOversight = {
   LeaseLostError,
   isLeaseLostError,
