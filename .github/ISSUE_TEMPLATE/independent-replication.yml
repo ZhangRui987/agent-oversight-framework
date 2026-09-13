@@ -1,0 +1,42 @@
+name: 独立复现报告
+description: 提交对本体系 A 级自复现实验（AOE-*）的第三方复现结果——证实 / 部分复现 / 证伪
+labels: [evidence, replication]
+body:
+  - type: dropdown
+    id: result
+    attributes:
+      label: 复现结果
+      description: 你的复现属于哪一类？
+      options:
+        - 完全复现（关键数字在报告口径容差内一致）
+        - 部分复现（方向一致但数字存在差异）
+        - 未能复现（与报告结论矛盾——证伪）
+        - 无法运行（脚本 / 环境问题，尚不构成证伪）
+    validations:
+      required: true
+  - type: input
+    id: target
+    attributes:
+      label: 复现对象
+      description: 证据键（如 AOE-CALIB-003；逐条清单见 spec/13「A 级证据独立验证状态与第三方复现路径」节）
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 复现环境
+      description: OS / Node 版本 / 仓库 commit SHA / 是否调用模型 API 及所用模型
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: 结果与差异
+      description: 关键数字对照报告值；证伪时请给出可核查的证据（运行日志 / 数据）
+    validations:
+      required: true
+  - type: input
+    id: artifact
+    attributes:
+      label: 复现产物链接
+      description: 仓库 / 运行日志 / 数据（可选，但证伪主张强烈建议提供）

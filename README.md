@@ -1,6 +1,6 @@
 # AI 执行与监察体系（Agent Oversight Framework）
 
-[![Version](https://img.shields.io/badge/version-2.39.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.40.0-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (100/170)](https://img.shields.io/badge/evidence-B_100%2F170-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -40,6 +40,8 @@ AI 正在从「工具」变成「代理者」：能调用工具、改代码、�
 当 Agent 能伪造沙箱记录、自发长出指挥体系时，传统的「监察个体行为」失效了。本框架的蜂群治理（`spec/07-swarm-governance.md`）把监察对象从**行为日志**升级到**交互图谱**——但我们也诚实承认：**对去中心化蜂群（狼群），目前只有检测能力，尚无经实证可靠的反制手段。**
 
 这是 31 条未解问题中的 #15（见 `spec/13-boundaries.md`），也是社区共建的优先方向。敢于公开承认「狼群我们还没搞定」，比声称「我们能搞定一切」更能建立专家社区的信任。
+
+同样显式登记的还有：**8 条 A 级证据中 7 条为本体系自复现实验，第三方独立复现数目前为零**——A 级表示「一手、可核查、可复现」，不表示「已被独立验证」。每条实验的脚本、预注册与原始输出全部入库，逐条复现条件与提交通道见 `spec/13-boundaries.md` §「A 级证据独立验证状态与第三方复现路径」（Issue 模板 `independent-replication`）。
 
 ## 架构概览
 
@@ -115,7 +117,7 @@ graph TD
 
 ## 状态
 
-- 当前版本：v2.39.0（见 [`VERSION`](VERSION)）
+- 当前版本：v2.40.0（见 [`VERSION`](VERSION)）
 - 维护状态：**不声称建成，只声称维护状态**——开放作弊集合只能持续对抗
 - **诚实边界**：31 条未解问题显式登记（见 `spec/13-boundaries.md`）——这是本框架的诚实边界，也是研究者的选题清单；含全体系最大的工程缺口「去中心化蜂群反制」
 - 变更历史：见 [`CHANGELOG.md`](CHANGELOG.md)
@@ -185,7 +187,7 @@ graph TD
 
 见 [`CITATION.cff`](CITATION.cff)。
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.39.0). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.40.0). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## 质量保障（自指验证）
 
