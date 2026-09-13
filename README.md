@@ -1,6 +1,6 @@
 # AI 执行与监察体系（Agent Oversight Framework）
 
-[![Version](https://img.shields.io/badge/version-2.38.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.39.0-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (100/170)](https://img.shields.io/badge/evidence-B_100%2F170-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -33,7 +33,7 @@ AI 正在从「工具」变成「代理者」：能调用工具、改代码、�
 | **五层治理结构** L0–L4（任务准入 → 内生对齐 → 运行监察 → 独立验证 → 问责演化） | `spec/02-architecture.md` |
 | **两条独立审计线**（行为合规 + 资源流向，互不信任） | `spec/02-architecture.md` |
 
-✨ = 全赛道无成体系竞品的差异化设计——均为治理逻辑（监察与决策框架），非工程实现，与 Sandlock / gVisor / Firecracker 等执行底座不冲突。
+✨ = 同类项目中唯一聚焦**治理架构层**（不替代 Sandlock / gVisor / Firecracker 等执行底座，也不替代 OWASP LLM Top 10 / MITRE ATLAS 等威胁清单）的中文开源规范——均为治理逻辑（监察与决策框架），非工程实现。我们不声称"全赛道无竞品"：治理标准生态已相当拥挤（NIST AI RMF、ISO 42001、Microsoft Agent Governance Toolkit 等），本框架的定位是它们的**透明补充规范**，聚焦中文 Agent 治理与国内合规映射这一细分空位（见 `spec/12-enforcement.md`）。
 
 ## 一个诚实的边界（也是我们的差异化）
 
@@ -115,7 +115,7 @@ graph TD
 
 ## 状态
 
-- 当前版本：v2.38.0（见 [`VERSION`](VERSION)）
+- 当前版本：v2.39.0（见 [`VERSION`](VERSION)）
 - 维护状态：**不声称建成，只声称维护状态**——开放作弊集合只能持续对抗
 - **诚实边界**：31 条未解问题显式登记（见 `spec/13-boundaries.md`）——这是本框架的诚实边界，也是研究者的选题清单；含全体系最大的工程缺口「去中心化蜂群反制」
 - 变更历史：见 [`CHANGELOG.md`](CHANGELOG.md)
@@ -185,7 +185,7 @@ graph TD
 
 见 [`CITATION.cff`](CITATION.cff)。
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.38.0). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.39.0). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## 质量保障（自指验证）
 

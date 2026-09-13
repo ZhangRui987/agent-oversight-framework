@@ -1,6 +1,6 @@
 # AI Execution & Oversight Framework
 
-[![Version](https://img.shields.io/badge/version-2.38.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.39.0-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (100/170)](https://img.shields.io/badge/evidence-B_100%2F170-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -33,7 +33,7 @@ This framework extends the "delegable boundary" from "no harm if wrong" (writing
 | **Five-layer governance structure** L0–L4 (task admission → intrinsic alignment → runtime oversight → independent verification → accountability evolution) | `spec/02-architecture.md` |
 | **Two independent audit lines** (behavioral compliance + resource flow, mutually distrusting) | `spec/02-architecture.md` |
 
-✨ = differentiated designs with no systematic competitor anywhere in the field — all governance logic (oversight and decision frameworks), not engineering implementations, and therefore non-conflicting with execution substrates such as Sandlock / gVisor / Firecracker.
+✨ = the only Chinese-language open-source specification focused exclusively on the **governance architecture layer** (neither replacing execution substrates like Sandlock / gVisor / Firecracker, nor replacing threat catalogs like OWASP LLM Top 10 / MITRE ATLAS) — all governance logic (oversight and decision frameworks), not engineering implementations. We do not claim "no competitors exist": the governance-standards landscape is already crowded (NIST AI RMF, ISO 42001, Microsoft Agent Governance Toolkit, etc.); this framework is positioned as a **transparent complementary specification**, focused on the niche of Chinese-language Agent governance and domestic compliance mapping (see `spec/12-enforcement.en.md`).
 
 ## An honest boundary (also our differentiation)
 
@@ -115,7 +115,7 @@ Per `CLASSIFICATION.md`, this repository has three levels:
 
 ## Status
 
-- Current version: v2.38.0 (see [`VERSION`](VERSION))
+- Current version: v2.39.0 (see [`VERSION`](VERSION))
 - Maintenance status: **does not claim "built"; claims only "maintained"** — an open cheating set can only be countered continuously
 - **Honest boundary**: 31 open problems explicitly registered (see `spec/13-boundaries.md`) — this framework's honest boundary and a problem list for researchers; includes the system's largest engineering gap, "decentralized-swarm countermeasures"
 - Change history: see [`CHANGELOG.md`](CHANGELOG.md)
@@ -185,7 +185,7 @@ This repository governs itself by its own specification (meta-governance):
 
 See [`CITATION.cff`](CITATION.cff).
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.38.0). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.39.0). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## Quality assurance (self-referential verification)
 
