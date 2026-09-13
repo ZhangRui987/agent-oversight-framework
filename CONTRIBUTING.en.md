@@ -67,14 +67,18 @@ Retrievability ≠ admissibility as independent evidence.
 
 ## Versioning Policy
 
-Effective from v2.11.1, enforced by the maintainer at release time. This project follows semantic versioning (`major.minor.patch`):
+Effective from v2.11.1 (revised in v2.41.0), enforced by the maintainer at release time. This project follows semantic versioning (`major.minor.patch`):
 
-- **minor (feature)**: adding or upgrading evidence entries, spec mechanism / section changes, gate-rule changes;
-- **patch (correction & infrastructure)**: count corrections, date / typo fixes, bilingual synchronization, engineering infrastructure such as CI, text changes without mechanism semantics;
+- **major (architecture)**: governance-architecture level changes (adjustments to the L0–L3 definitions), structural changes to the evidence-grading scheme (A/B/C/D/G), breaking normative changes (must also be recorded in `BREAKING_CHANGES.md`);
+- **minor (experiments & mechanisms)**: adding or upgrading **A-grade / G-grade** evidence entries (preregistered experiments, demo-level closures), substantive spec mechanism / section changes, gate-rule changes, revisions to this versioning policy itself;
+- **patch (correction & absorption)**: adding, upgrading, or correcting **B/C-grade** evidence entries (including literature-patrol absorption), count corrections, date / typo fixes, bilingual synchronization, engineering infrastructure such as CI, text changes without mechanism semantics;
+- **Batched releases**: multiple classes of changes within the same batch are merged into **one** release, with the version number taking the highest applicable tier; consecutive small commits are not released individually — version numbers carry the nature of changes, not the release frequency; change density is documented in `CHANGELOG.md` entries;
 - Every release must synchronize `VERSION` / `CHANGELOG.md` / README version badges (both languages) / `CITATION.cff`, and **create an annotated git tag (`vX.Y.Z`)**;
 - Before a release, all consistency checks (above) must pass and CI (`.github/workflows/ci.yml`) must be green.
 
-Background lessons: v2.4.1 once appeared in the README although it never existed in repository history (a typo); early count corrections repeatedly consumed minor numbers, inflating the version line. This policy explicitly classifies "count corrections / text corrections" as patch and mandates a tag on every release, so that version numbers can never again float without an anchor to a commit.
+Background lessons (v2.11.1, initial version): v2.4.1 once appeared in the README although it never existed in repository history (a typo); early count corrections repeatedly consumed minor numbers, inflating the version line. This policy explicitly classifies "count corrections / text corrections" as patch and mandates a tag on every release, so that version numbers can never again float without an anchor to a commit.
+
+Revision background (v2.41.0, external-review P2 item): external reviews noted that the release cadence of v2.0 → v2.38 within a single month rendered version numbers uninformative. Three root causes: "adding evidence entries" consumed a minor regardless of grade (a single literature-patrol absorption batch alone produced multiple minors); major had no definition; and no batching guidance existed. After this revision: literature absorption (B/C grades) moves to patch, A/G-grade experiments stay minor, major is explicitly anchored to architecture-class changes, and a "merge the same batch into one release" rule is introduced. The policy is not applied retroactively to historical versions.
 
 ## Style
 
