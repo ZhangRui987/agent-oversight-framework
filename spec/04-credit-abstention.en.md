@@ -86,3 +86,54 @@ Aspire (arXiv:2608.31111; Yuhao Wu et al., 21 authors, ByteDance Seed + SUTD + M
 Three registrations for L1 task-definition QA: ① **a running process is not evidence of task completion** — "the training loop is running and checkpoints are being produced" is nearly decoupled from "capability is improving" (1 of 12 pairs positive); completion must be judged against independent evaluation of the final state, and process outputs (throughput, rounds, self-reported completion) must not be credited; ② **the counterpart of the abstention exit** — 21/24 checkpoints that are "no worse than baseline, but only that" are exactly the kind of uninformative completion the abstention exit is designed to identify: when evaluation permits, the correct action is to report "did not exceed baseline" honestly as a negative result rather than package it as improvement; ③ **task-definition quality is itself the tested object** — self-evolution gains collapse across all six vague goals, and the only positive pair is the comparatively well-defined "9B scientific reasoning": vague goal definitions disable both evaluation and improvement, which is the empirical reason L1 QA treats "decidable task definition" as the first object under test.
 
 ⚠️ Evidence grade B (verifiable preprint). Three qualifications: ① all figures come from the paper's test environment (2 backbones × 6 vague goals × 520 hidden items) and must not be extrapolated to "self-evolution is negative on all vague tasks"; ② the final-only protocol and the rollback-retention check are the paper's evaluation-design choices; absolute scores must not be read as production expectations; ③ same team (overlapping authors) as HarnessDev (arXiv:2609.01437) and S³Gym (arXiv:2608.31100) — registered per-paper under the "same series, per-paper independent assessment, no merging" rule.
+
+## C12 credit-score formula: rubric draft (v2.42.0)
+
+This section lands the mitigation path of open problem #9 (C12 credit-score formula, a P0-level mechanism gap) — a rubric draft covering the five registered elements: storage location, update frequency, half-life algorithm, cross-task migration rules, and forced-retraining triggers for low credit. **Evidence grade C (this framework's own design derivation)**: the functional form and all default parameters have no external sources and are registered explicitly as design derivation; AOE-ABSTAIN-001/002 (grade A) support only the motivation (under-refusal is real; authorization checking cannot rely on model self-discipline), not any parameter value. **Until real-task calibration completes, none of the thresholds or weights in this section may be used for automated decisions** (the calibration paradigm follows the AOE-CALIB series: preregistration first, scripts checked in and rerunnable); #9 moves from "formula missing" to "rubric draft landed; real calibration and automated activation still missing" — not closed.
+
+### Credit carrier and storage location
+
+The carrier is the triple **(provider organization, model version, task family F)** — implementing the "carrier binding" correction: bound to an accountable model version and organization, not a one-off execution instance; the task-family dimension keeps the semantics of "credit" local. Storage is a **deployer-side credit ledger**: the append-only event ledger of the G7 `CreditEventStream` is the single source of truth, and the score is a **deterministic projection** over it (S = f(event ledger)), recomputable at any time — the score may be questioned, the ledger cannot be rewritten (aligned with the E subsystem's "records are verifiable"). A new carrier or new task family starts in the **no-credit state ∅**: a ∅ carrier must not take on G ≥ 2 tasks alone; it requires human adjudication or supervised operation — preventing the cold-start period from passing unknown off as trusted.
+
+### Events, weights, and the update equation
+
+Consumes the four behavior-event classes plus neutral events of the G7 event stream, with candidate default weights (**all pending calibration**):
+
+| Event | Weight δ | Rationale |
+| --- | --- | --- |
+| Success | +1 | positive signal of task completion |
+| Failure | −1 | capability or execution deficiency |
+| Violation (incl. over-attempt-cap, post-hoc abstention) | −3 | low-effort behavior; punishment is effective (w_v > w_f) |
+| Neutral (lease interruption and other environment faults) | 0 | environment faults do not enter the behavior denominator |
+| Compliant abstention (voluntary white-paper) | 0 | the abstention exit: no deduction, no demotion — and no bonus either; locked in both directions against white-paper farming |
+
+The update equation takes the **exponentially half-life-weighted form of the event sum**:
+
+`S(c, F, t) = clamp( Σ_i δ_i · 2^(−(t − t_i)/H_F), 0, 1 )`
+
+where t_i is the event timestamp, δ_i the signed weight from the table, and H_F the half-life of task family F (candidate default 30 days, pending calibration). Update frequency: **event-driven immediate update + a daily scheduled re-projection as fallback**. The engineering reason for choosing the event-weighted sum over a "daily depreciation snapshot": the ledger is append-only, recomputable at any time, with no day-by-day floating-point drift. Three properties registered honestly: ① **what recovers is the scalar score, not the compliance history** — a violation's deduction dilutes over the half-life, but historical events remain permanently queryable in the ledger, and the T3 tier additionally carries a windowed violation count that does not decay (see below); ② the clamp upper bound of 1 prevents success farming; ③ abstention does not change S — "going low-credit, then abstaining on everything to wait out the decay" does not work (S only drifts back toward 0; abstention produces no positive events).
+
+### The two-channel separation of low effort and low capability
+
+Implementing the third ontological correction — **two channels, never convertible into each other**:
+
+- **Conduct channel**: violation-class events drive deductions and demotion — punishment is effective for low effort (perfunctory work, over-cap retries, post-hoc abstention);
+- **Capability channel**: SR (success rate) is tracked per task family, **measured but never punished** — a carrier with low SR and low violations triggers a "switch model" recommendation (via M2 re-selection), not a deduction.
+
+### Cross-task migration rules
+
+**No automatic migration**: S(c, F1) does not migrate to S(c, F2) — the failure semantics of different task families are not comparable, and automatic migration equals using uncalibrated values. Model version upgrades, and fine-tuned / quantized variants of the same version, are always new carriers (∅ initialization), isomorphic to "abstention-rate baselines must be re-calibrated after a model upgrade". The task-family partition mapping is registered by the deployer; once registered, families must not be re-partitioned to escape low credit (a re-partition is treated as a new carrier, inheriting no history).
+
+### Low-credit trigger tiers (candidate operationalization of credit avoidance)
+
+All thresholds are candidate defaults, **pending calibration**; before calibration completes only T1 human review and T2 human-executed admission demotion are permitted — **no automated hard circuit-breaking**:
+
+| Tier | Trigger (candidate default) | Consequence |
+| --- | --- | --- |
+| T1 Watch | S < 0.4 sustained for 7 days | flagged for human review |
+| T2 Demotion | S < 0.3 | the carrier must not take on G ≥ G3 tasks (admission demotion, executed by the L0 grading process) — the mechanized form of "credit avoidance" |
+| T3 Forced re-evaluation | S < 0.2, or ≥ 3 violations within a 30-day window (the windowed count **does not decay with the half-life**) | mandatory M2 model re-selection evaluation; failure removes the carrier from that task family's dispatch pool (linked to the M5 version-level recall clause) |
+
+### Anti-gaming summary and honest boundaries
+
+Three gaming paths are structurally blocked: white-paper farming (abstention weight 0), score laundering via task-family switching (∅ initialization), and post-hoc abstention as exoneration (counted as violation). ⚠️ Four qualifications: ① the formula form and all default parameters (δ, H, θ1–θ3, n_v) are **grade-C design derivation** with no external sources and no real-task calibration — must not be stated as "a validated credit-score mechanism"; ② AOE-ABSTAIN-001/002 support the motivation only; none of their figures may serve as the basis for any parameter here; ③ automated execution of T2/T3 depends on real-task calibration and L1 consumer-side landing (the remaining G7 gap), neither of which is complete — this section is an **evaluation blueprint** only; ④ this section does not alter the independent standing of the SR/UR/IRR triple — the credit score does not absorb abstention signals; the triple continues to be reported and judged separately.

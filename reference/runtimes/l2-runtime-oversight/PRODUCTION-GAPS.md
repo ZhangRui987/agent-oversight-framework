@@ -97,7 +97,7 @@ v2.1.0 之前，这 8 项缺口分散在三处：`index.ts` 顶部注释一段�
 - **现状**：`CreditEventStream`（v2.36.0）已落地信用分**输入事件流**——把 `RuntimeOverseer` 的 lifecycle 事件按确定性规则投影为结构化信用事件：`success`（session_end succeeded）/ `failure`（failed）/ `timeout`（failed 且 error 含 timeout/timed out）/ `violation`（over-attempt-cap——超尝试上限是违规信号而非普通失败）/ `neutral`（session_interrupted——租约丢失等环境故障不计入行为分母）。`OverseerDeps.creditStream` 注入即生效（emit 内自动投影，`demo [21]`/`[21b]` 8 项断言含 Overseer 集成）。
 - **spec 锚点**：`spec/04-credit-abstention.md`："信用分随历史行为演化，低于阈值的 Agent 须被信用回避（不允许接管高风险任务）。"
 - **已闭合部分**：本实现的角色（最小缓解路径）——「提供可作为信用分输入的事件流（成功 / 失败 / 超时 / 违规）」——已完整落地，L1 信用分子系统按 `eventsFor(agentId)` 拉取即可消费；`summary()` 仅做计数投影，显式不计算信用分值、不做回避判定。
-- **剩余差距**：信用分公式（载体绑定 / 动态衰减 / 低努力-低能力区分）与回避阈值判定属 L1 内生对齐层，需 L1 对接后消费本事件流方可闭环。
+- **剩余差距**：信用分公式的**量规草案已落地**（spec/04 §「C12 信用分计算公式：量规草案」，v2.42.0——三元载体 / 事件加权指数半衰 / 操守-能力双通道 / 跨任务族不迁移 / T1–T3 触发，全部候选默认待标定），但三档触发的**自动化执行**仍属 L1 内生对齐层：需真实任务标定完成 + L1 消费端对接本事件流后方可闭环；标定完成前仅 T1 人工复审与 T2 人工执行的准入降档可用。
 - **关联代码**：`index.ts` `CreditEventStream`（`RuntimeOverseer` 节后）+ `OverseerDeps.creditStream`。
 
 ### G8. 群治理与涌现检测
