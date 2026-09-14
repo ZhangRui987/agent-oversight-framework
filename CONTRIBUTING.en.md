@@ -9,7 +9,7 @@
 
 ### Before committing: consistency verification (pre-commit)
 
-This repository ships a release consistency check (`scripts/verify_consistency.py`, 33 items: table format / evidence-grade counts (five grades A–G, incl. G-class jurisdiction prefixes) / incident-number conventions / section references / terminology conventions / bidirectional citation closure / reference-key quality). Enable it (run once from the repository root):
+This repository ships a release consistency check (`scripts/verify_consistency.py`, 39 items: table format / evidence-grade counts (five grades A–G, incl. G-class jurisdiction prefixes) / incident-number conventions / section references / terminology conventions / bidirectional citation closure / reference-key quality). Enable it (run once from the repository root):
 
 ```sh
 git config core.hooksPath .githooks

@@ -218,3 +218,18 @@
 | RATS | E5 标准化接入（RATS 侧） | v2.26.0 | 2026-09-09（v2.26.1 订正） | RFC 官方原文核验 + datatracker draft 版本对照 | rfc-editor.org/rfc/rfc9334（作者栏 3 位：Birkholz / Thaler / Richardson；2023-01；Informational）+ datatracker.ietf.org/doc/draft-ietf-rats-architecture/22/（前身 draft 列 5 位作者，含 Ned Smith、Wei Pan）；⚠️ v2.26.1 订正原条目「共 5 位作者 / William Pan」错误——5 人名单为 draft-22 作者栏，RFC 9334 作者栏仅 3 位，且 draft 署名为 Wei Pan |
 
 ✅ **v2.19.0–v2.26.0 新增 10 条 B 级核验状态补登完成（v2.26.1）。VERIFICATION-LOG 覆盖全部 134 条。**
+
+---
+
+## v2.41.1 新增 B 类条目核验登记（4 条，业界对照批）
+
+| 条目键 | 类别 | 入库版本 | 核验日期 | 核验方式 | 一手来源（官方渠道） |
+|---|---|---|---|---|---|
+| Hashimoto-Harness | 业界对照（工程实践自述） | v2.41.1 | 2026-09-14 | 官方原文核验（WebFetch 全文核对标题、发布日期 2026-02-05 与 Step 5「Engineer the Harness」原文表述） | mitchellh.com/writing/my-ai-adoption-journey（Mitchell Hashimoto 个人工程博客）；⚠️ 个人 n=1 实践叙事，作者自述不知是否有行业通用术语 |
+| OpenAI-Harness-Codex | 业界对照（厂商官方报告） | v2.41.1 | 2026-09-14 | 官方原文核验（WebFetch 全文核对标题、发布日期 2026-02-11、作者 Ryan Lopopolo 与全部关键数字） | openai.com/index/harness-engineering/；⚠️ 数字全部为官方自述，模型与 harness 同属厂商（COI） |
+| Anthropic-Harness-LRA | 业界对照（厂商官方博客） | v2.41.1 | 2026-09-14 | 官方原文核验（WebFetch 全文核对标题、发布日期 2026-03-24、作者 Prithvi Rajasekaran 与两处关键原文表述） | anthropic.com/engineering/harness-design-long-running-apps；⚠️ 初核时二手转述 URL（…-long-running-application-development）返回 404，已按一手核验订正为现址；数字为官方自述单例（COI） |
+| LangChain-Harness-TB2 | 业界对照（厂商官方博客） | v2.41.1 | 2026-09-14 | 官方原文核验（WebFetch 全文核对标题、发布日期 2026-02-17、作者 Vivek Trivedy 与实验数字） | blog.langchain.com/improving-deep-agents-with-harness-engineering/；⚠️ 单一基准单一模型（COI），+13.7pp 不可外推 |
+
+⚠️ **登记缺口如实登记（v2.41.1）**：v2.27.0–v2.41.0 期间 REFERENCES 新增的 36 条 A/B/C 级条目（A +5 / B +30 / C +1）未逐条在本表登记核验状态——上文「覆盖全部 134 条」自 v2.27.0 起不再反映全集。成因与 v2.26.1 补登段所述相同：门禁第 34 项只强制 G 键覆盖，对非 G 类新增条目无约束，人工纪律同步点再次漂移。处置：① 自本版（v2.41.1）起新增条目恢复「不分等级、入库即登记」（本批 4 条即按此执行）；② 历史欠账 36 条的补登记列为待清欠项，不在本版虚报完成。
+
+✅ **v2.41.1 新增 4 条核验状态登记完成（业界对照批）。**

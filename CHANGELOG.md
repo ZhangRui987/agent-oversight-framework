@@ -1,5 +1,37 @@
 # 变更日志
 
+## v2.41.1（2026-09-14）— 业界对照落库：Harness Engineering 四条一手来源（B 级）+ spec/02 业界收敛对照节
+
+### 背景
+2026-09-12 腾讯云架构师城市沙龙（重庆场）外部输入（张逸《驾驭工程指导下的领域驱动设计》）触发的一轮检索显示，2026 年工程侧已收敛出「Agent = Model + Harness」的方向性表述。按证据纪律对四条一手来源逐一 WebFetch 全文核验后落库；同时恢复「证据入库即登记核验状态」纪律。
+
+### 改动 1：REFERENCES 新增 4 条 B 级（B:100 → 104，总数 170 → 174）
+- 【键: Hashimoto-Harness】My AI Adoption Journey（2026-02-05）——harness engineering 一词较早的公开命名之一（「每次 Agent 犯错，就工程化地确保它不再犯」）；作者自述不知是否有行业通用术语，不表述为「行业公认首创」。
+- 【键: OpenAI-Harness-Codex】Harness engineering: leveraging Codex in an agent-first world（2026-02-11）——官方自述 3→7 人 / 5 个月 / 约 100 万行 / 约 1,500 PR / 零人工代码 / 耗时约 1/10，全部为官方自述口径。
+- 【键: Anthropic-Harness-LRA】Harness design for long-running application development（2026-03-24）——自评偏差 + 上下文焦虑两条失效模式命名与 Planner/Generator/Evaluator 分离；「把独立评估器调校为怀疑态度远比让生成器自我批判可行」。
+- 【键: LangChain-Harness-TB2】Improving Deep Agents with harness engineering（2026-02-17）——固定模型仅改 harness 的控制变量实证（Terminal Bench 2.0 上 52.8 → 66.5）。
+- 四条均带 COI 标注与「不引任何效率 / 分数数字作生产预期」限定语；Anthropic 条目落库前完成一次 URL 订正——二手转述地址返回 404，一手核验修正为现址（anthropic.com/engineering/harness-design-long-running-apps）。
+
+### 改动 2：spec/02 新增「业界收敛对照：Harness Engineering（v2.41.1 新增）」节（中英双语）
+三点对照：① 约束前置（与「声明式禁令不具约束力」行同向）；② 生成 / 评估分离（与「双盲考核」同构，并与 S³Gym 自判零相关实证构成工程侧 / 研究侧双证人）；③ 治理盲区——四条来源共同默认 harness 自身可信，恰是本体系价值原点「监察记录可被伪造」的未覆盖面，强化「谁有权修改规则」与约束资产完整性的必要性。
+
+### 改动 3：spec/11 机制溯源表 +1 行（业界收敛对照，CAE 结构，中英双语）
+
+### 改动 4：登记纪律
+VERIFICATION-LOG 恢复「入库即登记」（本批 4 条已登记）；如实登记 v2.27.0–v2.41.0 期间新增的 36 条 A/B/C 级条目（A +5 / B +30 / C +1）未逐条登记核验状态的缺口——门禁第 34 项只强制 G 键覆盖，对该漂移无约束；历史欠账列为待清欠项，不虚报完成。
+
+### 改动 5：陈旧计数订正
+CONTRIBUTING.en.md 门禁项数「33 items」→「39 items」（v2.26.1 项数口径变更时漏改；门禁第 19 项的项数声明点清单只覆盖中文 CONTRIBUTING，属漏网计数）。
+
+### 证据与计数
+证据总数 170 → 174（A:8 / B:104 / C:10 / D:1 / G:51）；未解问题 31 条不变；本版不闭合任何未解问题（业界对照定位，仅强化既有条款的工程侧旁证）。
+
+### 元数据
+VERSION / CITATION.cff / README 双语（badge、当前版本、APA）同步 2.41.1。
+
+### 门禁状态
+39 项门禁提交前本地复验（pre-commit 钩子将再次执行）。
+
 ## v2.41.0（2026-09-13）— 外部审查 P2 改进：版本管理政策修订（semver 严格化）
 
 ### 背景
