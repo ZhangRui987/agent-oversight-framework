@@ -41,8 +41,9 @@
   31. 引用键非通用词（不在黑名单且长度 ≥ 4）
   32. G 类引用键前缀合法（cn- / us- / eu- / uk- / ca- / au- / jp- / kr- / sg- / int- / iso- / owasp-）
   33. G 类条目须声明【键: XXX】且键含管辖前缀（G 类无 arXiv 号，强制声明键以防漏检）
-  34. VERIFICATION-LOG 覆盖全部 G 类键（REFERENCES G 键 ⊆ LOG 键）
-  35. VERIFICATION-LOG 无幽灵键（LOG 键 ⊆ REFERENCES 全部条目键）
+  34. VERIFICATION-LOG 覆盖全部条目（不分等级；REFERENCES 键/arXiv 号 ⊆ LOG 首列，包含匹配）
+      —— v2.44.0 起从「仅 G 键」扩展为全量覆盖，堵死非 G 类欠账复发路径
+  35. VERIFICATION-LOG 无幽灵行（LOG 首列均可归因到 REFERENCES 条目）
      —— ⚠️ 历史注记：旧清单曾把 34/35 合写为一个编号项，导致「门禁项数」声明
         长期比实际 check 调用数少 1（v2.12.1–v2.26.0 声明 35/36、实际 36/37）；
         v2.26.1 起清单按实际调用数逐条编号，并由第 39 项防复发
@@ -498,29 +499,38 @@ _ref_non_g_keys = [m.group(1) for m in _NONG_LINE_RE.finditer(refs)]
 # 「无幽灵键」方向的对照全集从 REFERENCES G 键放宽为 REFERENCES 全部条目键
 # （非 G 键 + G 键合集），覆盖所有已回填类型。
 _LOG_PATH = os.path.join(ROOT, "VERIFICATION-LOG.md")
-_log_keys = []
+_log_cells = []
 if os.path.exists(_LOG_PATH):
     with open(_LOG_PATH, encoding="utf-8") as _f:
         for _ln in _f:
-            _m = re.match(r"^\|\s*([A-Za-z0-9][A-Za-z0-9_-]*?)\s*\|", _ln)
+            _m = re.match(r"^\|\s*([^|]+?)\s*\|", _ln)
             if _m:
-                _log_keys.append(_m.group(1))  # 表头中文「条目键」与 |---|---| 分隔行天然不匹配
-_log_key_set = set(_log_keys)
-_ref_g_key_set = set(_g_keys_in_refs)
-# 构建 REFERENCES 全部条目键（含 G 与非 G）用于「无幽灵键」方向
-_ref_all_keys = set(_g_keys_in_refs)
-_ref_all_keys.update(_ref_non_g_keys)  # 非零即加入；为空则仅含 G 键
-_missing_in_log = sorted(_ref_g_key_set - _log_key_set)
-_ghost_in_log = sorted(_log_key_set - _ref_all_keys)
-check(
-    "VERIFICATION-LOG 覆盖全部 G 类键（REFERENCES G 键 ⊆ LOG 键）",
-    not _missing_in_log,
-    f"{len(_missing_in_log)} 条 G 键未在 VERIFICATION-LOG 登记：{'; '.join(_missing_in_log[:5])}",
+                _cell = _m.group(1).strip()
+                if _cell and not _cell.startswith("-") and "条目键" not in _cell:
+                    _log_cells.append(_cell)  # 保留完整首列（含「短名（arXiv:xxxx）」形态），覆盖判定用包含匹配
+# 每条条目的匹配 token：arXiv 号加「arXiv:」前缀、键原样
+_entry_tokens = []
+for _keys, _has_arx, _lit, _land, _tag in _entries:
+    _toks = [("arXiv:" + _k) if re.match(r"^\d{4}\.\d{4,5}$", _k) else _k for _k in _keys]
+    _entry_tokens.append((_keys, _toks, _tag))
+_uncovered = sorted(
+    (_keys[0] if _keys else "(无键)") + " — " + _lit[:34]
+    for _keys, _toks, _tag in _entry_tokens
+    if not any(any(tok in c for tok in _toks) for c in _log_cells)
+)
+_ghost_in_log = sorted(
+    c for c in _log_cells
+    if not any(any(tok in c for tok in _toks) for _keys, _toks, _tag in _entry_tokens)
 )
 check(
-    "VERIFICATION-LOG 无幽灵键（LOG 键 ⊆ REFERENCES 全部条目键）",
+    "VERIFICATION-LOG 覆盖全部条目（不分等级；REFERENCES 键/arXiv 号均须在 LOG 出现）",
+    not _uncovered,
+    f"{len(_uncovered)} 条未登记：{'; '.join(_uncovered[:5])}",
+)
+check(
+    "VERIFICATION-LOG 无幽灵行（LOG 首列须可归因到 REFERENCES 条目）",
     not _ghost_in_log,
-    f"{len(_ghost_in_log)} 条 LOG 键不在 REFERENCES：{'; '.join(_ghost_in_log[:5])}",
+    f"{len(_ghost_in_log)} 行无法归因：{'; '.join(_ghost_in_log[:5])}",
 )
 
 # ── 16. README 法域枚举与 REFERENCES G 键前缀一致（防法域计数漂移） ──────

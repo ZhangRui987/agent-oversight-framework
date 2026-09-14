@@ -60,6 +60,15 @@ Retrievability ≠ admissibility as independent evidence.
 - ③ Schedule-and-maturity synchronization;
 - ④ Changelog-and-open-problem synchronization.
 
+### 3.5 Process discipline (run through before every manual step; since v2.44.0)
+
+> Rationale: a discipline with rule-like character (a must-do or a must-not) belongs in the harness even when it cannot be scripted. Whatever can be scripted is already enforced by the gates (e.g., item 34's full coverage of registration); the remaining items below **must be self-checked before each manual step**:
+
+- ① **Register first**: every new REFERENCES entry (any grade) must be registered in `VERIFICATION-LOG.md` at the same time (the scriptable part is enforced by gate item 34; what you check here is the **semantic quality** of the registration — is the verification method and primary-source description truthful and complete);
+- ② **Bilingual semantic synchronization**: a spec change's .en mirror needs more than "the file exists" — compare paragraph by paragraph for semantic equivalence (gates cannot check translation quality);
+- ③ **Semantic recount of figures**: beyond the gate-locked counts, numbers quoted in prose (e.g., "N consecutive versions without regression") must match the repository's actual state;
+- ④ **Review discipline**: independently verify facts before absorbing external input; never follow a single source; record rebuttals as faithfully as adoptions.
+
 ### 4. Confidentiality-classification confirmation
 
 - Do not introduce restricted-level content (honeypot-sample construction, rollout-roadmap timelines, audit-log formats);
