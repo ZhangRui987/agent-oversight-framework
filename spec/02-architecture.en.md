@@ -176,3 +176,6 @@ Three points of comparison for this framework (a comparison is not an equivalenc
 
 ⚠️ Evidence grade: all four are B (first-hand vendor/practitioner accounts). Three overall limitations: ① all four sources carry narrative motives (vendor COI for three, an individual n=1 practice for one); all figures are self-reported or single-benchmark observations, and **no efficiency or score figures are cited as production expectations**; ② "industry convergence" is a directional induction from four primary sources, not a systematic review — no coverage enumeration was performed, and any opposing practices that may exist are outside this section's view; ③ this section is a comparison and positioning; industry terminology is not treated as a synonym for this framework's mechanisms — this framework's harness concept (§"Who may modify the rules") carries a strictly broader governance semantics.
 
+
+
+⚠️ **Known translation gap (registered in v2.44.3)**: the Chinese edition's「治理实证锚点（G 类，L0 准入侧）」section does not yet have an English counterpart in this file. The Chinese edition is authoritative for that section until it is back-translated in a subsequent release. (Systematic bilingual audit, 2026-09-16)

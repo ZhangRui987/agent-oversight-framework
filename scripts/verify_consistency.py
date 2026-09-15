@@ -665,6 +665,14 @@ for _rn in ("README.md", "README.en.md"):
     _badge_v = _rm.group(1) if _rm else None
     if _badge_v != _version:
         _v_bad.append(f"{_rn} badge version {_badge_v} != VERSION {_version}")
+# v2.44.3 起把 README 双语「当前版本」正文行纳入校验——该行曾两轮漏网
+# （v2.44.1 / v2.44.2 时停在 v2.44.0；v2.31.0 同一坑已修过一次值但未入门禁）
+for _rn, _pat in (("README.md", r"当前版本：v([0-9.]+)"),
+                  ("README.en.md", r"Current version: v([0-9.]+)")):
+    _rm = re.search(_pat, read(os.path.join(ROOT, _rn)))
+    _cur_v = _rm.group(1) if _rm else None
+    if _cur_v != _version:
+        _v_bad.append(f"{_rn} 当前版本行 {_cur_v} != VERSION {_version}")
 check(
     "版本元数据同步（VERSION / CITATION.cff / README 双语 badge）",
     not _v_bad,
