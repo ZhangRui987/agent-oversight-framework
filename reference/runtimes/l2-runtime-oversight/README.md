@@ -49,7 +49,7 @@ node --experimental-transform-types otel-adapter.ts --selftest
 node --experimental-transform-types otel-adapter.ts < audit-events.jsonl > otlp-export.json
 ```
 
-demo 覆盖 20 组、136 项断言（截至 v2.13.0 实测全绿），含 9 组对抗性用例：
+demo 覆盖 24 组、153 项断言（实测全绿；**组数/断言数由 demo 运行末行动态输出**，v2.44.1 起经根门禁第 40 项与 ci.yml 声明双向校验，任何增删组/断言后以实跑输出为准），含 9 组对抗性用例（[8]–[16]）：
 
 | 组 | 证明的机制 / 对抗目标 |
 |---|---|
@@ -67,6 +67,9 @@ demo 覆盖 20 组、136 项断言（截至 v2.13.0 实测全绿），含 9 组�
 | [18] | G1 闭合：SQLite 租约权威——崩溃（close）后重开数据库租约状态仍在；语义与内存实现一致 |
 | [19] | G9 闭合：spec/02 第四条「配置权即攻击面」五项配置内容审查（明文凭据 / 共享范围 / 审批关闭 / 网关公开 / 脱敏弱化）；端到端证明恶意配置变更被拦在入口、execute 零调用 |
 | [20] | G5 闭合：spec/10 资源账本四类信号——预算比超阈产出审计信号（非拦截）、影子比偏离基线、记忆/提示/配置写入最高级审计（level=highest）、周期型外联检测（固定间隔、与数据量无关）；对抗性验证非周期出站不误报、基线内不误报、无基线跳过影子比 |
+| [21] | G7 演示级闭合（事件流侧，v2.36.0）：CreditEventStream 成功/失败/超时/违规四类事件投影、超尝试上限与事后弃权计入、租约中断为中性事件不计入行为分母、事件绑定 agentId 与 sessionId |
+| [21b] | CreditEventStream × RuntimeOverseer 集成：Overseer 注入 creditStream 后 lifecycle 事件自动投影（v2.36.0） |
+| [22] | G8 演示级闭合（告警侧，v2.38.0）：SwarmMonitor 交互图谱采集 + 四确定性涌现信号检测（S1–S4）+ 调度器白名单豁免（同形态对照）+ 熔断禁用写进 API 表面（evaluate 只输出告警，enforce 不存在） |
 
 ## 诚实边界（生产前必须补齐，不得误标为完整合规）
 

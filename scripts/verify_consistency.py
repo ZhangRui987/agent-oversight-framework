@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """发布一致性校验（推送前 / pre-commit 用）。
 
-校验项（共 39 项 = 39 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
+校验项（共 40 项 = 40 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
   1. 全仓库无 [TABLE START/END] 伪标记
   2. 所有 Markdown 表格表头后都有 |---| 分隔行
   3. 表格每行列数与分隔行一致
@@ -51,6 +51,13 @@
   37. spec/11 机制溯源表 CAE 三段齐全（每行含 主张/论证/证据；v2.23.0 新增）
   38. 版本元数据同步（VERSION / CITATION.cff / README 双语 badge；v2.26.1 新增）
   39. 门禁项数声明一致（README 双语 / CONTRIBUTING / ci.yml / 本清单 == 实际调用数；v2.26.1 新增）
+  40. demo 断言声明与实际输出一致（ci.yml 三处声明 + 子 README 一处 == demo 运行时计数；v2.44.1 新增）
+      —— 教训来源：外部审查（2026-09-16）实测发现 ci.yml 写「23 组 154 项」、子 README 停在
+         「20 组、136 项（截至 v2.13.0）」，而实际运行为 24 组 153 项——三处声明无一正确，
+         且错误自 v2.38.0 起伴随每轮 CI 全绿存活 7 个版本。结构性根源：门禁只校验「文档之间
+         一致」，不校验「声明 vs 实际运行」。本项把声明钉死到 demo 实际输出：运行 demo，
+         解析其末行动态计数（组数/断言数由运行时计数器生成，非手写）逐处比对。
+         原则：任何可验证数字，要么生成、要么校验，不写第三种。
 
 用法：
   python scripts/verify_consistency.py [仓库根目录，默认脚本所在目录的上级]
@@ -59,6 +66,7 @@
 """
 import os
 import re
+import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -692,6 +700,72 @@ check(
     not _decl_bad,
     "; ".join(_decl_bad),
 )
+
+# ── 20. demo 断言声明 vs 实际输出一致（v2.44.1 新增，防声明性数字漂移） ──────────
+# 声明采集四处，按格式分两类：
+#   完整二元组（组数, 项数）：ci.yml step 名「(N 组 M 项断言)」、子 README「demo 覆盖 N 组、M 项断言」
+#   仅 demo 项数（otel 项数属另一脚本，不在本项真相源内）：
+#       ci.yml 头注释「N+M 项断言」（N=demo、M=otel）、job 名「demo N 项 + otel M 项」
+# 真相源：demo.ts 运行末行「=== 结果：…（N 组 M 项断言）===」（运行时计数器生成）。
+_ci = read(os.path.join(ROOT, ".github", "workflows", "ci.yml"))
+_DEMO_REL = os.path.join("reference", "runtimes", "l2-runtime-oversight", "demo.ts")
+_decl_ci_header = re.search(r"(\d+)\+(\d+) 项断言", _ci)
+_decl_ci_job = re.search(r"demo (\d+) 项 \+ otel (\d+) 项", _ci)
+_decl_ci_step = re.search(r"Run demo\.ts \((\d+) 组 (\d+) 项断言\)", _ci)
+_sub_readme = read(os.path.join(ROOT, "reference", "runtimes",
+                                "l2-runtime-oversight", "README.md"))
+_decl_sub_readme = re.search(r"demo 覆盖 (\d+) 组、(\d+) 项断言", _sub_readme)
+_demo_bad = []
+_actual, _err = None, ""
+try:
+    _proc = subprocess.run(
+        ["node", "--experimental-transform-types", _DEMO_REL],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=ROOT, timeout=300,
+    )
+    _m = re.search(r"=== 结果：.*?（(\d+) 组 (\d+) 项断言）===", _proc.stdout)
+    if _m:
+        _actual = (int(_m.group(1)), int(_m.group(2)))
+        if _proc.returncode != 0:
+            _demo_bad.append(f"demo 实跑存在 FAIL（退出码 {_proc.returncode}）")
+    elif _proc.returncode != 0:
+        _err = f"demo 实跑非零退出（码 {_proc.returncode}），先修 demo 再谈声明"
+    else:
+        _err = ("demo 输出未找到「（N 组 M 项断言）」计数行"
+                "——demo 末行汇总模板被改动？第 40 项失去真相源")
+except FileNotFoundError:
+    _err = ("未找到 node——本项需 node ≥ 22 实跑 demo 取证"
+            "（CI consistency job 已配置 Setup Node）")
+except subprocess.TimeoutExpired:
+    _err = "demo 实跑超时（300s）"
+if _actual is None:
+    _demo_bad.append(_err or "demo 计数解析失败")
+else:
+    _ag, _an = _actual
+    for _label, _m2 in (("ci.yml step 名", _decl_ci_step),
+                        ("子 README", _decl_sub_readme)):
+        if _m2 is None:
+            _demo_bad.append(f"{_label} 未找到 demo 断言声明（声明被删除？）")
+        elif (int(_m2.group(1)), int(_m2.group(2))) != (_ag, _an):
+            _demo_bad.append(
+                f"{_label} 声明 {_m2.group(1)} 组 {_m2.group(2)} 项"
+                f" != 实际 {_ag} 组 {_an} 项")
+    # 头注释 / job 名：拼接格式，只校验 demo 项数段
+    for _label, _m2 in (("ci.yml 头注释", _decl_ci_header),
+                        ("ci.yml job 名", _decl_ci_job)):
+        if _m2 is None:
+            _demo_bad.append(f"{_label} 未找到 demo 断言声明（声明被删除？）")
+        elif int(_m2.group(1)) != _an:
+            _demo_bad.append(
+                f"{_label} 声明 demo {_m2.group(1)} 项 != 实际 {_an} 项")
+check(
+    "demo 断言声明与实际输出一致（ci.yml 三处 + 子 README == demo 运行时计数）",
+    not _demo_bad,
+    "; ".join(_demo_bad),
+)
+if _actual is not None:
+    print(f"       ↳ demo 实跑计数：{_actual[0]} 组 {_actual[1]} 项断言"
+          f"（运行时计数器生成，非手写）")
 
 # ── 汇总 ─────────────────────────────────────
 print()

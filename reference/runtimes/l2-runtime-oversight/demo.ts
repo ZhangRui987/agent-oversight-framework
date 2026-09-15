@@ -64,7 +64,11 @@ import {
 } from './index.ts';
 
 let failures = 0;
+// v2.44.1：断言总数改为运行时计数生成——声明性数字一律「生成或校验」，不再手写
+// （教训：外部审查发现 ci.yml「23 组 154 项」与实际不符，且无门禁可拦）
+let totalChecks = 0;
 function check(name: string, cond: boolean): void {
+  totalChecks++;
   console.log(`${cond ? '  PASS' : '  FAIL'}  ${name}`);
   if (!cond) failures++;
 }
@@ -1266,6 +1270,15 @@ function testSwarmMonitor(): void {
 // ============================================================================
 async function main(): Promise<void> {
 
+  // v2.44.1：组数改为运行时计数生成——凡「\n[Nx] 标题」形态的组头输出即计一组
+  // （含 [7a]/[7b]/[21b] 等字母后缀子组）。根门禁第 40 项以本计数校验 ci.yml 声明。
+  let totalGroups = 0;
+  const _origLog = console.log.bind(console);
+  console.log = (...args: unknown[]): void => {
+    if (/^\[\d+[a-z]?\]/.test(String(args[0] ?? '').trim())) totalGroups++;
+    _origLog(...args);
+  };
+
   console.log('=== runtime-oversight-skeleton demo ===');
   await testLeaseAuthority();
   testTripwire();
@@ -1292,7 +1305,7 @@ async function main(): Promise<void> {
   await testCreditStreamOverseer();
   testSwarmMonitor();
 
-  console.log(`\n=== 结果：${failures === 0 ? 'ALL PASS ✅' : `${failures} FAIL ❌`} ===`);
+  console.log(`\n=== 结果：${failures === 0 ? 'ALL PASS ✅' : `${failures} FAIL ❌`}（${totalGroups} 组 ${totalChecks} 项断言）===`);
   process.exit(failures === 0 ? 0 : 1);
 }
 
