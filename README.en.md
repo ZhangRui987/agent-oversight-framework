@@ -1,6 +1,6 @@
 # AI Execution & Oversight Framework
 
-[![Version](https://img.shields.io/badge/version-2.44.1-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.44.2-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (104/175)](https://img.shields.io/badge/evidence-B_104%2F175-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -106,7 +106,7 @@ The A/B/C/D/G grading in this repository is an **open, reviewable state**, not a
 
 Each correction, after maintainer verification, is back-propagated into `spec/11-traceability.md` and `REFERENCES.md` — the community-driven operation of this framework's "back-propagation checklist" (`spec/13-boundaries.md`): **let the evidence grading evolve with the real world.** Template: [`.github/ISSUE_TEMPLATE/evidence-correction.yml`](.github/ISSUE_TEMPLATE/evidence-correction.yml).
 
-> **Review process**: the correction review cycle does not exceed 14 days; disagreements are finally adjudicated by the maintainer with the reason recorded; rejected correction issues explicitly state the rejection reason and are not silently closed.
+> **Review process**: the correction review cycle does not exceed 14 days; disagreements are finally adjudicated by the maintainer with the reason recorded; rejected correction issues explicitly state the rejection reason and are not silently closed. This commitment is tracked in [`CORRECTION-LOG.md`](CORRECTION-LOG.md) (due date = acceptance date + 14 days); overdue open items are blocked by consistency check #41 — the commitment is enforced by mechanism, not by good intentions.
 
 ## Classification
 
@@ -191,7 +191,7 @@ See [`CITATION.cff`](CITATION.cff).
 
 ## Quality assurance (self-referential verification)
 
-This repository governs itself with itself: `scripts/verify_consistency.py` provides 40 release-consistency checks (table format / evidence-grade counts / incident-number conventions / section numbering / terminology / bidirectional reference checks / citation-key quality / G-grade jurisdictional-prefix validity / verification-log key-set sync / jurisdiction-enumeration consistency / demo assertion declarations vs. actual runtime output), mounted as a pre-commit hook (`.githooks/`). See `CONTRIBUTING.md` for enabling; every commit runs it automatically and blocks on failure. Manual run: `python scripts/verify_consistency.py` (pure standard library, no dependencies to install).
+This repository governs itself with itself: `scripts/verify_consistency.py` provides 41 release-consistency checks (table format / evidence-grade counts / incident-number conventions / section numbering / terminology / bidirectional reference checks / citation-key quality / G-grade jurisdictional-prefix validity / verification-log key-set sync / jurisdiction-enumeration consistency / demo assertion declarations vs. actual runtime output / correction-log timeliness), mounted as a pre-commit hook (`.githooks/`). See `CONTRIBUTING.md` for enabling; every commit runs it automatically and blocks on failure. Manual run: `python scripts/verify_consistency.py` (pure standard library, no dependencies to install).
 
 This is not a document maintained by good faith alone; it is a specification with an automated gate.
 

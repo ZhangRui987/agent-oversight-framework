@@ -1,6 +1,6 @@
 # AI 执行与监察体系（Agent Oversight Framework）
 
-[![Version](https://img.shields.io/badge/version-2.44.1-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.44.2-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (104/175)](https://img.shields.io/badge/evidence-B_104%2F175-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -106,7 +106,7 @@ graph TD
 
 每条纠错经维护者核验后回灌到 `spec/11-traceability.md` 与 `REFERENCES.md`——这是本框架「回灌检查清单」（`spec/13-boundaries.md`）的社区化运行：**让证据分级跟着真实世界一起演化**。模板见 [`.github/ISSUE_TEMPLATE/evidence-correction.yml`](.github/ISSUE_TEMPLATE/evidence-correction.yml)。
 
-> **评审流程**：纠错审核周期不超过 14 天；分歧由维护者最终裁定并记录理由；拒绝的纠错 Issue 明确标注拒绝原因，不静默关闭。
+> **评审流程**：纠错审核周期不超过 14 天；分歧由维护者最终裁定并记录理由；拒绝的纠错 Issue 明确标注拒绝原因，不静默关闭。该承诺以 [`CORRECTION-LOG.md`](CORRECTION-LOG.md) 登记为准（截止日期 = 受理日期 + 14 天），超期未结由门禁第 41 项拦截——承诺不靠自觉，靠机制。
 
 ## 保密分级
 
@@ -191,7 +191,7 @@ graph TD
 
 ## 质量保障（自指验证）
 
-本仓库用自己治理自己：`scripts/verify_consistency.py` 提供 40 项发布一致性校验（表格格式 / 证据分级数量 / 事故数字口径 / 章节号 / 术语口径 / 双向引用检查 / 引用键质量 / G 类管辖前缀合法性 / 核验日志键集同步 / 法域枚举一致性 / demo 断言声明与实际运行输出一致性），已挂载为 pre-commit 钩子（`.githooks/`）。启用方式见 `CONTRIBUTING.md`；每次提交自动执行，校验失败即拦截。手动运行：`python scripts/verify_consistency.py`（纯标准库，无需安装依赖）。
+本仓库用自己治理自己：`scripts/verify_consistency.py` 提供 41 项发布一致性校验（表格格式 / 证据分级数量 / 事故数字口径 / 章节号 / 术语口径 / 双向引用检查 / 引用键质量 / G 类管辖前缀合法性 / 核验日志键集同步 / 法域枚举一致性 / demo 断言声明与实际运行输出一致性 / 纠错登记时效），已挂载为 pre-commit 钩子（`.githooks/`）。启用方式见 `CONTRIBUTING.md`；每次提交自动执行，校验失败即拦截。手动运行：`python scripts/verify_consistency.py`（纯标准库，无需安装依赖）。
 
 这不是靠自觉维护的文档，而是有自动化门禁的规范。
 

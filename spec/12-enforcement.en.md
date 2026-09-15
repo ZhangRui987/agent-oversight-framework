@@ -34,3 +34,8 @@ Implication for this chapter: the existing four anchors (industry access / regul
 ⚠️ These two points do not close an open problem — they are newly claimable gaps in this framework, registered as open problem #29 (cross-instance isolation obligation); the specific disposition is left to subsequent versions.
 
 ⚠️ AgentWorm figure limitations are consistent with spec/06: the 63% / 82% and other figures all come from a controlled testbed and must not be extrapolated as expected infection rates in production.
+
+## Boundary statement: jurisdictional operationalization of the G×S mapping has no validation case yet (v2.44.2, external-review response)
+
+- The mapping from this chapter's G-grade anchors and the G×S grading onto regulatory texts currently stays at the level of **mechanism isomorphism and clause citation** — there is no hands-on validation case yet for "how the G×S grading translates into concrete compliance requirements (filing / labeling / audit) under a specific jurisdiction". This specification does not claim the mapping is operationalizable; jurisdiction-level landing (e.g., a real filing workflow completed by an Agent deployer in some jurisdiction) is a long-running item — upon the first validation case it will be back-filled under the evidence discipline and this section upgraded.
+- ⚠️ Known translation gap: the Chinese edition's「治理实证锚点（G 类，L3 离线重审 + L4 问责侧）」section (twelve G-grade anchors) does not yet have an English counterpart in this file; it will be back-translated in a subsequent release. Until then, the Chinese edition is authoritative for that section.

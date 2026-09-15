@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """发布一致性校验（推送前 / pre-commit 用）。
 
-校验项（共 40 项 = 40 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
+校验项（共 41 项 = 41 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
   1. 全仓库无 [TABLE START/END] 伪标记
   2. 所有 Markdown 表格表头后都有 |---| 分隔行
   3. 表格每行列数与分隔行一致
@@ -58,12 +58,18 @@
          一致」，不校验「声明 vs 实际运行」。本项把声明钉死到 demo 实际输出：运行 demo，
          解析其末行动态计数（组数/断言数由运行时计数器生成，非手写）逐处比对。
          原则：任何可验证数字，要么生成、要么校验，不写第三种。
+  41. CORRECTION-LOG 结构合法且无超期未结纠错（14 天纠错周期机制化；v2.44.2 新增）
+      —— 教训来源：外部审查（2026-09-16）A2 指出「14 天纠错周期、拒绝不静默关闭」
+         仅是 README 承诺，无登记载体、无机制保证，属「承诺≠机制」。本项把承诺数值化：
+         CORRECTION-LOG.md 每行登记 受理日期/截止日期/状态，门禁校验
+         截止-受理 == 14 天、状态合法、拒绝必附理由、待处理超期 FAIL（按当日日期）。
 
 用法：
   python scripts/verify_consistency.py [仓库根目录，默认脚本所在目录的上级]
 
 退出码 0 = 全部通过；非 0 = 存在未通过项（pre-commit 将拦截提交）。
 """
+import datetime
 import os
 import re
 import subprocess
@@ -675,6 +681,7 @@ _DECL_SITES = [
     ("README.md", r"(\d+) 项发布一致性校验"),
     ("README.en.md", r"(\d+) release-consistency checks"),
     ("CONTRIBUTING.md", r"verify_consistency\.py`，(\d+) 项："),
+    ("CONTRIBUTING.en.md", r"verify_consistency\.py`, (\d+) items:"),
     (".github/workflows/ci.yml", r"发布一致性校验（(\d+) 项）"),
     (".github/workflows/ci.yml", r"(\d+) 项门禁"),
     ("scripts/verify_consistency.py", r"校验项（共 (\d+) 项"),
@@ -766,6 +773,56 @@ check(
 if _actual is not None:
     print(f"       ↳ demo 实跑计数：{_actual[0]} 组 {_actual[1]} 项断言"
           f"（运行时计数器生成，非手写）")
+
+# ── 21. CORRECTION-LOG 结构与时效校验（v2.44.2 新增，纠错承诺机制化） ──────────
+# README 双语承诺「纠错审核周期不超过 14 天；拒绝不静默关闭」此前无登记载体，
+# 属审查 A2 所指「承诺≠机制」。CORRECTION-LOG.md 是该承诺的数值化载体：
+# 截止日期 = 受理日期 + 14 天；拒绝必附理由；待处理超期（按当日日期）FAIL。
+_COR_LOG = os.path.join(ROOT, "CORRECTION-LOG.md")
+_cor_bad = []
+if not os.path.isfile(_COR_LOG):
+    _cor_bad.append("CORRECTION-LOG.md 不存在（14 天纠错承诺失去登记载体）")
+else:
+    _cor_src = read(_COR_LOG)
+    _cor_rows = []
+    for _ln in _cor_src.splitlines():
+        if not re.match(r"^\|\s", _ln):
+            continue
+        _cells = [c.strip() for c in _ln.strip().strip("|").split("|")]
+        if len(_cells) != 5:
+            continue
+        if _cells[0] in ("Issue", "") or set(_cells[0]) <= set("-"):
+            continue  # 表头 / 分隔行
+        if _cells[0].startswith("（暂无"):
+            continue  # 占位行（空表合法）
+        _cor_rows.append(_cells)
+    for _issue, _accept, _due, _status, _summary in _cor_rows:
+        _tag = _issue[:24]
+        if not _issue:
+            _cor_bad.append("存在 Issue 为空的登记行")
+            continue
+        if _status not in ("待处理", "已结") and not _status.startswith("已拒绝"):
+            _cor_bad.append(f"{_tag}: 状态 {_status!r} 不在枚举（待处理/已结/已拒绝）")
+            continue
+        try:
+            _d1 = datetime.date.fromisoformat(_accept)
+            _d2 = datetime.date.fromisoformat(_due)
+        except ValueError:
+            _cor_bad.append(f"{_tag}: 受理/截止日期格式非法（{_accept} / {_due}，须 ISO 日期）")
+            continue
+        if (_d2 - _d1).days != 14:
+            _cor_bad.append(f"{_tag}: 截止-受理 = {(_d2 - _d1).days} 天 != 14 天")
+        if _status == "待处理" and _d2 < datetime.date.today():
+            _cor_bad.append(f"{_tag}: 待处理已超期（截止 {_d2} < 今日）——14 天纠错承诺违约")
+        if _status.startswith("已拒绝") and len(_summary) < 8:
+            _cor_bad.append(f"{_tag}: 已拒绝但拒绝理由缺失（违反「拒绝不静默关闭」）")
+    print(f"       ↳ 纠错登记：{len(_cor_rows)} 条（待处理 "
+          f"{sum(1 for r in _cor_rows if r[3] == '待处理')} 条）")
+check(
+    "CORRECTION-LOG 结构合法且无超期未结纠错（14 天纠错周期机制化）",
+    not _cor_bad,
+    "; ".join(_cor_bad[:5]),
+)
 
 # ── 汇总 ─────────────────────────────────────
 print()

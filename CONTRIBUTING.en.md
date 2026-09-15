@@ -9,7 +9,7 @@
 
 ### Before committing: consistency verification (pre-commit)
 
-This repository ships a release consistency check (`scripts/verify_consistency.py`, 39 items: table format / evidence-grade counts (five grades A–G, incl. G-class jurisdiction prefixes) / incident-number conventions / section references / terminology conventions / bidirectional citation closure / reference-key quality). Enable it (run once from the repository root):
+This repository ships a release consistency check (`scripts/verify_consistency.py`, 41 items: table format / evidence-grade counts (five grades A–G, incl. G-class jurisdiction prefixes) / incident-number conventions / section references / terminology conventions / bidirectional citation closure / reference-key quality / verification-log key-set sync / jurisdiction-enumeration consistency / demo assertion declarations vs. actual runtime output / correction-log timeliness). Enable it (run once from the repository root):
 
 ```sh
 git config core.hooksPath .githooks
@@ -68,6 +68,7 @@ Retrievability ≠ admissibility as independent evidence.
 - ② **Bilingual semantic synchronization**: a spec change's .en mirror needs more than "the file exists" — compare paragraph by paragraph for semantic equivalence (gates cannot check translation quality);
 - ③ **Semantic recount of figures**: beyond the gate-locked counts, numbers quoted in prose (e.g., "N consecutive versions without regression") must match the repository's actual state;
 - ④ **Review discipline**: independently verify facts before absorbing external input; never follow a single source; record rebuttals as faithfully as adoptions.
+- ⑤ **Verification-staleness patrol** (since v2.44.2): every literature patrol must take the 20 earliest「核验日期」(verification-date) rows of `VERIFICATION-LOG.md` as its fixed input (B / C preprint entries are due at 6 months; G-grade entries are re-verified upon legal-source revision or follow-up reporting); when absorbing patrol results, update the verification-date column of the affected entries — retracted / falsified citations go through the evidence-correction process, and deletion requires burden of proof.
 
 ### 4. Confidentiality-classification confirmation
 
