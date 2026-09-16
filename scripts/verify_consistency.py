@@ -194,15 +194,15 @@ check("REFERENCES 合计 177 条", total == 177, f"实测合计={total}")
 
 readme = read(os.path.join(ROOT, "README.md"))
 chg = read(os.path.join(ROOT, "CHANGELOG.md"))
-check("README 声明「176 条来源，其中 B 级 104 条」",
+check("README 声明「177 条来源，其中 B 级 104 条」",
       "177 条来源，其中 B 级 104 条" in readme)
-check("README 分布「A:10 / B:104 / C:10 / D:1」（含 A 级来源标注）",
+check("README 分布「A:11 / B:104 / C:10 / D:1」（含 A 级来源标注）",
       "A:11" in readme and "B:104 / C:10 / D:1" in readme)
 # CHANGELOG 取最近版本声明——门禁只校验字符串存在，数值一致性由第 14-15 项覆盖
 # v2.11.0 条目含「新增 1 条 G 级」字样
 check("CHANGELOG 声明「新增 1 条 G 级」（v2.11.0）",
       "新增 1 条 G 级" in chg)
-check("REFERENCES 注脚「10 条 A 级、104 条 B 级、10 条 C 级、1 条 D 级、51 条 G 级（合计 176 条来源）」",
+check("REFERENCES 注脚「11 条 A 级、104 条 B 级、10 条 C 级、1 条 D 级、51 条 G 级（合计 177 条来源）」",
       "11 条 A 级、104 条 B 级、10 条 C 级、1 条 D 级、51 条 G 级（合计 177 条来源）" in refs)
 
 # ── 3b. README 全文证据计数一致性 ─────────────
