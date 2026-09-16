@@ -118,6 +118,56 @@ Warning: five qualifiers (this entry's qualifiers are particularly long because 
 - (iv) **Single author** — not subjected to multi-institution collaborative review; per this framework's single-author rule, evaluated independently, not merged with other multi-institution evidence lines;
 - (v) "22-framework coverage" is the **currently implemented framework count**, not "all theoretically coverable frameworks" — deployers whose frameworks are not in the implemented list must confirm compatibility themselves.
 
+## Governance evidence anchors (G-grade, L0 admission side)
+
+This section registers first-hand evidence already operational in real governance / regulatory / enforcement settings, as empirical anchors for the design of L0 task-definition and admission mechanisms. G-grade entries link to primary regulatory documents, court rulings, official announcements, or statutory standard texts, and support the P0 hard constraints in parallel with academic evidence (A / B / C / D). The following sixteen entries are grouped by L0 mechanism; the full index is in the "Governance evidence anchors" paragraph of spec/01.
+
+**Filing and security assessment as prerequisites**:
+
+- 【键: cn-clear-2026】The Cyberspace Administration of China's "Qinglang · Rectifying AI Application Chaos" special campaign (2026-04): explicitly requires that large models complete deep-synthesis algorithm filing and security assessment before going live — mandatory filing, security-assessment-first, labeling obligations, and training-data legality together form the go-live gate.
+- 【键: cn-chongqing-2024】Chongqing Cyberspace Administration investigated and penalized non-compliant generative AI services (first half of 2024): a service that went live without completing the required security assessment was placed on file for investigation — a local-enforcement proof of "security assessment first".
+- 【键: cn-shanghai-2025】Shanghai's "Liangjian Pujiang · 2025" campaign produced the first case filed and penalized under the Interim Measures for the Administration of Generative AI Services (2025-11): the first proof of a paper rule moving to actual enforcement (detailed landing in spec/12).
+
+**Training-data legality as an admission precondition**:
+
+- 【键: eu-garante-openai-2024】The Italian Garante fined OpenAI EUR 15 million (2024-11): insufficient legal basis for training-data processing itself constitutes a GDPR violation — training-data compliance is not an after-the-fact review item but a pre-launch admission threshold.
+
+**The complete causal chain of missing bias testing**:
+
+- 【键: us-rite-aid-2024】The FTC banned Rite Aid from using facial-recognition systems for five years (consent order 2024-03): no pre-deployment bias testing → systemic discrimination after deployment → five-year ban + data deletion + third-party independent assessment. This causal chain directly supports M2 model-selection evaluation's "pre-admission bias testing" obligation — skipping the test is not an "omission" but "having already planted the cause of systemic discrimination".
+
+**Admission thresholds for specially protected groups**:
+
+- 【键: us-ngl-2024】FTC v. NGL Labs (settlement 2024-07): an AI chat application collected minors' data without parental consent, violating COPPA. Minors, as a specially protected group, face a higher admission threshold than general-purpose services.
+
+**Systematic legislative paths (cross-national convergence)**:
+
+- 【键: eu-ai-act-2026】The EU AI Act's transparency obligations and general enforcement powers took effect on 2026-08-02; high-risk-system obligations were postponed by the Digital Omnibus for AI (OJ L 2026/1744) to 2027-12 (Annex III) / 2028-08 (Annex I): a four-tier risk classification + mandatory requirements for high-risk systems + a three-tier fine ladder (up to 7% of global turnover). The first comprehensive enforcement proof of systematic AI regulatory legislation.
+- 【键: kr-ai-act-2026】Korea's AI Basic Act entered into force (2026-01-22): the second comprehensive AI legislation after the EU's — mandatory legislative paths are converging across jurisdictions.
+- 【键: us-colorado-2024】Colorado SB 24-205 (signed 2024-05-17, effective 2026-02-01): the first state-level comprehensive AI legislation in the US, establishing developer and deployer obligations for high-risk AI systems (algorithmic impact assessments, disclosure, human oversight, anti-discrimination). Note: SB 26-189 (signed 2026-05) will replace most of this framework on 2027-01-01.
+- 【键: us-illinois-2026】Illinois HB 3773 (effective 2026-01-01): employers are prohibited from using AI discriminatorily (including zip code as a proxy for protected classes) and must disclose AI use to employees; the act encourages but does not mandate bias-impact assessments — a state-legislative proof of employment-AI anti-discrimination.
+- 【键: uk-blueprint-2025】The UK government's new AI-regulation blueprint (2025-10-21): five principles (safety / transparency / fairness / accountability / contestability) + the AI Growth Lab regulatory sandbox — an empirical anchor of the principles-based path and sectoral regulation. Note: the AISI was established in 2023-11 and renamed in 2025-02, independent of this blueprint.
+
+**Cross-border deployment as an admission dimension**:
+
+- 【键: cn-export-2025】The Ministry of Commerce added AI companies to the export-control list (two batches, 2025-03 and 2025-04): cross-border deployment and transfer of core AI technology requires a license — cross-border deployment is itself an L0 admission dimension, not an operating-phase matter.
+
+**Governance frameworks for agent-driven organizations**:
+
+- 【键: sg-mgf-aa-2026】Singapore IMDA MGF-AA (2026-01-22): focused on agent-driven organizations, establishing least privilege, substantive accountability, and full-chain logging — an official proof of an agent-governance framework and a cross-national comparison anchor.
+
+**The innovation-first path as a contrast**:
+
+- 【键: jp-ai-promotion-2025】Japan's Act on the Promotion of Research and Development and Utilization of AI-related Technologies (passed 2025-05-28, promulgated and effective 2025-06-04): takes an "innovation-first" path with relatively relaxed, disclosure-oriented regulation of high-risk AI — in contrast to the EU's risk-tiered mandatory regulation. This framework presupposes no jurisdiction; the two paths are registered side by side.
+
+**Global soft-law frameworks**:
+
+- 【键: int-oecd-unesco】OECD AI Principles (adopted 2019-05-22, updated 2024-05-03) + the UNESCO Recommendation on the Ethics of AI (adopted 2021-11-23): the OECD now has 47 adherents (including the EU), and the UNESCO instrument was adopted unanimously by 193 member states — empirical anchors of global soft-law frameworks and multilateral ethical guidelines.
+
+**Certifiable management-system standards**:
+
+- 【键: iso-42001-2023】ISO/IEC 42001:2023, the AI management-system standard: the first international management-system standard for AI, isomorphic to ISO 9001 / 27001, with 350+ organizations certified worldwide as of 2026-09 — the proof of AI governance as a certifiable management system (detailed landing in spec/12).
+
 ## Harness-evolution boundary: agents can develop their own harness but not replace human engineering (added this round)
 
 HarnessDev (arXiv:2609.01437; Yuhao Wu et al., 20 authors, v1 2026-09-01, DOI 10.48550/arXiv.2609.01437; project page self-developing-agents.github.io) proposes a benchmark that **shifts the evaluation unit from task outputs to runnable infrastructure itself** — Creation (the agent starts from a minimal seed and a small number of cases, then builds a complete execution system) and Evolution (the agent iteratively revises its own created harness using downstream execution feedback). Six creator LLMs × four domains × five downstream benchmarks totaling 2,207 unique downstream instances, with hidden evaluation tasks withheld from development.
@@ -178,4 +228,4 @@ Three points of comparison for this framework (a comparison is not an equivalenc
 
 
 
-⚠️ **Known translation gap (registered in v2.44.3)**: the Chinese edition's「治理实证锚点（G 类，L0 准入侧）」section does not yet have an English counterpart in this file. The Chinese edition is authoritative for that section until it is back-translated in a subsequent release. (Systematic bilingual audit, 2026-09-16)
+⚠️ **Known translation gap — RESOLVED for this section (v2.44.5)**: the「治理实证锚点（G 类，L0 准入侧）」section has been fully back-translated; the Chinese edition's section-count declaration was also corrected from「十五条」to「十六条」(actual entry count 16 — a prose-number drift found during translation).
