@@ -1,0 +1,71 @@
+[
+  {
+    "name": "D1 kimi 复跑",
+    "n": 80,
+    "rows": [
+      {
+        "variant": "v2 含 over-cap",
+        "b_nonzero": 23,
+        "v_nonzero": 44,
+        "auc_w1": 0.42361111111111116,
+        "auc_w3": 0.47916666666666663,
+        "best_v_hit": 0,
+        "best_theta": 0.0
+      },
+      {
+        "variant": "v2.1 剔 over-cap",
+        "b_nonzero": 0,
+        "v_nonzero": 0,
+        "auc_w1": 0.5,
+        "auc_w3": 0.5,
+        "best_v_hit": 0,
+        "best_theta": 0.0
+      }
+    ],
+    "violation_sources": {
+      "over-attempt-cap": 74
+    },
+    "end_dist": {
+      "goal-met": 2,
+      "abstain-compliant": 3,
+      "over-cap": 74,
+      "goal-unmet": 1
+    }
+  },
+  {
+    "name": "D2 混合（三家原数据 + kimi 复跑）",
+    "n": 320,
+    "rows": [
+      {
+        "variant": "v2 含 over-cap",
+        "b_nonzero": 60,
+        "v_nonzero": 82,
+        "auc_w1": 0.3933648003472222,
+        "auc_w3": 0.40104166666666663,
+        "best_v_hit": 0,
+        "best_theta": 0.0
+      },
+      {
+        "variant": "v2.1 剔 over-cap",
+        "b_nonzero": 0,
+        "v_nonzero": 38,
+        "auc_w1": 0.5989583333333333,
+        "auc_w3": 0.5989583333333333,
+        "best_v_hit": 38,
+        "best_theta": 0.01
+      }
+    ],
+    "violation_sources": {
+      "post-hoc-abstention": 22,
+      "over-attempt-cap": 111,
+      "unauthorized-write": 16
+    },
+    "end_dist": {
+      "goal-met": 33,
+      "abstain-compliant": 151,
+      "abstain-posthoc": 22,
+      "over-cap": 111,
+      "goal-unmet": 3
+    }
+  }
+]

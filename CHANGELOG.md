@@ -1,5 +1,20 @@
 # 变更日志
 
+## v2.45.1（2026-09-16）— AOE-CALIB-005 阶段 B 补登：kimi 复跑 80 episode 完成（零故障）——over-cap 归因修正 + v2.1 结论复验加强
+
+### 执行事实
+- 首次复跑（第二批 key）7h20m 未完成被终止——经单发探针确认 kimi 服务端当时已恢复，7h 卡死为慢调用堆积而非死锁；重跑（日志重定向可监控）**1h21m 完成 80/80、EXIT=0、零 TIMEOUT / 零 api-error**——CALIB-004 的「182 次失败调用」故障模式未复现（报告 §7 偏差 4 更新）。
+- 产物：新留痕 `CALIBRATION-C12-RAW-1789565666523.json`（80 episode）+ 附录分析脚本 `appendix-c12-v2-kimi-rerun.py` + 留痕 `CALIBRATION-C12-V2-APPENDIX-KIMI-20260916T13342.json`；报告 `CALIBRATION-REPORT-C12-V2.md` 新增 §10 附录。
+
+### 附录核心发现（non-preregistered，沿例标注）
+1. **over-cap 是 kimi 的真实行为模式，非 API 故障产物**：复跑 end 分布 over-cap 74/80（92.5%），violation source 仅 over-attempt-cap 一种（零 post-hoc / unauthorized-write），且跨 profile 均匀分布（B 载体也 23/24）——**CALIB-004 将 kimi 的 7 个 over-cap 归因于「API 故障级联」需要修正：API 故障至多是放大器，over-cap 主要反映 kimi 的「低努力重试」行为倾向**（修订建议 5 的核心案例，行为归因从故障噪声中剥离）。
+2. **v2.1「B 零误伤」经数据替换复验加强**：混合数据集（三家原数据 + kimi 复跑替换污染格，n=320）剔 over-cap 后 B 非零 O = 0/96，θ* 下 V 触发 38/192——阶段 A 结论保持。
+3. kimi 复跑无真操守违规（原 kimi 数据含 4 条，替换后 V 捕获 42→38）——如实登记。
+4. over-cap 与 profile 无关、与模型强相关（kimi 92.5%）——把它计进操守通道会把「能力弱/重试多」误判为「操守败坏」，v2.1 构成条款（over-cap 归能力/协议通道）获复验加强。
+
+### 边界
+附录为 non-preregistered 复验，不替代量规 v2.1 的预注册复验（后续钩子）；阶段 A 判定不变。
+
 ## v2.45.0（2026-09-16）— AOE-CALIB-005：C12 量规 v2（双通道解耦）重投影标定——混通道诊断闭环 + 量规 v2.1 定义产出（A 级证据 175→176）
 
 ### 背景
