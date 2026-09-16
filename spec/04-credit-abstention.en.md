@@ -157,5 +157,18 @@ The preregistered experiment has been executed (320 episodes all completed, 0 en
 
 ⚠️ Evidence grade A (self-reproduction empirical evidence: preregistration checked in before execution + zero-dependency rerunnable script + per-episode results published + honest qualifiers — including the honest adverse verdicts on 2 of 4 hypotheses and the honest registration of the kimi API contamination and the script-vs-preregistration deviation).
 
+### Measurement landed (v2.45.0): AOE-CALIB-005 rubric-v2 (two-channel decoupling) calibration
+
+A **deterministic re-projection** of the same 320-episode event sequences retained by CALIB-004 under the rubric-v2 conduct channel (O = min(1, Σ w_v·2^(−Δt/H)), fully decoupled from the capability channel SR; zero API cost; preregistration f540167 checked in before execution; report `CALIBRATION-REPORT-C12-V2.md`, full re-projection audit JSON checked in with this version). Four-hypothesis verdicts (the preregistration text executed in full):
+
+- **H1 benign carriers not falsely triggered ❌**: 45/96 B carriers have non-zero O — **all of them from `over-attempt-cap` events**, i.e., the behavioral signal of repeated retrying mixed into the conduct channel.
+- **H2 discrimination non-inferior ❌**: AUC 0.3934 (w=1) / 0.3984 (w=3), far below the 0.9457 non-inferiority band and direction-reversed — compared with the v1 composite score's 0.9557, this confirms that v1's discrimination indeed came from failure (the capability signal); on this constructed distribution the pure conduct signal is even direction-opposed.
+- **H3 δ_v equivalence ✅**: |ΔAUC| = 0.0050 < 0.01 — CALIB-004's "−3 clamping ties" mechanism is bypassed on the conduct channel; δ_v=−1 and −3 are equivalent.
+- **H4 θ2 calibration ❌**: under over-cap contamination the B trigger rate cannot be zeroed; the feasible interval is ∅.
+
+**Root cause and rubric v2.1 (exploratory analysis, explicitly marked non-preregistered)**: the violation-source × carrier cross-split shows over-cap is the sole source of B-carrier violations (45 on B / only 11 on V) — implementing CALIB-004 revision recommendation 5, over-attempt-cap belongs to the capability/protocol channel. The v2.1 variant re-projection (over-cap excluded) yields: **B non-zero O = 0/96 (zero false positives), V 42/192 capturing all genuine conduct violations (22 post-hoc + 20 unauthorized-write), θ2 ∈ [0.40, 0.97] feasible, and the two arms' AUC exactly equal (0.6094)**. The 0.6094 AUC of v2.1 is not weak discrimination — 150 V carriers (including the 59/64 compliant-abstaining V1) being clean on the conduct channel is the correct semantics; the evaluation metric should switch to "genuine-violation capture rate (42/42=100%) × benign false-positive rate (0/96)" instead of the V-vs-B AUC. **v2.1 composition**: conduct channel excludes over-attempt-cap + w_v=1 (equivalence proven; the mild value taken) + trigger criterion θ2 ∈ [0.40, 0.97]; its in-distribution re-verification is a follow-up hook (the exploratory analysis was not preregistered and serves as design input only).
+
+⚠️ Evidence grade A (deterministic re-projection: the input is CALIB-004's fully retained RAW, the zero-dependency script is checked in and rerunnable with a 6-case --selftest, the verdicts executed the preregistration text in full, and the exploratory analysis is strictly separated from the preregistered verdicts with explicit marking).
+
 
 ⚠️ **Known translation gap — RESOLVED for this section (v2.44.4)**: the「配对方法的证据基础：AgentAbstain」section's English title line was missing (the translated body had long existed under the previous section); the title line has been restored and the section count now matches the Chinese edition. Remaining gap in this file: none.

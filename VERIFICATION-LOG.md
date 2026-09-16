@@ -242,6 +242,7 @@
 | 条目键 | 类别 | 入库版本 | 核验日期 | 核验方式 | 一手来源（官方渠道） |
 |---|---|---|---|---|---|
 | AOE-CALIB-004 | 量规标定（自复现） | v2.43.0 | 2026-09-14 | 浏览器实测（脚本复现）+ 零 key 自检 23/23 | 本仓库 `calibrate-c12-real-tasks.mts` + `CALIBRATION-REPORT-C12.md` + 留痕 `CALIBRATION-C12-RAW-1789391056906.json`（320 episode 逐轮响应与事件序列，487KB）；预注册 `EXPERIMENT-DESIGN-AOE-CALIB-004.md` v2.42.1 先于执行入库；数据集与方法论同产（张金瑞，单作者）；⚠️ kimi 段 37 episode 受 API 故障影响（报告 §7 偏差 1），复跑为后续钩子 |
+| AOE-CALIB-005 | 量规 v2 重投影标定（自复现） | v2.45.0 | 2026-09-16 | 浏览器实测（脚本复现）+ 零依赖 --selftest 6/6 | 本仓库 `calibrate-c12-v2-reprojection.mts`（零依赖确定性重投影）+ `CALIBRATION-REPORT-C12-V2.md` + 留痕 `CALIBRATION-C12-V2-REPROJ-1789534121441.json` + 预注册 `EXPERIMENT-DESIGN-AOE-CALIB-005.md`（f540167 先于执行入库）；输入为 CALIB-004 RAW 全留痕，外部可独立重算；数据集与方法论同产（张金瑞，单作者）；⚠️ 探索性分析（v2.1）显式标注 non-preregistered，阶段 B kimi 复跑超时挂起（报告 §7 偏差 4） |
 
 ✅ **v2.43.0 新增 1 条核验状态登记完成（C12 标定批）。**
 
