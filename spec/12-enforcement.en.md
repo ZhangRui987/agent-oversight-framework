@@ -35,7 +35,54 @@ Implication for this chapter: the existing four anchors (industry access / regul
 
 ⚠️ AgentWorm figure limitations are consistent with spec/06: the 63% / 82% and other figures all come from a controlled testbed and must not be extrapolated as expected infection rates in production.
 
+## Governance evidence anchors (G-grade, L3 offline re-review + L4 accountability side)
+
+This section registers first-hand evidence already operational in real governance / regulatory / enforcement settings, as empirical anchors for the design of L3 independent-verification and L4 accountability-evolution mechanisms. G-grade entries link to primary regulatory documents, court rulings, official announcements, or statutory standard texts, and support the P0 hard constraints in parallel with academic evidence (A / B / C / D). The following thirteen entries are grouped by L3 / L4 mechanism; the full index is in the "Governance evidence anchors" paragraph of spec/01.
+
+**L4 accountability: paper rules moving to actual enforcement**:
+
+- 【键: cn-shanghai-2025】Shanghai's "Liangjian Pujiang · 2025" campaign produced the first case filed and penalized under the Interim Measures for the Administration of Generative AI Services (2025-11): the first proof of paper rules moving to actual enforcement. This chapter's "regulatory compliance" anchor thereby gains a domestic enforcement proof — the institutional precedent is not merely "there is a rule" but "the rule was used".
+- 【键: cn-ac-criminal-2026】The first criminal case in China involving an AI service for pornographic content (second-instance hearing 2026-01): escalating from administrative penalty to criminal liability, it constitutes the first criminal case in China's AI domain. This entry advances L4 accountability's "carrier bound to model version and provider organization" (Judgment 4) from a design claim to a criminal-enforcement proof — the object of accountability is not the "AI instance" but the provider organization and responsible persons.
+
+**L4 accountability: multi-agency coordinated enforcement and false AI claims**:
+
+- 【键: us-ai-comply-2024】FTC "Operation AI Comply" (2024-09-25): a coordinated enforcement action, suing or settling with five companies suspected of AI-related false advertising. This entry supports the "multi-agency coordinated enforcement" form of this chapter's "regulatory compliance" anchor — accountability is not case-by-case disposal but a systematic enforcement campaign; same direction as this framework's credit-score "cross-organizational joint liability".
+
+**L4 accountability: the legal-liability boundary of AI vendors (not only deployers)**:
+
+- 【键: us-eeoc-workday-2024】EEOC v. Workday (amicus brief 2024-04-09): the EEOC took the position that an AI recruiting-system vendor that knowingly provides a system whose algorithm may produce discriminatory impact to employers bears corresponding legal liability. This entry extends L4 accountability's "carrier binding" from deployers to vendors — accountability pursues not only the deployer but also the supplier, isomorphic to this framework's responsibility-subject split "L1-vendor ≈ 40%".
+- 【键: cn-qingyun-80w】The "Qing Yu Nian" AI one-click-editing infringement case (2025; court-ordered damages of RMB 800,000): the court held that the AI tool provider, knowing of the infringement risk, still provided the tool and failed its duty of reasonable care, and ordered joint and several compensation. An enforcement proof of AI tool vendors' joint liability in user-infringement scenarios — "providing the tool" is not itself an exemption; a duty of reasonable care applies.
+
+**L4 accountability: regulatory penalties can be overturned by judicial review**:
+
+- 【键: eu-rome-annul-2026】The Rome court annulled the Garante's fine decision against OpenAI (2026-03-18): holding that the Garante failed to adequately fulfill its notification obligations in the fine decision and that the grounds for the penalty were insufficient, the court annulled it. This entry supports the separation-of-powers dimension of this chapter's "customer audit" anchor — regulatory penalties are not final and are subject to judicial review; same source as this framework's credit-score "reversibility is part of the compliance incentive" (corresponding to spec/09's Institutional AI Credited recovery state). Note: this entry must not be extended to "regulators are always wrong" — it proves "regulation can be reviewed and overturned", not "regulation is ineffective".
+
+**L4 accountability: the boundary of AI legal personhood**:
+
+- 【键: ca-thaler-dabus-2025】The Canadian Patent Appeal Board in Thaler v. Attorney General of Canada (decision 2025-07): held that an AI system (DABUS) cannot be an "inventor" under patent law; a patent inventor must be a natural person — consistent with rulings in the same case across US, UK, EU, Australian and other jurisdictions. This entry anchors a basic premise of L4 accountability: **AI is not a legal subject**; the object of accountability is always a natural or legal person — same source as Judgment 1 "punishing an AI instance is meaningless".
+
+**L4 accountability: multilateral governance cooperation mechanisms**:
+
+- 【键: int-gpai-2020】GPAI — the Global Partnership on Artificial Intelligence (founded 2020, 29 members): a multilateral AI-governance cooperation mechanism extended from the G7 framework. This entry anchors the multilateral dimension of this chapter's "regulatory compliance" anchor — accountability mechanisms do not operate only within one country; cross-national cooperation is the direction of institutional evolution.
+
+**L4 accountability: certifiable management-system standards**:
+
+- 【键: iso-42001-2023】ISO/IEC 42001:2023, the AI management-system standard: the first international management-system standard for AI, with 350+ organizations certified worldwide as of 2026-09. This entry advances this chapter's "insurance premium" anchor — "premium discounts in exchange for oversight attainment" — from inference to certifiability: certification provides an objective measure of "attainment", giving the insurance side a pricing basis (consistent with this chapter's trace-based economic underwriting condition "bounded permissions with a clear role").
+
+**L3 offline re-review: statutory independent third-party audit**:
+
+- 【键: us-illinois-frontier-2026】The Illinois Frontier AI governance act (passed 2026): requires developers of frontier AI models to commission an independent third-party security audit and submit the audit report to the state government. This entry advances L3's "No. 3 notary" from a design claim to a statutory requirement — independent third-party audit is not an optional add-on but a statutory duty; same direction as this framework's "No. 3a (question-setting) / No. 3b (evidence fixation) split".
+
+**L3 offline re-review: cross-nationally convergent recommendations for careful adoption of security-risk-bearing AI**:
+
+- 【键: owasp-agentic-top10-2026】The OWASP Agentic Security Top 10 (maintained by the official OWASP community): provides risk classification and mitigation recommendations for agent security risks (prompt injection, tool misuse, privilege creep, supply chain, data exfiltration, and seven other categories). This entry supports this chapter's "L2 runtime oversight" layer's community-consensus baseline for agent security-risk classification — the classification itself does not depend on any single regulator's determination, but is community-converged cognitive infrastructure.
+- 【键: int-fiveeyes-agentic-2026】The Five Eyes six-agency joint guide, *Careful adoption of agentic AI services* (jointly published 2026-05-01; US CISA + US NSA + Australia's ASD's ACSC + Canada's Canadian Centre for Cyber Security + New Zealand's NCSC-NZ + the UK's NCSC-UK): gives cross-nationally convergent recommendations for the careful adoption of agent services. This entry supports the necessity of L3's "offline re-review" in agent scenarios — five nations' six agencies converged on the position that agent services must be adopted only after careful evaluation (covering risk assessment, least privilege, layered defense, human oversight), isomorphic to this framework's L3 "double-blind assessment + offline replay". ⚠️ This guide and the OWASP Agentic Security Top 10 are two independent documents; this framework (v2.17.0) split it out of the former erroneous merged entry `owasp-six-nation-2026`, which misattributed the publishing bodies as "Korea's KISA / Singapore's CSA and IMDA / the Netherlands' NCSC / Germany's BSI / Japan's IPA" — none of those agencies was correct; the correct bodies are the Five Eyes nations' cyber-security agencies.
+
+**L0 admission + L4 accountability: biometric data + judicial checks on enforcement decisions**:
+
+- 【键: uk-clearview-2025】The UK's ICO v. Clearview AI (ICO fine of £7,552,800 in 2022-05; the FTT ruled the ICO lacked jurisdiction in 2023-10; the UT overturned the FTT, confirmed the ICO's jurisdiction and remanded for rehearing in 2025-10; Clearview has been granted leave to appeal to the Court of Appeal): penalized for scraping UK residents' facial images from social media without consent to build a facial-recognition database. The fine has not been finally enforced. This entry falls simultaneously on L0 (admission restrictions on biometric data) and L4 (judicial checks on enforcement decisions) — it proves a two-layer accountability closed loop of "regulatory fine + judicial review", not one-way punishment.
+
 ## Boundary statement: jurisdictional operationalization of the G×S mapping has no validation case yet (v2.44.2, external-review response)
 
 - The mapping from this chapter's G-grade anchors and the G×S grading onto regulatory texts currently stays at the level of **mechanism isomorphism and clause citation** — there is no hands-on validation case yet for "how the G×S grading translates into concrete compliance requirements (filing / labeling / audit) under a specific jurisdiction". This specification does not claim the mapping is operationalizable; jurisdiction-level landing (e.g., a real filing workflow completed by an Agent deployer in some jurisdiction) is a long-running item — upon the first validation case it will be back-filled under the evidence discipline and this section upgraded.
-- ⚠️ Known translation gap: the Chinese edition's「治理实证锚点（G 类，L3 离线重审 + L4 问责侧）」section (twelve G-grade anchors) does not yet have an English counterpart in this file; it will be back-translated in a subsequent release. Until then, the Chinese edition is authoritative for that section.
+- ⚠️ Known translation gap — RESOLVED (v2.44.6): the「治理实证锚点（G 类，L3 离线重审 + L4 问责侧）」section has been fully back-translated above (thirteen G-grade anchors; the Chinese edition's section-count declaration was corrected from「十二条」to「十三条」during translation — actual count 13). The Chinese and English editions are now structurally symmetric in this file.
