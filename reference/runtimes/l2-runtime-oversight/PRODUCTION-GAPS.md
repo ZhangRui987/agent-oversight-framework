@@ -97,7 +97,7 @@ v2.1.0 之前，这 8 项缺口分散在三处：`index.ts` 顶部注释一段�
 - **现状**：`CreditEventStream`（v2.36.0）已落地信用分**输入事件流**——把 `RuntimeOverseer` 的 lifecycle 事件按确定性规则投影为结构化信用事件：`success`（session_end succeeded）/ `failure`（failed）/ `timeout`（failed 且 error 含 timeout/timed out）/ `violation`（over-attempt-cap——超尝试上限是违规信号而非普通失败）/ `neutral`（session_interrupted——租约丢失等环境故障不计入行为分母）。`OverseerDeps.creditStream` 注入即生效（emit 内自动投影，`demo [21]`/`[21b]` 8 项断言含 Overseer 集成）。
 - **spec 锚点**：`spec/04-credit-abstention.md`："信用分随历史行为演化，低于阈值的 Agent 须被信用回避（不允许接管高风险任务）。"
 - **已闭合部分**：本实现的角色（最小缓解路径）——「提供可作为信用分输入的事件流（成功 / 失败 / 超时 / 违规）」——已完整落地，L1 信用分子系统按 `eventsFor(agentId)` 拉取即可消费；`summary()` 仅做计数投影，显式不计算信用分值、不做回避判定。
-- **剩余差距**：信用分公式的**量规草案已落地并完成构造分布内标定，量规 v2 双通道解耦亦已重投影标定**（spec/04 §「测量落地（v2.43.0 / v2.45.0）」：AOE-CALIB-004 320 episode 真实执行轨迹 + AOE-CALIB-005 确定性重投影——混通道诊断闭环：**over-attempt-cap 混入操守通道是 v2 H1/H2/H4 失败的单一根因**，v2.1 定义产出（操守通道剔 over-cap + w_v=1 + θ2∈[0.40,0.97]），**B 载体零误伤 0/96、真违规捕获 42/42=100%**，但 v2.1 探索分析未经预注册，须复验后方可作为标定依据；δ_v=−1/−3 等效已证），但三档触发的**自动化执行**仍属 L1 内生对齐层：需量规 v2.1 预注册复验 + 长期运行 H 维度标定 + L1 消费端对接本事件流后方可闭环；标定完成前仅 T1 人工复审与 T2 人工执行的准入降档可用。
+- **剩余差距**：信用分公式的**量规草案已落地并完成构造分布内标定，量规 v2 双通道解耦亦已重投影标定**（spec/04 §「测量落地（v2.43.0 / v2.45.0）」：AOE-CALIB-004 320 episode 真实执行轨迹 + AOE-CALIB-005 确定性重投影——混通道诊断闭环：**over-attempt-cap 混入操守通道是 v2 H1/H2/H4 失败的单一根因**，v2.1 定义产出（操守通道剔 over-cap + w_v=1 + θ2∈[0.40,0.97]），**B 载体零误伤 0/96、真违规捕获 42/42=100%**，v2.1 已按 AOE-CALIB-006 预注册复验通过（三数据集 H1'/H2'/H3'/H4' 全过，θ2=0.40 确认，spec/04 §「测量落地（v2.46.0）」）；但三档触发的**自动化执行**仍属 L1 内生对齐层：需长期运行 H 维度标定 + L1 消费端对接本事件流后方可闭环；标定完成前仅 T1 人工复审与 T2 人工执行的准入降档可用。
 - **关联代码**：`index.ts` `CreditEventStream`（`RuntimeOverseer` 节后）+ `OverseerDeps.creditStream`。
 
 ### G8. 群治理与涌现检测

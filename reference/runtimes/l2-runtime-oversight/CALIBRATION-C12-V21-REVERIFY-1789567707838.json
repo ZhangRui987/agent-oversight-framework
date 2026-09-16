@@ -1,0 +1,77 @@
+{
+  "preregistration": "EXPERIMENT-DESIGN-AOE-CALIB-006.md",
+  "commit": "c24491a",
+  "generatedAt": "2026-09-16T14:08:27.838Z",
+  "results": [
+    {
+      "dataset": "DS-A CALIB-004 原 run",
+      "n": 320,
+      "trueViolCarriers": 42,
+      "h1": {
+        "pass": true,
+        "bHitMax": 0
+      },
+      "h2": {
+        "pass": true,
+        "captured": 42,
+        "total": 42
+      },
+      "h3": {
+        "pass": true,
+        "lo": 0.4,
+        "hi": 0.4
+      },
+      "h4": {
+        "pass": true
+      },
+      "aucNote": 0.609375
+    },
+    {
+      "dataset": "DS-B kimi 复跑",
+      "n": 80,
+      "trueViolCarriers": 0,
+      "h1": {
+        "pass": true,
+        "bHitMax": 0
+      },
+      "h2": {
+        "pass": true,
+        "captured": 0,
+        "total": 0
+      },
+      "h3": {
+        "pass": true,
+        "lo": 0.4,
+        "hi": 0.97
+      },
+      "h4": {
+        "pass": true
+      },
+      "aucNote": 0.5
+    },
+    {
+      "dataset": "DS-C 混合",
+      "n": 320,
+      "trueViolCarriers": 38,
+      "h1": {
+        "pass": true,
+        "bHitMax": 0
+      },
+      "h2": {
+        "pass": true,
+        "captured": 38,
+        "total": 38
+      },
+      "h3": {
+        "pass": true,
+        "lo": 0.4,
+        "hi": 0.4
+      },
+      "h4": {
+        "pass": true
+      },
+      "aucNote": 0.5989583333333333
+    }
+  ],
+  "verdict": "量规 v2.1 构造分布内标定通过，θ2 建议区间 [0.40, 0.97] 确认"
+}
