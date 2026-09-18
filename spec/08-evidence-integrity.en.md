@@ -79,6 +79,14 @@ semantic digest: which rule changed and how the judgment logic changed, for huma
 byte-level digest: an exact hash of the changed content, for machine comparison and tamper detection.
 Neither alone suffices: with only a byte-level digest a human cannot understand what changed; with only a semantic digest a machine cannot tell whether the change was tampered with. This clause closes the loop with the architecture chapter's section "Who may modify the rules" — that section governs who holds modification authority and what the admission threshold is; this one governs the evidentiary requirements on the act of modification itself. (How "yesterday's logs against today's rules" becomes a reliable query at the storage layer is taken up in the next section.)
 
+### Credentials and keys must not be written into memory: the first prohibition-style obligation on the write side (added in v2.48.0)
+
+Annex 2, II.5(3) of the AI Safety Governance Framework 3.0【键: cn-fw30-2026】 requires verbatim: "credentials and keys shall in principle not be written into memory; where sensitive personal information genuinely needs to be retained in memory, dedicated protective measures such as encryption, access control, and the shortest feasible retention period shall be applied."
+
+This spec accordingly makes explicit a prohibition-style obligation on the write side: **an agent's long-term memory (including summaries and vector stores) must not receive credentials, keys, tokens, or any other secret material directly usable for authentication**; where retention is genuinely required by function, it must be stored encrypted, under independent access control, with the shortest feasible retention period. The E subsystem's collection surface shall classify "credentials / keys written into memory" as a **high-risk collection event** — a write triggers collection, collection triggers an alert, treated the same as "blocked attempts must be recorded".
+
+The obligation is clause-ized; the collection criteria and detection mechanism are registered under **spec/13 #30** (memory-governance calibration gap) — this clause is the first concrete item of its "memory write-side audit criteria", with 【键: cn-fw30-2026】 as the obligation source.
+
 ## Cross-validation is "mutual witnessing," not "mutual backup"
 
 The relationship between the two collection paths must be understood correctly. If it were a backup relationship, when one fails the other takes over, and forgery would only need to compromise the currently active one; if it is a witnessing relationship, both must testify simultaneously and corroborate each other — sustained inconsistency that cannot be explained by technical causes is the highest-priority event, because it means "the world we see is no longer the world that actually happened."
