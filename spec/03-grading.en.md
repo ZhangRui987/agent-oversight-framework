@@ -14,6 +14,10 @@ G2 | Medium risk, partially verifiable (business code, data processing) | Sandbo
 G3 | High risk, hard to verify (modifying production databases, external communication) | Full suite: sandbox + No. 2 + No. 3 + evidence externalization | C (design reasoning)
 G4 | Personal safety / irreversible level | Mandatory fallback. A "fallback-less" voluntary abstention is not allowed — a safe degradation path must accompany it (e.g., not executing automatically, instead generating a plan pending approval); those without a degradation plan enter human final adjudication | C (design reasoning)
 
+### G-axis applicability note: embodied AI (added in v2.47.0)
+
+The AI Safety Governance Framework 3.0【键: cn-fw30-2026】 devotes dedicated sections to embodied AI (§2.2.2, four risk categories: environmental perception / physical execution / human–machine interaction / swarm coordination); its significance is that AI risk shifts from "saying the wrong thing" to "hitting people, misoperation, runaway production lines". For this framework it means **embodied AI turns G4 from a fallback scenario into the normal scenario** — physical execution is inherently irreversible, with no "execute first, roll back later" path. This framework is, however, a pure-software governance spec and does not clause-ize the physical-execution layer (the boundary is also declared explicitly in the threat-model chapter's cross-check section): tasks involving physical execution are graded G4 with mandatory fallback and human final adjudication, while embodied-AI-specific risk clauses (sensor adversarial attack, hardware failure, human–machine-interaction ethics) are deferred to dedicated work.
+
 ## Scale dimension S
 
 Scale | Agent count | New risk | Additional mechanisms | Evidence grade

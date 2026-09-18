@@ -112,3 +112,43 @@ Warning: three qualifiers:
 
 ## Consequences of the modeling gap
 If the oversight framework is designed for "single agents" while the real threat is a "700-agent swarm", then even if every single agent is perfectly overseen, the framework still fails — because the danger comes not from any single agent's behavior, but from the connections between them. This is not a matter of quantity but of quality. The swarm-governance chapter addresses it head-on.
+
+## Threat-surface cross-check against Annex 2 of the AI Safety Governance Framework 3.0 (added in v2.47.0)
+
+### Why a cross-check is needed
+This chapter's knowledge production is **incident-driven**: every real-world incident gets absorbed as mechanism corroboration or an evidence entry (see the "added this round" sections above). The systematic blind spot of this mode is that **threat categories never exposed by an incident will never enter**. "Context-overflow attacks" (crafting excessively long inputs to exhaust the limited context window, truncating built-in instructions and disabling safety constraints) are the living example: it has never been a famous incident, hence its absence from every earlier section of this chapter.
+
+Annex 2 of the AI Safety Governance Framework 3.0【键: cn-fw30-2026】 represents another production mode: **systematic enumeration along the lifecycle** (9 categories, 33 risk items, counted category by category). The two modes complement each other — enumeration is complete in coverage but shallow in incident depth; incident-driving stays close to reality but incomplete in coverage. This section uses that enumeration as an **external cross-check axis**, runs a non-incident-driven blind-spot audit over this chapter, and fixes the result as a standing self-check table (to be re-run whenever new mechanisms are added to this chapter).
+
+### Division of labor: obligation layer vs. verification layer (citation-sentence constraint)
+The 7 classes of safeguards in Annex 2 are all **obligation clauses** ("what shall be done") and do not answer "how to prove it was done" — which is exactly where this framework stands. Absorption discipline:
+
+- **Citation sentence pattern**: "Framework 3.0 Annex 2, II.N requires X; this framework's spec/XX provides the mechanism that verifies X";
+- Do **not** rewrite national-standard obligations into this framework's own clauses — that adds nothing;
+- Grade G supports only obligation claims; any efficacy claim ("mechanism X works", "detection rate Y") still requires grade A/B evidence (see the grade-G definition in REFERENCES).
+
+### Nine-category cross-check matrix (coverage self-check table)
+Coverage is judged as of v2.47.0; the "gap noted" column states facts only — numbered registration is deferred to later versions via the clause-level backfill process:
+
+Coverage | Framework risk category (items) | This framework's counterpart | Gap noted
+--- | --- | --- | ---
+Partial | 1 Design & development (3) | spec/05 intrinsic alignment; spec/03 G×S grading | No explicit clause on progressive permission-granting or version-rollback records
+Weak | 2 Installation & deployment (3) | spec/02 SkillFortify (skill / plugin layer) | No clause on install artifacts and container-image layer
+Partial | 3 Instruction input (2) | L1 task-definition QA | **No clause on context-overflow attacks** (an attack surface entirely absent from this chapter before)
+Covered | 4 Reasoning & planning (3) | spec/09 No. 2 oversight, watchdog | —
+Covered | 5 Tool invocation & execution (7) | spec/08 E1–E5; spec/10 resource ledger | Budget ratio triggers audit only, not interception (existing spec/10 boundary)
+Strong | 6 Memory storage (4) | spec/08 three memory sections (empirical) | No prohibition-style clause on keeping credentials/keys out of memory
+Covered | 7 Output (2) | spec/04 blank-ball exit, evidence solidification | —
+**Blank** | 8 Decommissioning (3) | — | **Entirely blank**: no clause on process/port shutdown, third-party authorization revocation, or residual credential cleanup
+Partial | 9 Other risks (6) | spec/08 tamper-proof logging (strong) | Behavioral escape (exploiting runtime flaws to bypass gates) is a different attack surface from the watchdog's "cannot be switched off by the AI"
+
+### Explicit non-coverage declarations
+- **Embodied AI** (Framework 3.0 §2.2.2 / §3.2.2): this framework is a pure-software governance spec and does not address the physical-execution layer; its significance is registered as a G4 applicability-scope expansion in spec/03 (v2.47.0).
+- **Information-content safety** (§2.2.4 etc.): content-side governance is outside this spec's scope and is not clause-ized.
+- **Regulatory sandbox regime** (§4.3): administrative institutional design by regulators (entry criteria, responsibility, exit); only "exemption without liability immunity" is taken as an external anchor for the H axis in the grading chapter.
+- **Open-source obligation allocation** (§4.4.4): allocation of duties between open-source providers and download users — different scope from this framework's object of governance (agent execution and oversight); registered as a boundary note.
+
+### Qualifiers
+- The nine categories are a risk classification under an **obligation-enumeration perspective**, not an empirically validated threat taxonomy — "the standard lists it" is not evidence that "the threat exists or is prevalent" (grade G supports obligations only; see the grade-G definition in REFERENCES);
+- Coverage judgments are a static snapshot as of v2.47.0; re-run this table when new mechanisms are added to this chapter;
+- "Covered" means a corresponding mechanism exists and is invoked per the G×S grading — it does **not** mean the mechanism has been calibrated to the point of interception (e.g., open issue #16, δ uncalibrated).
