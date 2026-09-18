@@ -1,6 +1,6 @@
 # AI Execution & Oversight Framework
 
-[![Version](https://img.shields.io/badge/version-2.48.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.48.1-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (104/178)](https://img.shields.io/badge/evidence-B_104%2F178-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -34,6 +34,8 @@ This framework extends the "delegable boundary" from "no harm if wrong" (writing
 | **Two independent audit lines** (behavioral compliance + resource flow, mutually distrusting) | `spec/02-architecture.md` |
 
 ✨ = the only Chinese-language open-source specification focused exclusively on the **governance architecture layer** (neither replacing execution substrates like Sandlock / gVisor / Firecracker, nor replacing threat catalogs like OWASP LLM Top 10 / MITRE ATLAS) — all governance logic (oversight and decision frameworks), not engineering implementations. We do not claim "no competitors exist": the governance-standards landscape is already crowded (NIST AI RMF, ISO 42001, Microsoft Agent Governance Toolkit, etc.); this framework is positioned as a **transparent complementary specification**, focused on the niche of Chinese-language Agent governance and domestic compliance mapping (see `spec/12-enforcement.en.md`).
+
+This framework has completed a systematic cross-check against Annex 2 of the AI Safety Governance Framework 3.0, and — positioned as the **verification layer** — provides verifiable mechanisms for its obligation clauses (see the threat-surface cross-check section in `spec/06-threat-model.en.md`).
 
 ## An honest boundary (also our differentiation)
 
@@ -118,7 +120,7 @@ Per `CLASSIFICATION.md`, this repository has three levels:
 
 ## Status
 
-- Current version: v2.48.0 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
+- Current version: v2.48.1 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
 - Maintenance status: **does not claim "built"; claims only "maintained"** — an open cheating set can only be countered continuously
 - **Honest boundary**: 35 open problems explicitly registered (see `spec/13-boundaries.md`) — this framework's honest boundary and a problem list for researchers; includes the system's largest engineering gap, "decentralized-swarm countermeasures"
 - Change history: see [`CHANGELOG.md`](CHANGELOG.md)
