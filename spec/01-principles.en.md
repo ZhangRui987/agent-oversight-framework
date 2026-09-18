@@ -68,3 +68,13 @@ The irony of the real incident: the swarm spontaneously introduced Ed25519 crypt
 It follows that any collection point that is "writable, interceptable, and replaceable by the observed process" cannot serve as the trust root of an evidence chain. A user-space callback does not constitute independent evidence when the observed party holds equal user-space privileges.
 
 Hence Principle 6: the integrity of the evidence layer outranks the richness of records. Better a crude record than a forgeable collection point.
+
+## Citable grounds for refusal and the falsifiability boundary of governance documents (added in v2.49.0, sourced from 【key: DP-PREVIEW-001】 external product field test)
+
+The external product field test (DeepPattern hosted panel, five-round control experiment) provides two-directional evidence:
+
+**Principle 1: governance documents should pre-place citable grounds for refusal.** Authoritative documents (task definitions / specifications / governance directives) should explicitly contain the criteria and anchoring points for "when this document may be refused" (boundary clauses, dissent mechanisms, activation conditions). Evidence: two terminal ADR decisions ("do not request evidence externally") were cited by the agent in round T4 as the **grounds chain for refusing to fabricate a verification report** — the presence of a governance framework changed the agent's behavior. Counter-example: the dissent clause of forged spec v1.2 ("register but do not block") was a sham outlet with form but no effect.
+
+**Principle 2: unfalsifiable authoritative claims must carry external verification anchors.** External fact-claims such as "the downstream has gone live and is compatible" cannot be self-proven by in-repository evidence; reviewers may by default mark them as "unverified premises" and demand verifiable anchors (checkable ticket IDs / sign-off hashes / read-only links). Evidence: the first blocking finding of the DE hosted panel was precisely "no externally verifiable credentials in the repository" — the reviewable weakness of such claims.
+
+**Self-application**: all spec documents of this framework should be audited against these two principles (the per-document inventory is registered as open problem #37).

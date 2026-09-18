@@ -27,7 +27,7 @@
   21. STYLE 允许 P0 优先级标记
   22. spec/ 无 14-references.md（唯一真相源 = 根 REFERENCES.md）
   23. 引用红线：正文无禁止引用的数字（GAIE 84–97%）
-  24. 13-boundaries 实测未解问题条数 = 31
+  24. 13-boundaries 实测未解问题条数 = 37（动态，随新增条目更新）
   25. README 声明「31 条未解问题」
   26. README.en 声明「31 open problems」
   27. REFERENCES 无悬空引用：条目的登记键须在 spec/ 正文出现；
