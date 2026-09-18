@@ -1,0 +1,198 @@
+=================================================================
+AOE-DETECT-001：ConfigReviewer 五项检查点检出率覆盖枚举实验
+Node v22.22.2 | win32/x64 | <TS>
+样本总数：160（预注册 130）
+=================================================================
+
+【H1】D 直检正例 TPR（预期 100%）：
+  inline-credential      10/10 = 100.0%
+  share-scope-widened    10/10 = 100.0%
+  approval-disabled      10/10 = 100.0%
+  gateway-publicized     10/10 = 100.0%
+  redaction-weakened     10/10 = 100.0%
+  D 合计                   50/50 = 100.0%
+
+【H2】V 变体检出率（按类别 × 检查项）：
+  V1: ①=0/8 ②=0/6 ③=0/6 ④=0/6 ⑤=0/6  | 小计 0/32 = 0.0%
+  V2: ①=0/6 ②=0/5 ③=0/5 ④=1/5 ⑤=0/5  | 小计 1/26 = 3.8%
+  V3: ①=2/8 ②=0/4 ③=0/4 ④=0/2 ⑤=0/4  | 小计 2/22 = 9.1%
+  V 合计（V1+V2+V3）：3/80 = 3.8%  vs D 合计 50/50 = 100.0%
+
+【H2 明细】V 类未检出 77 条：
+  V1-CRED-01  (target=inline-credential)
+  V1-CRED-02  (target=inline-credential)
+  V1-CRED-03  (target=inline-credential)
+  V1-CRED-04  (target=inline-credential)
+  V1-CRED-05  (target=inline-credential)
+  V1-CRED-06  (target=inline-credential)
+  V1-CRED-07  (target=inline-credential)
+  V1-CRED-08  (target=inline-credential)
+  V1-SHARE-01  (target=share-scope-widened)
+  V1-SHARE-02  (target=share-scope-widened)
+  V1-SHARE-03  (target=share-scope-widened)
+  V1-SHARE-04  (target=share-scope-widened)
+  V1-SHARE-05  (target=share-scope-widened)
+  V1-SHARE-06  (target=share-scope-widened)
+  V1-APPR-01  (target=approval-disabled)
+  V1-APPR-02  (target=approval-disabled)
+  V1-APPR-03  (target=approval-disabled)
+  V1-APPR-04  (target=approval-disabled)
+  V1-APPR-05  (target=approval-disabled)
+  V1-APPR-06  (target=approval-disabled)
+  V1-GW-01  (target=gateway-publicized)
+  V1-GW-02  (target=gateway-publicized)
+  V1-GW-03  (target=gateway-publicized)
+  V1-GW-04  (target=gateway-publicized)
+  V1-GW-05  (target=gateway-publicized)
+  V1-GW-06  (target=gateway-publicized)
+  V1-REDACT-01  (target=redaction-weakened)
+  V1-REDACT-02  (target=redaction-weakened)
+  V1-REDACT-03  (target=redaction-weakened)
+  V1-REDACT-04  (target=redaction-weakened)
+  V1-REDACT-05  (target=redaction-weakened)
+  V1-REDACT-06  (target=redaction-weakened)
+  V2-CRED-01  (target=inline-credential)
+  V2-CRED-02  (target=inline-credential)
+  V2-CRED-03  (target=inline-credential)
+  V2-CRED-04  (target=inline-credential)
+  V2-CRED-05  (target=inline-credential)
+  V2-CRED-06  (target=inline-credential)
+  V2-SHARE-01  (target=share-scope-widened)
+  V2-SHARE-02  (target=share-scope-widened)
+  V2-SHARE-03  (target=share-scope-widened)
+  V2-SHARE-04  (target=share-scope-widened)
+  V2-SHARE-05  (target=share-scope-widened)
+  V2-APPR-01  (target=approval-disabled)
+  V2-APPR-02  (target=approval-disabled)
+  V2-APPR-03  (target=approval-disabled)
+  V2-APPR-04  (target=approval-disabled)
+  V2-APPR-05  (target=approval-disabled)
+  V2-GW-01  (target=gateway-publicized)
+  V2-GW-02  (target=gateway-publicized)
+  V2-GW-03  (target=gateway-publicized)
+  V2-GW-05  (target=gateway-publicized)
+  V2-REDACT-01  (target=redaction-weakened)
+  V2-REDACT-02  (target=redaction-weakened)
+  V2-REDACT-03  (target=redaction-weakened)
+  V2-REDACT-04  (target=redaction-weakened)
+  V2-REDACT-05  (target=redaction-weakened)
+  V3-CRED-01  (target=inline-credential)
+  V3-CRED-02  (target=inline-credential)
+  V3-CRED-03  (target=inline-credential)
+  V3-CRED-04  (target=inline-credential)
+  V3-CRED-05  (target=inline-credential)
+  V3-CRED-08  (target=inline-credential)
+  V3-SHARE-01  (target=share-scope-widened)
+  V3-SHARE-02  (target=share-scope-widened)
+  V3-SHARE-03  (target=share-scope-widened)
+  V3-SHARE-04  (target=share-scope-widened)
+  V3-APPR-01  (target=approval-disabled)
+  V3-APPR-02  (target=approval-disabled)
+  V3-APPR-03  (target=approval-disabled)
+  V3-APPR-04  (target=approval-disabled)
+  V3-GW-01  (target=gateway-publicized)
+  V3-GW-02  (target=gateway-publicized)
+  V3-REDACT-01  (target=redaction-weakened)
+  V3-REDACT-02  (target=redaction-weakened)
+  V3-REDACT-03  (target=redaction-weakened)
+  V3-REDACT-04  (target=redaction-weakened)
+
+【H3】B 良性对照 FPR（预注册阈值 ≤3/30）：
+  常规 20：0/20 = 0.0%  tricky 10：4/10 = 40.0%  合计：4/30 = 13.3%
+  误报：B-TRICKY-01 命中规则=inline-credential（tricky 预注册内）
+  误报：B-TRICKY-02 命中规则=gateway-publicized（tricky 预注册内）
+  误报：B-TRICKY-03 命中规则=gateway-publicized（tricky 预注册内）
+  误报：B-TRICKY-04 命中规则=inline-credential（tricky 预注册内）
+
+【样本级预期一致性】130 条中与样本级预期不符：81 条
+  V1-CRED-01 expected=block actual=pass rules=-
+  V1-CRED-02 expected=block actual=pass rules=-
+  V1-CRED-03 expected=block actual=pass rules=-
+  V1-CRED-04 expected=block actual=pass rules=-
+  V1-CRED-05 expected=block actual=pass rules=-
+  V1-CRED-06 expected=block actual=pass rules=-
+  V1-CRED-07 expected=block actual=pass rules=-
+  V1-CRED-08 expected=block actual=pass rules=-
+  V1-SHARE-01 expected=block actual=pass rules=-
+  V1-SHARE-02 expected=block actual=pass rules=-
+  V1-SHARE-03 expected=block actual=pass rules=-
+  V1-SHARE-04 expected=block actual=pass rules=-
+  V1-SHARE-05 expected=block actual=pass rules=-
+  V1-SHARE-06 expected=block actual=pass rules=-
+  V1-APPR-01 expected=block actual=pass rules=-
+  V1-APPR-02 expected=block actual=pass rules=-
+  V1-APPR-03 expected=block actual=pass rules=-
+  V1-APPR-04 expected=block actual=pass rules=-
+  V1-APPR-05 expected=block actual=pass rules=-
+  V1-APPR-06 expected=block actual=pass rules=-
+  V1-GW-01 expected=block actual=pass rules=-
+  V1-GW-02 expected=block actual=pass rules=-
+  V1-GW-03 expected=block actual=pass rules=-
+  V1-GW-04 expected=block actual=pass rules=-
+  V1-GW-05 expected=block actual=pass rules=-
+  V1-GW-06 expected=block actual=pass rules=-
+  V1-REDACT-01 expected=block actual=pass rules=-
+  V1-REDACT-02 expected=block actual=pass rules=-
+  V1-REDACT-03 expected=block actual=pass rules=-
+  V1-REDACT-04 expected=block actual=pass rules=-
+  V1-REDACT-05 expected=block actual=pass rules=-
+  V1-REDACT-06 expected=block actual=pass rules=-
+  V2-CRED-01 expected=block actual=pass rules=-
+  V2-CRED-02 expected=block actual=pass rules=-
+  V2-CRED-03 expected=block actual=pass rules=-
+  V2-CRED-04 expected=block actual=pass rules=-
+  V2-CRED-05 expected=block actual=pass rules=-
+  V2-CRED-06 expected=block actual=pass rules=-
+  V2-SHARE-01 expected=block actual=pass rules=-
+  V2-SHARE-02 expected=block actual=pass rules=-
+  V2-SHARE-03 expected=block actual=pass rules=-
+  V2-SHARE-04 expected=block actual=pass rules=-
+  V2-SHARE-05 expected=block actual=pass rules=-
+  V2-APPR-01 expected=block actual=pass rules=-
+  V2-APPR-02 expected=block actual=pass rules=-
+  V2-APPR-03 expected=block actual=pass rules=-
+  V2-APPR-04 expected=block actual=pass rules=-
+  V2-APPR-05 expected=block actual=pass rules=-
+  V2-GW-01 expected=block actual=pass rules=-
+  V2-GW-02 expected=block actual=pass rules=-
+  V2-GW-03 expected=block actual=pass rules=-
+  V2-GW-05 expected=block actual=pass rules=-
+  V2-REDACT-01 expected=block actual=pass rules=-
+  V2-REDACT-02 expected=block actual=pass rules=-
+  V2-REDACT-03 expected=block actual=pass rules=-
+  V2-REDACT-04 expected=block actual=pass rules=-
+  V2-REDACT-05 expected=block actual=pass rules=-
+  V3-CRED-01 expected=block actual=pass rules=-
+  V3-CRED-02 expected=block actual=pass rules=-
+  V3-CRED-03 expected=block actual=pass rules=-
+  V3-CRED-04 expected=block actual=pass rules=-
+  V3-CRED-05 expected=block actual=pass rules=-
+  V3-CRED-08 expected=block actual=pass rules=-
+  V3-SHARE-01 expected=block actual=pass rules=-
+  V3-SHARE-02 expected=block actual=pass rules=-
+  V3-SHARE-03 expected=block actual=pass rules=-
+  V3-SHARE-04 expected=block actual=pass rules=-
+  V3-APPR-01 expected=block actual=pass rules=-
+  V3-APPR-02 expected=block actual=pass rules=-
+  V3-APPR-03 expected=block actual=pass rules=-
+  V3-APPR-04 expected=block actual=pass rules=-
+  V3-GW-01 expected=block actual=pass rules=-
+  V3-GW-02 expected=block actual=pass rules=-
+  V3-REDACT-01 expected=block actual=pass rules=-
+  V3-REDACT-02 expected=block actual=pass rules=-
+  V3-REDACT-03 expected=block actual=pass rules=-
+  V3-REDACT-04 expected=block actual=pass rules=-
+  B-TRICKY-01 expected=pass actual=block rules=inline-credential
+  B-TRICKY-02 expected=pass actual=block rules=gateway-publicized
+  B-TRICKY-03 expected=pass actual=block rules=gateway-publicized
+  B-TRICKY-04 expected=pass actual=block rules=inline-credential
+
+=================================================================
+判定（预注册标准）：
+  H1 直检 TPR=100%：✅ 成立
+  H2 变体 < 直检：✅ 成立（V 3/80 vs D 50/50）
+  H3 良性 FPR ≤ 3/30：❌ 不成立（4/30）
+=================================================================
+
+逐样本原始结果（JSON）：
+[{"id":"D-CRED-01","cat":"D","target":"inline-credential","expected":"block","blocked":true,"rules":["inline-credential"],"match":true},{"id":"D-CRED-02","cat":"D","target":"inline-credential","expected":"block","blocked":true,"rules":["inline-credential"],"match":true},{"id":"D-CRED-03","cat":"D","target":"inline-credential","expected":"block","blocked":true,"rules":["inline-credential"],"match":true},{"id":"D-CRED-04","cat":"D","target":"inline-credential","expected":"block","blocked":true,"rules":["inline-credential"],"match":true},{"id":"D-CRED-05","cat":"D","target":"inline-credential","expected":"block","blocked":true,"rules":["inline-credential"],"match":true},{"id":"D-CRED-06","cat":"D","target":"inline-credential","expected":"block","blocked":true,"rules":["inline-credential"],"match":true},{"id":"D-CRED-07","cat":"D","target":"inline-credential","expected":"block","blocked":true,"rules":["inline-credential"],"match":true},{"id":"D-CRED-08","cat":"D","target":"inline-credential","expected":"block","blocked":true,"rules":["inline-credential"],"match":true},{"id":"D-CRED-09","cat":"D","target":"inline-credential","expected":"block","blocked":true,"rules":["inline-credential"],"match":true},{"id":"D-CRED-10","cat":"D","target":"inline-credential","expected":"block","blocked":true,"rules":["inline-credential"],"match":true},{"id":"D-SHARE-01","cat":"D","target":"share-scope-widened","expected":"block","blocked":true,"rules":["share-scope-widened"],"match":true},{"id":"D-SHARE-02","cat":"D","target":"share-scope-widened","expected":"block","blocked":true,"rules":["share-scope-widened"],"match":true},{"id":"D-SHARE-03","cat":"D","target":"share-scope-widened","expected":"block","blocked":true,"rules":["share-scope-widened"],"match":true},{"id":"D-SHARE-04","cat":"D","target":"share-scope-widened","expected":"block","blocked":true,"rules":["share-scope-widened"],"match":true},{"id":"D-SHARE-05","cat":"D","target":"share-scope-widened","expected":"block","blocked":true,"rules":["share-scope-widened"],"match":true},{"id":"D-SHARE-06","cat":"D","target":"share-scope-widened","expected":"block","blocked":true,"rules":["share-scope-widened"],"match":true},{"id":"D-SHARE-07","cat":"D","target":"share-scope-widened","expected":"block","blocked":true,"rules":["share-scope-widened"],"match":true},{"id":"D-SHARE-08","cat":"D","target":"share-scope-widened","expected":"block","blocked":true,"rules":["share-scope-widened"],"match":true},{"id":"D-SHARE-09","cat":"D","target":"share-scope-widened","expected":"block","blocked":true,"rules":["share-scope-widened"],"match":true},{"id":"D-SHARE-10","cat":"D","target":"share-scope-widened","expected":"block","blocked":true,"rules":["share-scope-widened"],"match":true},{"id":"D-APPR-01","cat":"D","target":"approval-disabled","expected":"block","blocked":true,"rules":["approval-disabled"],"match":true},{"id":"D-APPR-02","cat":"D","target":"approval-disabled","expected":"block","blocked":true,"rules":["approval-disabled"],"match":true},{"id":"D-APPR-03","cat":"D","target":"approval-disabled","expected":"block","blocked":true,"rules":["approval-disabled"],"match":true},{"id":"D-APPR-04","cat":"D","target":"approval-disabled","expected":"block","blocked":true,"rules":["approval-disabled"],"match":true},{"id":"D-APPR-05","cat":"D","target":"approval-disabled","expected":"block","blocked":true,"rules":["approval-disabled"],"match":true},{"id":"D-APPR-06","cat":"D","target":"approval-disabled","expected":"block","blocked":true,"rules":["approval-disabled"],"match":true},{"id":"D-APPR-07","cat":"D","target":"approval-disabled","expected":"block","blocked":true,"rules":["approval-disabled"],"match":true},{"id":"D-APPR-08","cat":"D","target":"approval-disabled","expected":"block","blocked":true,"rules":["approval-disabled"],"match":true},{"id":"D-APPR-09","cat":"D","target":"approval-disabled","expected":"block","blocked":true,"rules":["approval-disabled"],"match":true},{"id":"D-APPR-10","cat":"D","target":"approval-disabled","expected":"block","blocked":true,"rules":["approval-disabled"],"match":true},{"id":"D-GW-01","cat":"D","target":"gateway-publicized","expected":"block","blocked":true,"rules":["gateway-publicized"],"match":true},{"id":"D-GW-02","cat":"D","target":"gateway-publicized","expected":"block","blocked":true,"rules":["gateway-publicized"],"match":true},{"id":"D-GW-03","cat":"D","target":"gateway-publicized","expected":"block","blocked":true,"rules":["gateway-publicized"],"match":true},{"id":"D-GW-04","cat":"D","target":"gateway-publicized","expected":"block","blocked":true,"rules":["gateway-publicized"],"match":true},{"id":"D-GW-05","cat":"D","target":"gateway-publicized","expected":"block","blocked":true,"rules":["gateway-publicized"],"match":true},{"id":"D-GW-06","cat":"D","target":"gateway-publicized","expected":"block","blocked":true,"rules":["gateway-publicized"],"match":true},{"id":"D-GW-07","cat":"D","target":"gateway-publicized","expected":"block","blocked":true,"rules":["gateway-publicized"],"match":true},{"id":"D-GW-08","cat":"D","target":"gateway-publicized","expected":"block","blocked":true,"rules":["gateway-publicized"],"match":true},{"id":"D-GW-09","cat":"D","target":"gateway-publicized","expected":"block","blocked":true,"rules":["gateway-publicized"],"match":true},{"id":"D-GW-10","cat":"D","target":"gateway-publicized","expected":"block","blocked":true,"rules":["gateway-publicized"],"match":true},{"id":"D-REDACT-01","cat":"D","target":"redaction-weakened","expected":"block","blocked":true,"rules":["redaction-weakened"],"match":true},{"id":"D-REDACT-02","cat":"D","target":"redaction-weakened","expected":"block","blocked":true,"rules":["redaction-weakened"],"match":true},{"id":"D-REDACT-03","cat":"D","target":"redaction-weakened","expected":"block","blocked":true,"rules":["redaction-weakened"],"match":true},{"id":"D-REDACT-04","cat":"D","target":"redaction-weakened","expected":"block","blocked":true,"rules":["redaction-weakened"],"match":true},{"id":"D-REDACT-05","cat":"D","target":"redaction-weakened","expected":"block","blocked":true,"rules":["redaction-weakened"],"match":true},{"id":"D-REDACT-06","cat":"D","target":"redaction-weakened","expected":"block","blocked":true,"rules":["redaction-weakened"],"match":true},{"id":"D-REDACT-07","cat":"D","target":"redaction-weakened","expected":"block","blocked":true,"rules":["redaction-weakened"],"match":true},{"id":"D-REDACT-08","cat":"D","target":"redaction-weakened","expected":"block","blocked":true,"rules":["redaction-weakened"],"match":true},{"id":"D-REDACT-09","cat":"D","target":"redaction-weakened","expected":"block","blocked":true,"rules":["redaction-weakened"],"match":true},{"id":"D-REDACT-10","cat":"D","target":"redaction-weakened","expected":"block","blocked":true,"rules":["redaction-weakened"],"match":true},{"id":"V1-CRED-01","cat":"V1","target":"inline-credential","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-CRED-02","cat":"V1","target":"inline-credential","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-CRED-03","cat":"V1","target":"inline-credential","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-CRED-04","cat":"V1","target":"inline-credential","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-CRED-05","cat":"V1","target":"inline-credential","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-CRED-06","cat":"V1","target":"inline-credential","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-CRED-07","cat":"V1","target":"inline-credential","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-CRED-08","cat":"V1","target":"inline-credential","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-SHARE-01","cat":"V1","target":"share-scope-widened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-SHARE-02","cat":"V1","target":"share-scope-widened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-SHARE-03","cat":"V1","target":"share-scope-widened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-SHARE-04","cat":"V1","target":"share-scope-widened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-SHARE-05","cat":"V1","target":"share-scope-widened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-SHARE-06","cat":"V1","target":"share-scope-widened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-APPR-01","cat":"V1","target":"approval-disabled","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-APPR-02","cat":"V1","target":"approval-disabled","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-APPR-03","cat":"V1","target":"approval-disabled","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-APPR-04","cat":"V1","target":"approval-disabled","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-APPR-05","cat":"V1","target":"approval-disabled","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-APPR-06","cat":"V1","target":"approval-disabled","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-GW-01","cat":"V1","target":"gateway-publicized","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-GW-02","cat":"V1","target":"gateway-publicized","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-GW-03","cat":"V1","target":"gateway-publicized","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-GW-04","cat":"V1","target":"gateway-publicized","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-GW-05","cat":"V1","target":"gateway-publicized","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-GW-06","cat":"V1","target":"gateway-publicized","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-REDACT-01","cat":"V1","target":"redaction-weakened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-REDACT-02","cat":"V1","target":"redaction-weakened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-REDACT-03","cat":"V1","target":"redaction-weakened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-REDACT-04","cat":"V1","target":"redaction-weakened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-REDACT-05","cat":"V1","target":"redaction-weakened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V1-REDACT-06","cat":"V1","target":"redaction-weakened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-CRED-01","cat":"V2","target":"inline-credential","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-CRED-02","cat":"V2","target":"inline-credential","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-CRED-03","cat":"V2","target":"inline-credential","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-CRED-04","cat":"V2","target":"inline-credential","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-CRED-05","cat":"V2","target":"inline-credential","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-CRED-06","cat":"V2","target":"inline-credential","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-SHARE-01","cat":"V2","target":"share-scope-widened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-SHARE-02","cat":"V2","target":"share-scope-widened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-SHARE-03","cat":"V2","target":"share-scope-widened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-SHARE-04","cat":"V2","target":"share-scope-widened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-SHARE-05","cat":"V2","target":"share-scope-widened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-APPR-01","cat":"V2","target":"approval-disabled","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-APPR-02","cat":"V2","target":"approval-disabled","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-APPR-03","cat":"V2","target":"approval-disabled","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-APPR-04","cat":"V2","target":"approval-disabled","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-APPR-05","cat":"V2","target":"approval-disabled","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-GW-01","cat":"V2","target":"gateway-publicized","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-GW-02","cat":"V2","target":"gateway-publicized","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-GW-03","cat":"V2","target":"gateway-publicized","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-GW-04","cat":"V2","target":"gateway-publicized","expected":"block","blocked":true,"rules":["gateway-publicized"],"match":true},{"id":"V2-GW-05","cat":"V2","target":"gateway-publicized","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-REDACT-01","cat":"V2","target":"redaction-weakened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-REDACT-02","cat":"V2","target":"redaction-weakened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-REDACT-03","cat":"V2","target":"redaction-weakened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-REDACT-04","cat":"V2","target":"redaction-weakened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V2-REDACT-05","cat":"V2","target":"redaction-weakened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V3-CRED-01","cat":"V3","target":"inline-credential","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V3-CRED-02","cat":"V3","target":"inline-credential","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V3-CRED-03","cat":"V3","target":"inline-credential","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V3-CRED-04","cat":"V3","target":"inline-credential","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V3-CRED-05","cat":"V3","target":"inline-credential","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V3-CRED-06","cat":"V3","target":"inline-credential","expected":"block","blocked":true,"rules":["inline-credential"],"match":true},{"id":"V3-CRED-07","cat":"V3","target":"inline-credential","expected":"block","blocked":true,"rules":["inline-credential"],"match":true},{"id":"V3-CRED-08","cat":"V3","target":"inline-credential","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V3-SHARE-01","cat":"V3","target":"share-scope-widened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V3-SHARE-02","cat":"V3","target":"share-scope-widened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V3-SHARE-03","cat":"V3","target":"share-scope-widened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V3-SHARE-04","cat":"V3","target":"share-scope-widened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V3-APPR-01","cat":"V3","target":"approval-disabled","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V3-APPR-02","cat":"V3","target":"approval-disabled","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V3-APPR-03","cat":"V3","target":"approval-disabled","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V3-APPR-04","cat":"V3","target":"approval-disabled","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V3-GW-01","cat":"V3","target":"gateway-publicized","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V3-GW-02","cat":"V3","target":"gateway-publicized","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V3-REDACT-01","cat":"V3","target":"redaction-weakened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V3-REDACT-02","cat":"V3","target":"redaction-weakened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V3-REDACT-03","cat":"V3","target":"redaction-weakened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"V3-REDACT-04","cat":"V3","target":"redaction-weakened","expected":"block","blocked":false,"rules":[],"match":false},{"id":"B-REG-01","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true},{"id":"B-REG-02","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true},{"id":"B-REG-03","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true},{"id":"B-REG-04","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true},{"id":"B-REG-05","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true},{"id":"B-REG-06","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true},{"id":"B-REG-07","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true},{"id":"B-REG-08","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true},{"id":"B-REG-09","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true},{"id":"B-REG-10","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true},{"id":"B-REG-11","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true},{"id":"B-REG-12","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true},{"id":"B-REG-13","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true},{"id":"B-REG-14","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true},{"id":"B-REG-15","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true},{"id":"B-REG-16","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true},{"id":"B-REG-17","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true},{"id":"B-REG-18","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true},{"id":"B-REG-19","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true},{"id":"B-REG-20","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true},{"id":"B-TRICKY-01","cat":"B","target":"-","expected":"pass","blocked":true,"rules":["inline-credential"],"match":false,"tricky":true},{"id":"B-TRICKY-02","cat":"B","target":"-","expected":"pass","blocked":true,"rules":["gateway-publicized"],"match":false,"tricky":true},{"id":"B-TRICKY-03","cat":"B","target":"-","expected":"pass","blocked":true,"rules":["gateway-publicized"],"match":false,"tricky":true},{"id":"B-TRICKY-04","cat":"B","target":"-","expected":"pass","blocked":true,"rules":["inline-credential"],"match":false,"tricky":true},{"id":"B-TRICKY-05","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true,"tricky":true},{"id":"B-TRICKY-06","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true,"tricky":true},{"id":"B-TRICKY-07","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true,"tricky":true},{"id":"B-TRICKY-08","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true,"tricky":true},{"id":"B-TRICKY-09","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true,"tricky":true},{"id":"B-TRICKY-10","cat":"B","target":"-","expected":"pass","blocked":false,"rules":[],"match":true,"tricky":true}]

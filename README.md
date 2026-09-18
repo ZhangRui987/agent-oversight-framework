@@ -1,6 +1,6 @@
 # AI 执行与监察体系（Agent Oversight Framework）
 
-[![Version](https://img.shields.io/badge/version-2.49.3-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.50.0-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (104/179)](https://img.shields.io/badge/evidence-B_104%2F179-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -121,7 +121,7 @@ graph TD
 
 ## 状态
 
-- 当前版本：v2.49.3（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
+- 当前版本：v2.50.0（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
 - 维护状态：**不声称建成，只声称维护状态**——开放作弊集合只能持续对抗
 - **诚实边界**：37 条未解问题显式登记（见 `spec/13-boundaries.md`）——这是本框架的诚实边界，也是研究者的选题清单；含全体系最大的工程缺口「去中心化蜂群反制」
 - 变更历史：见 [`CHANGELOG.md`](CHANGELOG.md)
@@ -140,12 +140,34 @@ graph TD
 4. **研究者**：从 `REFERENCES.md` 出发复现证据链，或从 `spec/13-boundaries.md` 的 37 条未解问题选题；
 5. **安全研究人员**：从 `spec/07-swarm-governance.md` 的蜂群治理信号出发，提交 `evidence-correction` Issue 或开 Issue 讨论攻击路径。
 
+### 零依赖复现：一条命令重跑实验（无需 API 密钥）
+
+想直接动手验证而非阅读结论？clone 后执行：
+
+```bash
+node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts
+# 退出码 0 = 9/9 通过；1 = 存在失败
+```
+
+这会在**零安装、零密钥、零网络**的前提下，重跑本仓库 9 个「零外部依赖」标定实验
+（覆盖 5 个 AOE 编号），并将其输出与入库的对照基准比对。
+比对分三档：**A 类字节级 / B 类归一化后字节级 / C 类仅结构不变量**——
+分档原因与「为什么测量数值不可字节比对」的诚实说明见
+[`reference/runtimes/l2-runtime-oversight/README.md`](reference/runtimes/l2-runtime-oversight/README.md)
+的「tier-0 复现」章。该入口已进 CI，push/PR 自动执行。
+
+> **边界**：本入口只覆盖**零依赖档**。需模型 API 密钥的实验（AOE-ABSTAIN-001/002、
+> AOE-CALIB-004 等）属 **tier-1 API 档**，逐条条件与成本上限见
+> `spec/13-boundaries.md` §「A 级证据独立验证状态与第三方复现路径」。
+> 若你独立复现成功，请走 Issue 模板 `independent-replication` 提交。
+
 ## 仓库结构
 
 | 目录 / 文件 | 内容 |
 |---|---|
 | `spec/` | 规范正文（13 篇：01 原则 → 13 诚实边界） |
 | `REFERENCES.md` | 179 条分级证据（单一真相源） |
+| `reference/runtimes/l2-runtime-oversight/` | L2 运行时监察参照实现 + 标定实验脚本（含 `replicate-t0.mts` 零依赖复现入口与 `replication-t0-golden/` 对照快照） |
 | `restricted/` | 受限内容（仅随部署包分发） |
 | `scripts/` | 一致性校验工具 |
 | `.github/` | Issue / PR 模板与代码归属 |
@@ -191,7 +213,7 @@ graph TD
 
 见 [`CITATION.cff`](CITATION.cff)。
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.49.3). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.50.0). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## 质量保障（自指验证）
 

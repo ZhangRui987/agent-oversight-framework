@@ -1,9 +1,11 @@
-# 发布一致性校验 + L2 参照实现断言（CI）
+# 发布一致性校验 + L2 参照实现断言 + tier-0 复现包（CI）
 # 动机：verify_consistency.py 与 demo.ts 此前只挂在本地 pre-commit，外部读者无法在远端
 #       机器可复现。本 workflow 把 41 项门禁与 153+14 项断言升级为 push/PR 自动执行——
 #       让"自动化门禁"从口号变成任何人可核验的事实（采纳豆包深度审查建议 1）。
 # 设计约束：脚本零外部依赖（Python 纯标准库 / Node 内置 node:sqlite + node:crypto），
-#       故 CI 无需安装任何包；两 job 相互独立，可并行。
+#       故 CI 无需安装任何包；三 job 相互独立，可并行。
+# tier-0 复现包 job 的语义：证明「干净 clone 上一条命令可重跑零依赖档标定实验」，
+#       把外部复现从人工动作升级为 CI 事实；零密钥、零安装、零网络。
 name: ci
 
 on:
@@ -43,3 +45,21 @@ jobs:
         run: node --experimental-transform-types reference/runtimes/l2-runtime-oversight/demo.ts
       - name: Run otel-adapter selftest (14 项)
         run: node --experimental-transform-types reference/runtimes/l2-runtime-oversight/otel-adapter.ts --selftest
+
+  replication-t0:
+    name: tier-0 复现包（零依赖档 9 实验）
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Selftest comparison kernel (26 项)
+        run: node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts --selftest
+      - name: Replicate tier-0 experiments (9 实验)
+        run: node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts
+      - name: Assert no repo writes (复现不得污染工作区)
+        run: git diff --exit-code --stat
+

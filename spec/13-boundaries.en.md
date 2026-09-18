@@ -54,6 +54,14 @@ Three independent external reviews (2026-09-13) jointly noted that the large maj
 - **AOE-CALIB-004** (C12 credit-score rubric real-task calibration, v2.43.0): `calibrate-c12-real-tasks.mts` + preregistration `EXPERIMENT-DESIGN-AOE-CALIB-004.md` (checked in at v2.42.1 before execution) + report `CALIBRATION-REPORT-C12.md` + transcript `CALIBRATION-C12-RAW-1789391056906.json`. Requires API keys for four providers × ~2,000 calls (11.92 CNY equivalent measured this run); all 320 episodes' per-turn responses and event sequences are archived with the transcript and can be checked without re-running. ⚠️ The kimi segment's 37 episodes were affected by API faults (report §7 deviation 1); strengthen kimi backoff when replicating.
 - The 9th, **Sandlock** (arXiv:2605.26298), is an external first-hand publication (not a framework experiment); its verification obligation lies with the original authors, and this framework bears only citation correctness (verified against the arXiv record).
 
+**Unified tier-0 zero-dependency replication entry point (added in v2.50.0)**: among the 8 AOE experiments listed above, the 9 scripts that are "zero-dependency" (AOE-SWARM-001, AOE-CALIB-003, AOE-DETECT-001, the three AOE-CALIB-002 scripts, AOE-CALIB-001 path A, and the AOE-CALIB-005/006 reprojection and re-verification scripts) can be rerun in one pass from a single entry point:
+
+```bash
+node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts
+```
+
+This entry point needs zero installs, zero keys, and zero network, and runs in CI (job `replication-t0`). Comparison is tiered by determinism class: class A byte-exact / class B byte-exact after normalization / class C structural invariants only — **class C does not reproduce measured values** (those contain real wall-clock timings that are physically irreproducible across machines); it verifies only the experimental structure and verdict polarity. The rationale for the tiers and the false-negative guard are in the "tier-0 replication" section of `reference/runtimes/l2-runtime-oversight/README.md`. ⚠️ This entry point covers **only the zero-dependency tier**; rerunning the full chain (including AOE-CALIB-004 and others) still requires model API keys and a cost ceiling, i.e. tier-1.
+
 **Independent-verification status**: the third-party independent replication count for all 8 AOE experiments above is **0**. Landing this section does not change that.
 
 **Submission channel for third-party replications**: replication outcomes (confirmed / partial / failed) are submitted via the `independent-replication` issue template; confirmations will update the corresponding REFERENCES entry to "independently replicated (third party)" with the replicator and date; failures go through the evidence-correction process — downgrade or correction without exemption. Replicators bear no burden of proof for this repository's reputation: a falsification is evidence.

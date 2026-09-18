@@ -1,6 +1,6 @@
 # AI Execution & Oversight Framework
 
-[![Version](https://img.shields.io/badge/version-2.49.3-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.50.0-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (104/179)](https://img.shields.io/badge/evidence-B_104%2F179-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -120,7 +120,7 @@ Per `CLASSIFICATION.md`, this repository has three levels:
 
 ## Status
 
-- Current version: v2.49.3 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
+- Current version: v2.50.0 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
 - Maintenance status: **does not claim "built"; claims only "maintained"** — an open cheating set can only be countered continuously
 - **Honest boundary**: 37 open problems explicitly registered (see `spec/13-boundaries.md`) — this framework's honest boundary and a problem list for researchers; includes the system's largest engineering gap, "decentralized-swarm countermeasures"
 - Change history: see [`CHANGELOG.md`](CHANGELOG.md)
@@ -138,6 +138,31 @@ By role:
 3. **Standards organizations**: read the standard mappings and gap analysis in `spec/12-enforcement.md`;
 4. **Researchers**: reproduce the evidence chain from `REFERENCES.md`, or select a topic from the 37 open problems in `spec/13-boundaries.md`;
 5. **Security researchers**: starting from the swarm-governance signals in `spec/07-swarm-governance.md`, submit an `evidence-correction` issue or open an issue to discuss attack paths.
+
+### Zero-dependency replication: rerun the experiments with one command (no API keys)
+
+Want to verify hands-on rather than read conclusions? After cloning, run:
+
+```bash
+node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts
+# exit code 0 = 9/9 passed; 1 = some experiment failed
+```
+
+With **zero installs, zero keys, zero network**, this reruns the repository's 9
+zero-external-dependency calibration experiments (covering 5 AOE ids) and compares their
+output against the committed reference baselines. Comparison has three tiers — **class A
+byte-exact / class B byte-exact after normalization / class C structural invariants only**.
+The rationale for the tiers, including an honest account of why measured numeric values
+cannot be byte-compared, is in the "tier-0 replication" section of
+[`reference/runtimes/l2-runtime-oversight/README.md`](reference/runtimes/l2-runtime-oversight/README.md).
+This entry point runs in CI on every push/PR.
+
+> **Boundary**: this entry point covers only the **zero-dependency tier**. Experiments
+> requiring model API keys (AOE-ABSTAIN-001/002, AOE-CALIB-004, etc.) belong to the
+> **tier-1 API tier**; per-item conditions and cost ceilings are in
+> `spec/13-boundaries.md` § "Independent-verification status of grade-A evidence and the
+> third-party replication path". If your independent replication succeeds, submit it via
+> the `independent-replication` issue template.
 
 ## Repository structure
 
@@ -190,7 +215,7 @@ This repository governs itself by its own specification (meta-governance):
 
 See [`CITATION.cff`](CITATION.cff).
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.49.3). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.50.0). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## Quality assurance (self-referential verification)
 

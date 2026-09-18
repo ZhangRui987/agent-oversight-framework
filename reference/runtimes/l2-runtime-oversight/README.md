@@ -71,6 +71,64 @@ demo 覆盖 24 组、153 项断言（实测全绿；**组数/断言数由 demo �
 | [21b] | CreditEventStream × RuntimeOverseer 集成：Overseer 注入 creditStream 后 lifecycle 事件自动投影（v2.36.0） |
 | [22] | G8 演示级闭合（告警侧，v2.38.0）：SwarmMonitor 交互图谱采集 + 四确定性涌现信号检测（S1–S4）+ 调度器白名单豁免（同形态对照）+ 熔断禁用写进 API 表面（evaluate 只输出告警，enforce 不存在） |
 
+## tier-0 复现（零依赖档，一条命令）
+
+上表「运行验证」是**组件级**验证（L2 运行时是否自洽）。本节是**实验级**复现：
+让你在干净 clone 上用一条命令，重跑本仓库全部「零外部依赖」标定实验，
+并把输出与该实验声明的对照基准比对。**不需要任何 API 密钥、不安装任何包、不访问网络。**
+
+```bash
+node --experimental-transform-types replicate-t0.mts
+# 退出码 0 = 9/9 通过；1 = 存在失败（用 --only=<名> --raw 定位）
+
+node --experimental-transform-types replicate-t0.mts --list     # 只列清单
+node --experimental-transform-types replicate-t0.mts --selftest # 比对内核自检（26 项）
+```
+
+### 覆盖实验（9 个脚本 / 5 个 AOE 编号）
+
+| # | AOE 编号 | 脚本 | 比对模式 | 对照报告 |
+|---|---|---|---|---|
+| 1 | AOE-SWARM-001 | `calibrate-swarm-detection.mts` | A 类 字节级 | `CALIBRATION-REPORT-SWARM.md` |
+| 2 | AOE-CALIB-003 | `calibrate-concentration-threshold.mts` | A 类 字节级 | `CALIBRATION-REPORT-CONCENTRATION.md` |
+| 3 | AOE-DETECT-001 | `calibrate-config-reviewer-detection.mts` | B 类 归一化后字节级 | `CALIBRATION-REPORT-CONFIG-REVIEWER.md` |
+| 4 | AOE-CALIB-005 | `calibrate-c12-v2-reprojection.mts` | B 类 归一化后字节级 | `CALIBRATION-REPORT-C12-V2.md` |
+| 5 | AOE-CALIB-006 | `calibrate-c12-v21-reverify.mts` | B 类 归一化后字节级 | `CALIBRATION-REPORT-C12-V21.md` |
+| 6 | AOE-CALIB-002 | `calibrate-periodic-threshold.mts` | C 类 结构不变量 | `CALIBRATION-REPORT-PERIODIC.md` |
+| 7 | AOE-CALIB-002 | `calibrate-periodic-sensitivity.mts` | C 类 结构不变量 | 同上 |
+| 8 | AOE-CALIB-002 | `calibrate-periodic-coverage-bound.mts` | C 类 结构不变量 | 同上 |
+| 9 | AOE-CALIB-001（路径 A） | `calibrate-shadow-ratio.mts` | C 类 结构不变量 | `CALIBRATION-REPORT.md` |
+
+> **#4 / #5 的上游数据属 API 档**：这两脚本自身零依赖（可无密钥重跑），
+> 但其输入（`CALIBRATION-C12-RAW-*.json`）由需 API 密钥的实验产出。
+> 把它们列入 tier-0 是为了让你零成本复算既有的 C12 结论，
+> **不代表「C12 全链零成本可复现」**——重跑全链需四家模型密钥（见 spec/13）。
+
+### 三种比对模式——为什么不能一律字节比对
+
+| 模式 | 判定 | 适用 |
+|---|---|---|
+| **A 类 字节级** | 运行 stdout 逐字节等于入库快照 | #1 #2 |
+| **B 类 归一化后字节级** | 归一化易变 token 后逐字节比对 | #3 #4 #5 |
+| **C 类 结构不变量** | 只断言小节标题 + 判定极性 + 行数容差 | #6–#9 |
+
+**C 类为何不断言数值**：`#6–#9` 测量**真实墙钟耗时**（中位数 / MAD / σ_robust / 95% CI / 方差 ms²），
+这些值**跨机器物理上不可复现**。实测证据：`calibrate-periodic-threshold` 的
+「最优阈值（Youden's J）」两次相邻运行分别为 `7553.33ms²` 与 `6732.49ms²`。
+若把它们写进验收断言，会把「本就不可复现」误报为「复现失败」——
+这是**假阴性**，会损害而非增强可信度。故 C 类只验证**实验结构未漂移**。
+
+**A/B 类的 golden 快照**存于 `replication-t0-golden/`（A 类存原始文本；B 类存归一化文本，
+以保证重建幂等）。运行器另设**假阴性护栏**：若两侧差异全部是浮点末位 / 平台串
+（例如 Node 小版本差异），判 `WARN(env-diff)` 而非 `FAIL`。
+
+### 复现方的诚实边界
+
+- C 类**不**重现测量数值，只重现实验结构与判定极性。想比对数值请在**同一台机器**上跑两次。
+- 本运行器**零写入仓库**：既有 C12 脚本会无条件写留痕 JSON，运行器把它们放进
+  系统临时目录执行，跑完即删（自检项「运行后仓库未新增留痕文件」守护此不变量）。
+- tier-1（API 档）复现需密钥与成本上限，不在本入口范围。
+
 ## 诚实边界（生产前必须补齐，不得误标为完整合规）
 
 本实现存在 **9 项生产级缺口（G1–G9）**，已集中到同目录 [`PRODUCTION-GAPS.md`](PRODUCTION-GAPS.md) 作为一级章节性文件。**v2.2.0 起 G1（SQLite 持久化租约）与 G2（SHA-256 哈希链）已演示级闭合**；**v2.5.0 起 G9（配置内容审查）已演示级闭合**；**v2.13.0 起 G5（资源账本）已演示级闭合**；其余 5 项未闭合：

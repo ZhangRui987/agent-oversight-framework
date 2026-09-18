@@ -54,6 +54,14 @@
 - **AOE-CALIB-004**（C12 信用分量规真实任务标定，v2.43.0）：`calibrate-c12-real-tasks.mts` + 预注册 `EXPERIMENT-DESIGN-AOE-CALIB-004.md`（v2.42.1 先于执行入库）+ 报告 `CALIBRATION-REPORT-C12.md` + 留痕 `CALIBRATION-C12-RAW-1789391056906.json`。需四家模型 API 密钥 × 约 2000 调用（本次实测 11.92 元等值）；320 episode 逐轮响应与事件序列随留痕入库，可对照核验而无需重跑。⚠️ kimi 段 37 episode 受 API 故障影响（报告 §7 偏差 1），复现时建议加强 kimi 退避。
 - 第 9 条 **Sandlock**（arXiv:2605.26298）为外部一手文献（非本体系实验），其验证义务在原作者侧，本体系承担的是引用正确性（已按 arXiv 记录核验）。
 
+**tier-0 零依赖档统一复现入口（v2.50.0 新增）**：上列 8 条 AOE 实验中，「零依赖」的 9 个脚本（AOE-SWARM-001、AOE-CALIB-003、AOE-DETECT-001、AOE-CALIB-002 的三个脚本、AOE-CALIB-001 路径 A、以及 AOE-CALIB-005/006 的再投影与复验脚本）可由单一入口一次复跑：
+
+```bash
+node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts
+```
+
+该入口零安装、零密钥、零网络，并已进 CI（job `replication-t0`）。比对按确定性分档：A 类字节级 / B 类归一化后字节级 / C 类仅结构不变量——**C 类不重现测量数值**（那些值含真实墙钟耗时，跨机器物理上不可复现），只验证实验结构与判定极性；分档理由与假阴性护栏见 `reference/runtimes/l2-runtime-oversight/README.md`「tier-0 复现」章。⚠️ 该入口**只覆盖零依赖档**；重跑全链（含 AOE-CALIB-004 等）仍需模型 API 密钥与成本上限，属 tier-1。
+
 **独立验证状态**：上述 8 条 AOE 实验的第三方独立复现数均为 **0**。本节落档本身不改变这一状态。
 
 **第三方复现提交通道**：复现结果（证实 / 部分复现 / 证伪）经 Issue 模板 `independent-replication` 提交；证实者将把 REFERENCES 相应条目更新为「已独立复现（第三方）」并登记复现方与日期；证伪者按 evidence-correction 流程处理，降级或修正不设豁免——提交方无须为本仓库的声誉承担任何举证负担，证伪即证据。
