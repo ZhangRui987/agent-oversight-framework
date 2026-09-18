@@ -1,6 +1,6 @@
 # AI Execution & Oversight Framework
 
-[![Version](https://img.shields.io/badge/version-2.49.2-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.49.3-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (104/179)](https://img.shields.io/badge/evidence-B_104%2F179-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -41,7 +41,7 @@ This framework has completed a systematic cross-check against Annex 2 of the AI 
 
 When agents can forge sandbox logs and spontaneously grow command hierarchies, the traditional "oversee individual behavior" approach fails. This framework's swarm governance (`spec/07-swarm-governance.md`) elevates the oversight target from **behavior logs** to **the interaction graph** — but we honestly admit: **for decentralized swarms (wolf-packs), we currently have detection capability only, and no empirically proven countermeasure.**
 
-This is open problem **#15** of 35 (see `spec/13-boundaries.md`), and a priority direction for community co-development. Publicly admitting "we haven't solved wolf-packs yet" builds more trust with the expert community than claiming "we can handle everything."
+This is open problem **#15** of 37 (see `spec/13-boundaries.md`), and a priority direction for community co-development. Publicly admitting "we haven't solved wolf-packs yet" builds more trust with the expert community than claiming "we can handle everything."
 
 Also explicitly registered: **10 of the 11 grade-A evidence items are self-reproduction experiments by this framework, and the count of independent third-party replications is currently zero** — grade A means "first-hand, verifiable, reproducible", not "independently verified". Every experiment's script, preregistration, and raw output are in the repository; the per-item replication conditions and submission channel are in `spec/13-boundaries.md` § "Independent-verification status of grade-A evidence and the third-party replication path" (issue template `independent-replication`).
 
@@ -96,7 +96,7 @@ Every claim in this repository is graded on five levels; every mechanism is trac
 
 Current distribution: A:11 (Sandlock, arXiv:2605.26298, experimental reproduction / AOE-CALIB-001, shadow-ratio threshold self-reproduction calibration / AOE-CALIB-002, periodic-egress variance threshold calibration / AOE-DETECT-001, config-review detection-rate coverage enumeration / AOE-ABSTAIN-001, paired proxy measurement of abstention rates / AOE-ABSTAIN-002, implicit-condition abstention experiment / AOE-SWARM-001, swarm-detection signal reproduction / AOE-CALIB-003, command-concentration threshold ROC calibration / AOE-CALIB-004, C12 credit-score rubric real-task calibration / AOE-CALIB-005, C12 rubric-v2 re-projection calibration / AOE-CALIB-006, C12 rubric-v2.1 calibration re-verification) / B:104 / C:11 / D:1 / G:52. **"Insufficient evidence" is a reviewable state, not a hidden defect.**
 
-> **Structural-bias disclosure**: grade B currently accounts for about 58% (104/179), with 11 grade-A sources (Sandlock experimental reproduction + AOE-CALIB-001 shadow-ratio threshold calibration + AOE-CALIB-002 periodic-egress variance threshold calibration + AOE-DETECT-001 config-review detection-rate coverage enumeration + AOE-ABSTAIN-001 paired proxy measurement of abstention rates + AOE-ABSTAIN-002 implicit-condition abstention experiment + AOE-SWARM-001 swarm-detection signal reproduction + AOE-CALIB-003 command-concentration threshold ROC calibration + AOE-CALIB-004 C12 credit-score rubric real-task calibration + AOE-CALIB-005 C12 rubric-v2 re-projection calibration + AOE-CALIB-006 C12 rubric-v2.1 calibration re-verification); grade G accounts for about 29% (52/178), covering six anchoring points L0–L4 + E across nine jurisdictions; plus 1 grade-C external product field test (DP-PREVIEW-001, a DeepPattern hosted-review control experiment, locally archived and unpublished). This reflects the current hybrid shape of a specification-first project augmented with real governance/policy evidence and self-reproduction calibration experiments — academic citations still outnumber primary reproducible experiments, but governance and enforcement evidence now provides broad cross-jurisdiction coverage, and the framework's own runtime data has begun filling engineering-parameter calibration gaps. **This distribution should not be read as empirical sufficiency.** The path to raising the grade-A share is already listed among the open problems in `spec/13-boundaries.md` (particularly the entries related to experimental validation), and is the key step for this framework to move from "a specification" to "a citable specification with empirical backing."
+> **Structural-bias disclosure**: grade B currently accounts for about 58% (104/179), with 11 grade-A sources (Sandlock experimental reproduction + AOE-CALIB-001 shadow-ratio threshold calibration + AOE-CALIB-002 periodic-egress variance threshold calibration + AOE-DETECT-001 config-review detection-rate coverage enumeration + AOE-ABSTAIN-001 paired proxy measurement of abstention rates + AOE-ABSTAIN-002 implicit-condition abstention experiment + AOE-SWARM-001 swarm-detection signal reproduction + AOE-CALIB-003 command-concentration threshold ROC calibration + AOE-CALIB-004 C12 credit-score rubric real-task calibration + AOE-CALIB-005 C12 rubric-v2 re-projection calibration + AOE-CALIB-006 C12 rubric-v2.1 calibration re-verification); grade G accounts for about 29% (52/179), covering six anchoring points L0–L4 + E across nine jurisdictions; plus 1 grade-C external product field test (DP-PREVIEW-001, a DeepPattern hosted-review control experiment, locally archived and unpublished). This reflects the current hybrid shape of a specification-first project augmented with real governance/policy evidence and self-reproduction calibration experiments — academic citations still outnumber primary reproducible experiments, but governance and enforcement evidence now provides broad cross-jurisdiction coverage, and the framework's own runtime data has begun filling engineering-parameter calibration gaps. **This distribution should not be read as empirical sufficiency.** The path to raising the grade-A share is already listed among the open problems in `spec/13-boundaries.md` (particularly the entries related to experimental validation), and is the key step for this framework to move from "a specification" to "a citable specification with empirical backing."
 
 ## Evidence correction (community back-propagation loop)
 
@@ -120,7 +120,7 @@ Per `CLASSIFICATION.md`, this repository has three levels:
 
 ## Status
 
-- Current version: v2.49.2 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
+- Current version: v2.49.3 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
 - Maintenance status: **does not claim "built"; claims only "maintained"** — an open cheating set can only be countered continuously
 - **Honest boundary**: 37 open problems explicitly registered (see `spec/13-boundaries.md`) — this framework's honest boundary and a problem list for researchers; includes the system's largest engineering gap, "decentralized-swarm countermeasures"
 - Change history: see [`CHANGELOG.md`](CHANGELOG.md)
@@ -190,7 +190,7 @@ This repository governs itself by its own specification (meta-governance):
 
 See [`CITATION.cff`](CITATION.cff).
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.49.2). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.49.3). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## Quality assurance (self-referential verification)
 

@@ -28,8 +28,8 @@
   22. spec/ 无 14-references.md（唯一真相源 = 根 REFERENCES.md）
   23. 引用红线：正文无禁止引用的数字（GAIE 84–97%）
   24. 13-boundaries 实测未解问题条数 = 37（动态，随新增条目更新）
-  25. README 声明「31 条未解问题」
-  26. README.en 声明「31 open problems」
+  25. README 声明「37 条未解问题」
+  26. README.en 声明「37 open problems」
   27. REFERENCES 无悬空引用：条目的登记键须在 spec/ 正文出现；
      若确系有意登记而未回灌，须在落点列显式标注【登记备用】
      —— 备用清单逐条打印公示，无法静默堆积
