@@ -27,9 +27,9 @@
   21. STYLE 允许 P0 优先级标记
   22. spec/ 无 14-references.md（唯一真相源 = 根 REFERENCES.md）
   23. 引用红线：正文无禁止引用的数字（GAIE 84–97%）
-  24. 13-boundaries 实测未解问题条数 = 37（动态，随新增条目更新）
-  25. README 声明「37 条未解问题」
-  26. README.en 声明「37 open problems」
+  24. 13-boundaries 实测未解问题条数 = 登记册总条数（动态；已解决行留痕不删、不扣减——#12/#14/#37 先例，v2.51.1 口径裁决）
+  25. README 声明「N 条未解问题」（N 动态跟随第 24 项实测）
+  26. README.en 声明「N open problems」（N 动态跟随第 24 项实测）
   27. REFERENCES 无悬空引用：条目的登记键须在 spec/ 正文出现；
      若确系有意登记而未回灌，须在落点列显式标注【登记备用】
      —— 备用清单逐条打印公示，无法静默堆积
@@ -311,6 +311,10 @@ for _line in b13.split("\n"):
             break
     elif _started:
         break
+# 口径裁决（v2.51.1）：本数 = 未解问题登记册总条数；已解决行留痕不删、不扣减
+# （#12 / #14 自 v1.0.0 首版即为已解决留痕行，历史计数 31→37 从未因闭合而 -1）。
+# 曾在本轮短暂改为「未解状态行数」并回滚——那是基于「未解 = 未解决状态」的误读，
+# 漏查了 #12/#14 先例；登记册口径以本注释钉死，防止后续再按状态数误改。
 open_n = len(_seq)
 readme_en = read(os.path.join(ROOT, "README.en.md"))
 check(f"13-boundaries 实测未解问题条数 = {open_n}",

@@ -90,6 +90,10 @@ Background lessons (v2.11.1, initial version): v2.4.1 once appeared in the READM
 
 Revision background (v2.41.0, external-review P2 item): external reviews noted that the release cadence of v2.0 → v2.38 within a single month rendered version numbers uninformative. Three root causes: "adding evidence entries" consumed a minor regardless of grade (a single literature-patrol absorption batch alone produced multiple minors); major had no definition; and no batching guidance existed. After this revision: literature absorption (B/C grades) moves to patch, A/G-grade experiments stay minor, major is explicitly anchored to architecture-class changes, and a "merge the same batch into one release" rule is introduced. The policy is not applied retroactively to historical versions.
 
+## Refusal grounds and credential-anchor boundary
+
+This guide is a procedural document and sets up no refusal clause of its own: if a contributor believes a requirement is unenforceable in this repository's context, cite the "citable refusal grounds" principle of `spec/01` (the meta-level criterion source, registered in the spec/13 open-problem register) to state the reason and request an exemption. Paragraphs citing external facts must carry credential anchors per principle two of `spec/01` — a near-anchor must be traceable to one of a REFERENCES key / an arXiv ID / a DOI / a spec/13 problem number (a literal DOI is not a hard requirement; the ruling rationale is in `spec/13` #37); claims about in-repo implementations use an in-repo path or an AOE-* experiment registration number as the anchor. (Added in v2.51.1, closing the #37 residual item)
+
 ## Style
 
 See `STYLE.md` (terminology, numbering rules, writing conventions).
