@@ -1,6 +1,22 @@
 # 变更日志
 
 
+## v2.52.4（2026-09-29）— NVIDIA OASP 轮：spec/02 业界对照增补（Sentry=P3 产业实例化 + OpenShell=Sandlock 同族 + policy prover 候选增量 + 「治理即基础设施」双例收敛）+ B 级条目 nvidia-oasp-2026（patch）
+
+### 背景
+NVIDIA 2026-09-28 发布 Open Agent Safety Platform（OASP）= OpenShell（开源安全运行时，Vera CPU 上划定文件/网络/工具/进程/凭证执行边界，可扩展 Arm/Intel）+ Sentry（BlueField-4 DPU 带外看门狗，隔离于宿主机之外、对 agent 不可达、毫秒级隔离越界 agent）。一手三锚点（Newsroom 新闻稿 + Technical Blog + GitHub 仓库）经 WebFetch 核验（2026-09-29）；转述稿「本可以阻止 7 月 HF 攻击」经一手核伪（两份一手均无此表述，禁引）；用户裁决：先出工作区映射分析（`NVIDIA_OASP×AOF映射分析_v1.md`）+ 数字印证，再 B 级入库（沿 v2.52.3 阿里轮同型先例）。
+
+### 主要变更
+- spec/02（双语）：「业界收敛对照」节新增**业界对照增补：NVIDIA Open Agent Safety Platform**——① Sentry 是 P3「独立硬件域 + 远程证明」的产业实例化（总纲原则一的硬件域落地形态例证、G9 留痕「P3 落地前不得单独用作信任根」的产业可行形态）；② OpenShell 与 Sandlock 同族第二例（运行时边界路线产业扩散互证）；③ policy prover（预运行策略可证明性，本体系 spec 空位候选）与「通往模型的路径即控制点」两个对照点；④ 与 AgentCore 合并：「治理能力成为基础设施售卖项」获云厂商 + 芯片/基础设施厂商两条互不关联产业线收敛；⚠️ 四项限定（COI / 只借结构不引效能 / 分层对照非等价 / 反事实禁引）
+- REFERENCES：新增 1 条 B 级（nvidia-oasp-2026，一手 = Newsroom 新闻稿 + Technical Blog + GitHub 仓库三锚点，四项限定随条目）；注脚计数与演化链同步（189→190 / B113→114）
+- VERIFICATION-LOG：新条目核验行（三锚点 verbatim 核验 + GitHub 仓库 1,555 commits / PR #3718 prover 落地实证 + 反事实表述 ABSENT 裁决）
+- 版本五件套：VERSION / CHANGELOG / README 双语三处（badge / 当前版本 / APA）/ CITATION.cff
+
+### 守恒与边界
+证据计数 189→190（B 113→114，A/C/D/G 不变）；未解问题登记册 40 条不变；门禁计数断言同步（B:114 / 合计 190）；本批为产品发布立场印证与机制参照，**不入 spec/06 威胁模型事件表**；「本可以阻止 7 月 HF 攻击」未经一手证实前不得在任何产物中引用。
+
+---
+
 ## v2.52.3（2026-09-29）— 阿里云栖轮：spec/02 业界对照增补（AgentCore 同构 + RSI 路线图）+ spec/13 #31 注记 + B 级条目 aliyun-yunqi-2026（patch）
 
 ### 背景
