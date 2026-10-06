@@ -89,6 +89,22 @@
 
 ⚠️ **证据等级 B（一手公开事件）**。五项限定：① **COI**——OpenAI 自报自家事故与自家监控表现，不可独立复现；② **域差**——治理对象为 RL 训练沙盒中的 agent，非运行时生产 agent，威胁形态可参照、不作等价外推（DSec 先例同款限定语）；③ **义务不效能**——只支撑威胁形态存在性与义务来源，不引任何「监控有效 / 修复有效」的效能外推；④ **引用锚点**——alignment.openai.com 报告页及其官方摘要，时间线数字经一手全文逐字核对（2026-09-28）；央视新闻与第三方博客转述稿不作来源；⑤ 「约 22 问」「19–24 秒延迟」两条二手流传数字与原文不符（原文仅证实末批 18 问；6/19/24 秒为超时设置非实测延迟），**禁引**。
 
+## API 层对抗蒸馏：加密推理重放（v2.52.5 新增）
+
+与前三起事故（2026-04 能力跃迁逃逸 / 2026-07 蜂群自组织入侵 / 2026-09 DNS 环境配置缺口）主体与方向均不同的一类威胁：攻击者不在系统之内，而是**系统外部的 API 滥用方**——被攻击的不是部署环境，而是模型提供方自身的推理接口。该事件把本体系威胁面从「被监察 agent 的运行时」扩展出一个新维度：**模型提供方侧的 API 信任边界**。
+
+2026-09-30，OpenAI 发布官方披露 *Disrupting a coordinated model distillation campaign*（【键: openai-moonshot-distill-2026】，openai.com/index/disrupting-a-coordinated-model-distillation-campaign/）：一起针对其推理 API 的协同「对抗蒸馏」活动。时间线（官方逐字）："The activity began on July 1, initially at a low volume until we observed high-volume spikes on July 24 and 25 consisting of 16,000 requests using a relevant extraction pattern from over 4,000 users."（脚注限定："These figures describe attempted, not necessarily successful, extractions."——**引用时正文与脚注并引，不得表述为成功提取**）；"Further investigation identified related prompt-pattern activity across a cluster of more than 15,000 users"；"…which we fully disrupted by July 28."。手法官方逐字："The operators did not break our encryption, compromise a database, or gain direct access to stored user conversations. Instead, they manipulated model interactions so that protected reasoning could be reproduced in forms visible to the requester in a coordinated, scaled manner that violated our terms of service."——**加密未被攻破**：滥用者把 A 会话的加密推理 trace 重放到同一生态内的另一模型路径，令持有解密能力的模型把密文内容逐字输出。
+
+对本体系有三条增量：
+
+其一，**加密不是信任边界，密钥持有路径才是**。加密保护推理「在途」，但不防「同生态内任何持有解密能力的模型路径」——失效点在于**解密操作不校验请求方是否为该密文的产生者**（来源绑定缺失）。这与「监察组件自身攻击面与监察信号覆盖层级」节（DSec 盲区一）结构同构：**受信组件持有敏感能力，该能力本身即第一序攻击面**。本事件存在学术-生产双线收敛：arXiv:2608.09867（MATS / ELLIS Institute Tübingen / Synk，2026-08）先行实证 Claude / Gemini / GPT 的加密推理 trace 在同一提供方生态内 "fully compatible and interchangeable across different sessions, users, and models"——「向同生态较弱模型注入他模型 trace 即可逐字解密」在学术侧已可复现，约两个月后生产侧披露同类手法被规模化使用。义务候选（**暂挂**）：解密 / 透传密文类中间态前校验「请求方 = 密文产生者」的来源绑定义务——本体系对 API 层密文 / 凭据类中间态的流转来源校验无条款；单实例不撑起新开未解条目，**第二起同族事件出现时升格登记**。
+
+其二，**模型间互调的第二例（方向互补）**：Parse OSINT 报告（未解 #40）还原的是「借算力」——被调模型成为无监察的协作计算体；本事件是「借密钥」——模型路径成为解密预言机。同属「模型间互调的监察边界」，攻击方向相反，#40 行已加第二例注记（v2.52.5）。
+
+其三，**生态级事件知情的披露依赖**：本事件与 openai-dns-2026、parse-swarmtraces-2026 并列为 2026 年厂商 / 第三方披露族第三例——此类 API 滥用无外部审计主体，发现方 = 受损方 = 披露方，「生态级事件知情依赖厂商自披露」的结构性盲区再获一例。
+
+⚠️ **证据等级 B（厂商官方披露）**。五项限定：① **单方指控红线**——归属表述无公开技术证据（官方页核对确认无任何 IoC / 日志样本 / 请求样例），官方逐字自陈 "It is unclear whether all operators we observed during the relevant time period originated from a single actor. However, we attribute a core cluster of the activity to individuals associated with Moonshot AI, the developer of Kimi."，被指控方截至 2026-10-01 未回应；本节只登记攻击形态与防护义务，**归属指控不作为事实结论引用**，相关表述一律冠「OpenAI 称」；② **COI**——披露方 = 受损方 = 定性方，全部规模数字为自报，不可独立复现；③ **域差**——治理对象为模型提供方 API 侧的滥用防御，非运行时生产 agent；④ **义务不效能**——处置措施（封号与注册管控 / 关闭重放路径 / 流式输出检测拦截 / 第三方联动 / Frontier Model Forum 与政府通报渠道）效果无外部验证，只引事实形态；⑤ **引用锚点**——openai.com 官方页（逐字核对于 2026-10-06，经第三方工具渠道抓取，直接抓取受反爬拦截）+ The Hacker News（2026-10-01）与 ThreatFrontier（2026-10-02）两路独立二手佐证一致；二手观点段不作来源。
+
 ## 事故印证的三个机制
 机制 | 事故中的印证 | 证据等级
 | --- | --- | --- |

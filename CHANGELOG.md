@@ -1,6 +1,24 @@
 # 变更日志
 
 
+## v2.52.5（2026-10-06）— 双批：OpenAI-Moonshot API 层对抗蒸馏事件（spec/06 新攻击形态 + #40 第二例注记）+ False Frontiers 闭环共漂移定量（spec/08 E4 对照五）+ 2 条 B 级条目（patch）
+
+### 背景
+两批外部材料经五问法评估 + 工作区映射分析（`OpenAI-Moonshot对抗蒸馏事件×AOF映射分析_v1.md` / `HF论文批_FalseFrontiers-MidHarness-MILO-AgentWorld×AOF映射分析_v1.md`）后入库：① OpenAI 2026-09-30 官方披露 API 层对抗蒸馏（加密推理重放），官方页经第三方工具渠道抓取完成 11 项核对清单逐字核对（直接抓取受反爬拦截），The Hacker News / ThreatFrontier 两路独立二手一致；② False Frontiers（arXiv:2609.39102 v2）受控实验为 E4「同源不构成证人」给出因果级定量。用户裁决：来源绑定义务候选并入 spec/06 新节暂挂（第二起同族事件出现时升格未解条目，未解登记册不变），False Frontiers 同轮入库。
+
+### 主要变更
+- spec/06（双语）：新增 §「API 层对抗蒸馏：加密推理重放」——加密不是信任边界、密钥持有路径才是（与 DSec 盲区一同构）+ 学术-生产双线收敛（arXiv:2608.09867 于 2026-08 先行实证加密推理 trace 同生态跨 session/用户/模型可互换）+ 来源绑定义务候选（暂挂）+ 披露三联；⚠️ 单方指控红线（官方页无任何 IoC/日志样本/请求样例，归属表述不作为事实结论、一律冠「OpenAI 称」）
+- spec/13（双语）：#40 第二例注记（Parse 例「借算力」vs 本例「借密钥」，方向互补）
+- spec/08（双语）：E4 对照五——闭环自评共漂移（co-cheating，论文明示非有意协调）定量 + CrossFit 血统拆分（隔离反馈血统单一变量即消除主要假一致：6.1/8.8→3.0/3.7；隔离重放→0.4/0.1 为诊断实验读数）
+- REFERENCES：新增 2 条 B 级（openai-moonshot-distill-2026 / false-frontiers-2026，限定随条目）；注脚计数与演化链同步（190→192 / B114→116）
+- VERIFICATION-LOG：两条核验行（官方页 11 项逐字核对渠道如实记录 + arXiv abs 页逐字核对）
+- 版本五件套：VERSION / CHANGELOG / README 双语三处（badge / 当前版本 / APA）/ CITATION.cff
+
+### 守恒与边界
+证据计数 190→192（B 114→116，A/C/D/G 不变）；未解问题登记册 40 条不变（来源绑定义务并入 spec/06 新节暂挂，未新开条目）；门禁计数断言同步（B:116 / 合计 192）；co-cheating 措辞订正（论文明示 does not imply intentional coordination，「共谋」表述禁用）；0.4%/0.1% 为血统隔离诊断实验读数，禁表述为修复效能；本事件为单方指控，归属内容不得在任何产物中作为事实结论引用。
+
+---
+
 ## v2.52.4（2026-09-29）— NVIDIA OASP 轮：spec/02 业界对照增补（Sentry=P3 产业实例化 + OpenShell=Sandlock 同族 + policy prover 候选增量 + 「治理即基础设施」双例收敛）+ B 级条目 nvidia-oasp-2026（patch）
 
 ### 背景
