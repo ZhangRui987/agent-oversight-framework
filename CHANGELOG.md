@@ -1,6 +1,24 @@
 # 变更日志
 
 
+## v2.52.6（2026-10-07）— F3/F4/F5 顺带轮：spec/02 业界对照增补（Mid-Harness 验证门经济学）+ spec/13 #31 meta-evolution 注记（MILO）+ spec/07 研究侧参照段（AgentWorld CCE）+ 3 条 B 级条目（patch）
+
+### 背景
+v2.52.5 双批轮的挂账项（映射表 `HF论文批_FalseFrontiers-MidHarness-MILO-AgentWorld×AOF映射分析_v1.md` F3/F4/F5）经用户裁决顺带推进；远端 CI #88（199c0b3）确认绿色后开工。三篇论文 arXiv 页逐字核对完成；MILO「超过榜首」经区间重叠核算订正为统计不显著。
+
+### 主要变更
+- spec/02（双语）：「业界收敛对照」新增增补段**Mid-Harness 的验证门经济学**——「验证先于不可逆动作」的运行时形态（与运行监察章二号监察结构同构）+ 「监察质量是独立变量」（弱验证器下采样无用；与 L2 预算分配设计直觉同向）
+- spec/13（双语）：#31 行追加 **meta-evolution 注记**（MILO 把搜索策略自身纳入演化；同族第六条按不叠加惯例仅作注记素材、效能数字不引）
+- spec/07（双语）：「涌现检测信号」节「协同效能异常」行后新增**研究侧参照段**（AgentWorld CCE：「忙碌 ≠ 贡献」的可量化形式；度量语义补充候选，不改既有信号检测方法与阈值）
+- REFERENCES：新增 3 条 B 级（mid-harness-2026 / milo-harness-2026 / agentworld-2026，限定随条目）；注脚计数与演化链同步（192→195 / B116→119）
+- VERIFICATION-LOG：三条核验行（三篇 arXiv 页逐字 + MILO 区间重叠勘误记录）
+- 版本五件套：VERSION / CHANGELOG / README 双语三处（badge / 当前版本 / APA）/ CITATION.cff
+
+### 守恒与边界
+证据计数 192→195（B 116→119，A/C/D/G 不变）；未解问题登记册 40 条不变；门禁计数断言同步（B:119 / 合计 195，含脚本自身——v2.52.5 首跑 5 FAIL 教训对本轮生效）；MILO 按同族不叠加惯例不另立落点；「超过榜首」表述禁用（置信区间重叠）；AgentWorld CCE 为度量语义补充候选，不改变「协同效能异常」信号检测方法与阈值。
+
+---
+
 ## v2.52.5（2026-10-06）— 双批：OpenAI-Moonshot API 层对抗蒸馏事件（spec/06 新攻击形态 + #40 第二例注记）+ False Frontiers 闭环共漂移定量（spec/08 E4 对照五）+ 2 条 B 级条目（patch）
 
 ### 背景
