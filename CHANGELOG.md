@@ -1,6 +1,24 @@
 # 变更日志
 
 
+## v2.52.9（2026-10-07）— 三线批：OpenAI 事故链（Wikimedia + 澳洲听证）× MCP 协议安全 × CCI 升格——B 级 ×3 + C 级 ×1 + spec/06 第四起事故节 + spec/07 委托链出处节 + spec/10 资源外部性边界声明 + spec/13 新未解 #41/#42（minor）
+
+### 背景
+三线新材料（Wikimedia 事件链 / MCP protocol pivoting + Copilot CLI CCI / 监管落地）经五问法评估（`外部材料价值评估_OpenAI事故链×MCP协议安全×监管落地_2026-10-07.md`）+ 映射分析（`OpenAI事故链×MCP协议安全×AOF映射分析_v1.md`）后用户裁决「走 A」随批入库。三线仓内查证均零命中；一手锚点全部核验（Wikimedia Diff 官方博客 / 听证多源 / Ars Technica / Adversa AI 原始博客 / NVD 双 CVE）。
+
+### 主要变更
+- REFERENCES：新增 3 条 B 级 + 1 条 C 级——openai-wikimedia-2026（受害方一手：sandbox 编辑 / citation tool 配置劫持代理化 / Etherpad 未遂 / 数百万请求「may have contributed to」WQDS 5 月部分宕机，归因限定 + 反面事实同引）；openai-au-hearing-2026（Medicare 披露失效时间线 6-18→9-10→9-24 + Kwon「within 30 days of discovery」挂钩 HF 回溯 + Anthropic「days or sooner」议会基准 + 强制披露立法动向；**G 类化挂起待官方听证记录锚点**）；mcp-protocol-pivoting-2026（Ars Technica + **NVD 双 CVE 内嵌**——Google CVE-2026-14540（**评分口径差异：NVD v3.1 6.1 MEDIUM vs GitHub v4.0 8.0 HIGH**，转述「8 分」系 GitHub 口径）+ Rapid7 CVE-2026-97228（2.7）；命名争议 Vervier「间接提示注入子类」随条目）；copilot-cci-2026（**C 级**：单源 Adversa AI + GitHub 拒认 + 无 CVE + 无野外利用，升 B 条件随条目）；注脚计数与演化链同步（199→203 / B123→126 / C12→13）
+- spec/06（双语）：新增「**第四起独立事故：生产 agent 的外部危害与披露失效**」节——①工具配置劫持代理化 = 外联信道家族第三例新亚型「配置面」（对照 DNS 绕过与 LMDeploy SSRF，spec/02「配置权即攻击面」生产实证）；②资源耗尽型外部危害（spec/10 账本不覆盖）；③披露失效样本三连 + 「生态级事件知情依赖厂商自披露」盲区获立法确权；API 蒸馏节义务候选**升格注记**（CCI = Moonshot 密文中间态同族第二例，按预承诺规则升格）
+- spec/07（双语）：新增「**跨 Agent 委托链的出处连续性**」节——委托链中出处/授权在协议转换中丢失，与消费侧委托协议（PACT/PAP）双线收敛，「Carry provenance across delegation」与签名即认领 + spec/08 溯源对齐
+- spec/10（双语）：新增「**资源外部性：账本覆盖边界声明**」节——账本核算 agent 自身消耗，对外部基础设施的资源外部性为显式边界（义务候选：出站速率上限 + 可识别身份）
+- spec/13（双语）：新增未解 **#41 密文类中间态的来源绑定与信任缺失**（Moonshot 暂挂义务候选按预承诺规则升格；含模型路由维度）+ **#42 事故对外披露的时效与通报渠道义务**；未解 40→42
+- VERIFICATION-LOG：四条核验行；版本五件套 + 门禁计数断言同步（B:126 / C:13 / 合计 203 / 未解动态跟随）
+
+### 守恒与边界
+证据计数 199→203（B 123→126、C 12→13，A/D/G 不变）；未解 40→42（两条新登记，无闭合）；等级裁决——听证内容为媒体转述故 G 类化挂起（官方记录锚点补齐后再评）、CCI 单源+厂商拒认故 C 级（升 B 条件随条目）、双 CVE 并入 MCP 条目不单独立条；归因表述一律冠「Wikimedia 称 / 据听证报道」；反面事实（无系统沦陷、无协调证据）同引；textGrain（线 2）一手锚点未抓暂挂不入。
+
+---
+
 ## v2.52.8（2026-10-07）— 人大报告挂账回溯批：B 级 ×3（qi-shallow-alignment-2025 / cve-2026-5757 / cve-2026-33626）+ spec/05 §M4 第二处交叉引用段 + spec/06 新节「LLM 服务栈自身的漏洞面」+ cn-renmin 红线状态更新（patch）
 
 ### 背景
