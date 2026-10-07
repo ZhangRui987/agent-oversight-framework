@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """发布一致性校验（推送前 / pre-commit 用）。
 
-校验项（共 41 项 = 41 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
+校验项（共 42 项 = 42 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
   1. 全仓库无 [TABLE START/END] 伪标记
   2. 所有 Markdown 表格表头后都有 |---| 分隔行
   3. 表格每行列数与分隔行一致
@@ -63,6 +63,12 @@
          仅是 README 承诺，无登记载体、无机制保证，属「承诺≠机制」。本项把承诺数值化：
          CORRECTION-LOG.md 每行登记 受理日期/截止日期/状态，门禁校验
          截止-受理 == 14 天、状态合法、拒绝必附理由、待处理超期 FAIL（按当日日期）。
+  42. PRODUCTION-GAPS 当前状态行与正文表格一致（闭合/未闭合双向比对；v2.52.10 新增）
+      —— 教训来源：外部 AI 评估（2026-10-07）实测发现头部 v2.2.0 状态声明「其余 6 项
+         （G3–G8）未闭合」与正文表格 G7（v2.36.0 事件流侧）/ G8（v2.38.0 告警侧）已
+         「✅ 演示级闭合」漂移存活多个版本。与第 40 项教训同构：门禁只校验「文档之间
+         一致」，不校验「同一文件头尾一致」。本项把头部显式「当前状态」行钉死到正文
+         表格实测 ✅/❌ 集合：任一侧变化未同步即 FAIL。
 
 用法：
   python scripts/verify_consistency.py [仓库根目录，默认脚本所在目录的上级]
@@ -834,6 +840,36 @@ check(
     "CORRECTION-LOG 结构合法且无超期未结纠错（14 天纠错周期机制化）",
     not _cor_bad,
     "; ".join(_cor_bad[:5]),
+)
+
+# ── 22. PRODUCTION-GAPS 当前状态行 vs 正文表格一致（v2.52.10 新增） ─────────────
+# 教训来源：外部 AI 评估（2026-10-07）实测发现 PRODUCTION-GAPS.md 头部 v2.2.0 更新行
+# 写「其余 6 项（G3–G8）未闭合」，而正文表格 G7（v2.36.0 事件流侧）/ G8（v2.38.0 告警侧）
+# 已「✅ 演示级闭合」——头部声明与正文表格漂移存活多个版本。与第 40 项教训同构：
+# 门禁只校验「文档之间一致」，不校验「同一文件头尾一致」。
+# 机制：头部须有显式「当前状态」行（闭合/未闭合清单），门禁从正文表格解析实际
+# ✅/❌ 集合，双向比对；表格状态变化而状态行未同步即 FAIL。
+_pg = read(os.path.join(ROOT, "reference", "runtimes", "l2-runtime-oversight",
+                        "PRODUCTION-GAPS.md"))
+_pg_state = re.search(
+    r"当前状态（v[\d.]+）\*{0,2}：\s*([G\d/ ]+?)演示级闭合[；;]\s*([G\d/ ]+?)未闭合", _pg)
+_pg_tbl_closed, _pg_tbl_open = set(), set()
+for _m in re.finditer(r"^\| \*\*G(\d+)\*\*.*\|\s*(✅|❌)[^|]*\|\s*$", _pg, re.M):
+    (_pg_tbl_closed if _m.group(2) == "✅" else _pg_tbl_open).add(_m.group(1))
+_pg_bad = []
+if not _pg_state:
+    _pg_bad.append("未找到「当前状态（vX.Y.Z）：G…演示级闭合；G…未闭合」状态行")
+else:
+    _pg_dec_closed = set(re.findall(r"G(\d+)", _pg_state.group(1)))
+    _pg_dec_open = set(re.findall(r"G(\d+)", _pg_state.group(2)))
+    if _pg_dec_closed != _pg_tbl_closed:
+        _pg_bad.append(f"闭合声明 {sorted(_pg_dec_closed)} != 表格实测 {sorted(_pg_tbl_closed)}")
+    if _pg_dec_open != _pg_tbl_open:
+        _pg_bad.append(f"未闭合声明 {sorted(_pg_dec_open)} != 表格实测 {sorted(_pg_tbl_open)}")
+check(
+    "PRODUCTION-GAPS 当前状态行与正文表格一致（闭合/未闭合双向比对）",
+    not _pg_bad,
+    "; ".join(_pg_bad[:3]),
 )
 
 # ── 汇总 ─────────────────────────────────────
