@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """发布一致性校验（推送前 / pre-commit 用）。
 
-校验项（共 42 项 = 42 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
+校验项（共 43 项 = 43 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
   1. 全仓库无 [TABLE START/END] 伪标记
   2. 所有 Markdown 表格表头后都有 |---| 分隔行
   3. 表格每行列数与分隔行一致
@@ -69,6 +69,11 @@
          「✅ 演示级闭合」漂移存活多个版本。与第 40 项教训同构：门禁只校验「文档之间
          一致」，不校验「同一文件头尾一致」。本项把头部显式「当前状态」行钉死到正文
          表格实测 ✅/❌ 集合：任一侧变化未同步即 FAIL。
+  43. spec/ 双语结构对齐（X.md ↔ X.en.md 标题层级序列一致；v2.52.11 新增）
+      —— 实测（2026-10-14）：5/13 对存在标题数量或层级序列漂移——双语同步此前
+         仅靠人工纪律，门禁对英文版检查面远窄于中文（同「声明 vs 实际」盲区族）。
+         机制：逐对提取 ^#+ 标题层级序列比对；已实测漂移的 5 对按完整序列指纹
+         登记入豁免表（诚实公示而非粉饰），修复一对删一对；未登记的新漂移即 FAIL。
 
 用法：
   python scripts/verify_consistency.py [仓库根目录，默认脚本所在目录的上级]
@@ -870,6 +875,53 @@ check(
     "PRODUCTION-GAPS 当前状态行与正文表格一致（闭合/未闭合双向比对）",
     not _pg_bad,
     "; ".join(_pg_bad[:3]),
+)
+
+# ── 23. spec/ 双语结构对齐（v2.52.11 新增） ─────────────────────────────────
+# 实测（2026-10-14）：5/13 对 spec 存在标题数量或层级序列漂移——双语同步此前仅靠
+# 人工纪律，门禁对英文版的检查面远窄于中文（同「声明 vs 实际」盲区族）。机制：
+# 逐对比对 ^#+ 标题层级序列；已知漂移按完整序列指纹登记豁免表（诚实公示），
+# 修复一对删一对；未登记的新漂移即 FAIL。豁免指纹为实测快照：修复后手动删除。
+_BILINGUAL_KNOWN_DRIFT = {
+    # 文件名: (中文标题层级序列, 英文标题层级序列)
+    "02-architecture.md": (
+        "1,2,2,3,3,3,3,3,2,2,3,2,2,3,2,2,2,2,2,2,2,2,2",
+        "1,2,2,3,3,3,3,3,2,2,2,2,3,2,2,2,2,2,2,2,2,2"),
+    "04-credit-abstention.md": (
+        "1,2,3,2,2,3,3,3,3,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3",
+        "1,2,3,2,2,3,3,3,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3"),
+    "07-swarm-governance.md": (
+        "1,2,2,2,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2",
+        "1,2,2,2,2,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2"),
+    "12-enforcement.md": ("1,2,2,2", "1,2,2,2,2"),
+    "13-boundaries.md": ("1,2,2,2,2,3,3,2", "1,2,2,2,2,2"),
+}
+_spec_dir = os.path.join(ROOT, "spec")
+_bl_bad, _bl_exempt = [], []
+for _base in sorted(os.listdir(_spec_dir)):
+    if not re.match(r"^[0-1][0-9]-.*\.md$", _base) or _base.endswith(".en.md"):
+        continue
+    _en = os.path.join(_spec_dir, _base[:-3] + ".en.md")
+    if not os.path.exists(_en):
+        continue
+    _hz = re.findall(r"^(#+) ", read(os.path.join(_spec_dir, _base)), re.M)
+    _he = re.findall(r"^(#+) ", read(_en), re.M)
+    _sz = ",".join(str(len(h)) for h in _hz)
+    _se = ",".join(str(len(h)) for h in _he)
+    if _sz == _se:
+        continue
+    if _base in _BILINGUAL_KNOWN_DRIFT and tuple(_BILINGUAL_KNOWN_DRIFT[_base]) == (_sz, _se):
+        _bl_exempt.append("%s（zh %d / en %d 标题）" % (_base, len(_hz), len(_he)))
+    else:
+        _bl_bad.append("%s 中文 %d 标题/序列 vs 英文 %d（未登记的新漂移）"
+                       % (_base, len(_hz), len(_he)))
+if _bl_exempt:
+    print("       ↳ 双语结构：已登记漂移豁免 %d 对（修复一对删一对）: %s"
+          % (len(_bl_exempt), "; ".join(_bl_exempt)))
+check(
+    "spec/ 双语结构对齐（标题层级序列一致；已知漂移按豁免表公示）",
+    not _bl_bad,
+    "; ".join(_bl_bad[:3]),
 )
 
 # ── 汇总 ─────────────────────────────────────

@@ -1,6 +1,22 @@
 # 变更日志
 
 
+## v2.52.11（2026-10-14）— 工程化补强轮：CI 供应链/兼容性 + 门禁第 43 项双语结构（patch）
+
+### 背景
+工程化缺口盘点（2026-10-14）实测四项：CI actions 浮动标签（@v4/@v5，与本项目供应链治理叙事相悖）；CI 单 Node 版本守卫（2026-10-07 复现轮 Node 24 已实测触发 5 个 env-diff WARN）；双语一致性门禁覆盖面窄于中文（实测 5/13 对 spec 结构漂移）；Release 自 v2.46.0 断更（tag 92 个 vs Release 停在 09-16）。
+
+### 改动
+- **ci.yml**：① 7 处 actions 引用 SHA pin——checkout@11d5960a（v4.4.0）/ setup-node@49933ea5（v4.4.0）/ setup-python@a26af69b（v5.6.0），均 pin 当前大版本最新 patch（零行为变化，大版本升级另轮）；② runtime-tests 与 replication-t0 两 job 增 Node 版本矩阵 ["22", "24"]（fail-fast: false）——Node 24 下 L2 demo 153 断言与 tier-0 复现包均已实测通过（10-07 / 10-14），跨版本行为差异自此在 CI 内可观测。
+- **门禁第 43 项**（scripts/verify_consistency.py）：spec/ 双语结构对齐——逐对比对 X.md ↔ X.en.md 的标题层级序列。实测 5/13 对漂移（02/04/12 标题数差、07/13 层级序列错位），按完整序列指纹登记豁免表（信息行公示，修复一对删一对），未登记的新漂移即 FAIL——机制先立，双语结构漂移自本轮起被钉死不扩大。
+- **门禁项数声明 42→43 七处同步**（README 双语 / CONTRIBUTING 双语 / ci.yml 两处 / 脚本 docstring）；CORRECTION-LOG 与 PRODUCTION-GAPS 检查编号不变。
+- **Release 流程**：自本版起每版发布时建 GitHub Release（正文沿 CHANGELOG 条目）；v2.46.0→v2.52.10 历史不追。
+
+### 计数与不变量
+- 证据计数不变：A:11 / B:126 / C:13 / D:1 / G:52 = 203 条；未解问题 42 不变。
+- 门禁 43 项（42→43），提交前实测 43/43 PASS。
+- CI job 数 3→5（两 job × Node 2 版本）。
+
 ## v2.52.10（2026-10-07）— PRODUCTION-GAPS 头部状态修复 + 门禁第 42 项（头部/表格一致性联动）（patch）
 
 ### 背景

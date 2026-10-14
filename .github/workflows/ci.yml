@@ -1,6 +1,6 @@
 # 发布一致性校验 + L2 参照实现断言 + tier-0 复现包（CI）
 # 动机：verify_consistency.py 与 demo.ts 此前只挂在本地 pre-commit，外部读者无法在远端
-#       机器可复现。本 workflow 把 42 项门禁与 153+14 项断言升级为 push/PR 自动执行——
+#       机器可复现。本 workflow 把 43 项门禁与 153+14 项断言升级为 push/PR 自动执行——
 #       让"自动化门禁"从口号变成任何人可核验的事实（采纳豆包深度审查建议 1）。
 # 设计约束：脚本零外部依赖（Python 纯标准库 / Node 内置 node:sqlite + node:crypto），
 #       故 CI 无需安装任何包；三 job 相互独立，可并行。
@@ -15,17 +15,17 @@ on:
 
 jobs:
   consistency-gate:
-    name: 发布一致性校验（42 项）
+    name: 发布一致性校验（43 项）
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.12"
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
       - name: Run verify_consistency.py
@@ -34,13 +34,17 @@ jobs:
   runtime-tests:
     name: L2 参照实现断言（demo 153 项 + otel 14 项）
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["22", "24"]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          node-version: "22"
+          node-version: ${{ matrix.node-version }}
       - name: Run demo.ts (24 组 153 项断言)
         run: node --experimental-transform-types reference/runtimes/l2-runtime-oversight/demo.ts
       - name: Run otel-adapter selftest (14 项)
@@ -49,13 +53,17 @@ jobs:
   replication-t0:
     name: tier-0 复现包（零依赖档 9 实验）
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["22", "24"]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
-          node-version: "22"
+          node-version: ${{ matrix.node-version }}
       - name: Selftest comparison kernel (26 项)
         run: node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts --selftest
       - name: Replicate tier-0 experiments (9 实验)
