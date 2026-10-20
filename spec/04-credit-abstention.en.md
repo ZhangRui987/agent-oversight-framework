@@ -15,6 +15,8 @@ Real-world corroboration (B-grade first-hand event): ExploitGym has 898 problems
 ## Abstention-rate calibration: the SR/UR/IRR joint triple + the paired safety control group (upgraded in v2.18.0; first measured in v2.33.0)
 A non-penalized abstention exit would lead the model to submit a blank on every difficult task. This spec originally used three signals — abstention-rate baseline / abstention informativeness / abstention-to-failure ratio — to plug this loophole; all three are necessary conditions, but **they lacked a unifying calibration framework** — the abstention rate alone cannot distinguish "over-refusal" from "under-refusal", and the failure rate alone cannot distinguish "giving up too early" from "giving up too late". External evidence supplies the minimal complete form of such a framework.
 
+### The jointly defined triple
+
 Designing for Doubt (arXiv:2606.02965v2, AIES 2026) decomposes the calibration of abstention into three **jointly defined** quantities, each incomplete without the others:
 
 | Quantity | Definition | What it measures |

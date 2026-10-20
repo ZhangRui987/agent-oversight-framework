@@ -1,6 +1,23 @@
 # 变更日志
 
 
+## v2.52.12（2026-10-20）— 双语债清偿轮：第 43 项豁免表清零（patch）
+
+### 背景
+门禁第 43 项（v2.52.11）实测 5/13 对 spec 双语结构漂移并按指纹登记豁免。本轮逐对诊断清偿：其中 3 处为「内容已在、标题形式不一致」（04 en 三元联合口径已并入校准节正文；12 zh 边界声明已是粗体段；07 en 节顺序错位），2 处为 en 真缺节（02 awareness 有效性前提节、13 数学支撑与持续证据供给侧两节）。09-16 登记的「spec/12 缺治理实证锚点节」翻译债经核已于 v2.44.6 清偿（en 版注记实证），登记口径修正。
+
+### 改动
+- **02-architecture.en.md**：补译「Validity precondition of L3 independent verification: monitored-party awareness」节（SHADE-Arena awareness 实证 + C+ 证据等级限定，术语沿用 en 版既有 No. 3 notary / double-blind assessment 译名）。
+- **04-credit-abstention.en.md**：校准节内三元联合口径内容拆出独立 h3「The jointly defined triple」（对齐 zh 结构，零翻译）。
+- **07-swarm-governance.en.md**：「Emergent collusion at the prompt-optimization layer」节（3385 字符）移至「Threshold-calibration precondition」之后，对齐 zh 节顺序。
+- **12-enforcement.md**：「边界声明：G×S 分级的辖区操作化尚无验证案例（v2.44.2）」由粗体段落升级为 h2 节（对齐 en 侧既有 h2 结构，零翻译）。
+- **13-boundaries.en.md**：补译「Mathematical support: open cheating sets can only be contested continuously」（Vassilev/Gödel 不完备性推广）与「Continuous evidence supply side: AIID and AVID」两节（锚点逐字保留，⚠️ 限定段全译）。
+- **scripts/verify_consistency.py**：第 43 项豁免表清零（留空 dict 保留机制），docstring 补清偿注记。
+
+### 计数与不变量
+- 门禁 43 项不变；证据 A:11 / B:126 / C:13 / D:1 / G:52 = 203 不变；未解 42 不变。
+- 提交前实测 43/43 PASS，双语结构 13/13 对全对齐（豁免 0 条）。
+
 ## v2.52.11（2026-10-14）— 工程化补强轮：CI 供应链/兼容性 + 门禁第 43 项双语结构（patch）
 
 ### 背景
