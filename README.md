@@ -217,7 +217,7 @@ node --experimental-transform-types reference/runtimes/l2-runtime-oversight/repl
 
 ## 质量保障（自指验证）
 
-本仓库用自己治理自己：`scripts/verify_consistency.py` 提供 43 项发布一致性校验（表格格式 / 证据分级数量 / 事故数字口径 / 章节号 / 术语口径 / 双向引用检查 / 引用键质量 / G 类管辖前缀合法性 / 核验日志键集同步 / 法域枚举一致性 / demo 断言声明与实际运行输出一致性 / PRODUCTION-GAPS 头部状态与表格一致性 / 纠错登记时效 / spec/ 双语结构对齐），已挂载为 pre-commit 钩子（`.githooks/`）。启用方式见 `CONTRIBUTING.md`；每次提交自动执行，校验失败即拦截。手动运行：`python scripts/verify_consistency.py`（纯标准库，无需安装依赖）。
+本仓库用自己治理自己：`scripts/verify_consistency.py` 提供 43 项发布一致性校验（表格格式 / 证据分级数量 / 事故数字口径 / 章节号 / 术语口径 / 双向引用检查 / 引用键质量 / G 类管辖前缀合法性 / 核验日志键集同步 / 法域枚举一致性 / demo 断言声明与实际运行输出一致性 / PRODUCTION-GAPS 头部状态与表格一致性 / 纠错登记时效 / spec/ 双语结构对齐），已挂载为 pre-commit 钩子（`.githooks/`）。启用方式见 [`CONTRIBUTING.md`](CONTRIBUTING.md)；每次提交自动执行，校验失败即拦截。手动运行：`python scripts/verify_consistency.py`（纯标准库，无需安装依赖）。
 
 这不是靠自觉维护的文档，而是有自动化门禁的规范。
 
@@ -231,4 +231,4 @@ node --experimental-transform-types reference/runtimes/l2-runtime-oversight/repl
 
 ## 参与贡献
 
-见 `CONTRIBUTING.md`。所有新增机制必须附 A/B/C/D/G 证据等级与来源；D 级（推演）不得单独支撑 P0 机制。
+见 [`CONTRIBUTING.md`](CONTRIBUTING.md)。所有新增机制必须附 A/B/C/D/G 证据等级与来源；D 级（推演）不得单独支撑 P0 机制。
