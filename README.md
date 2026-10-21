@@ -25,25 +25,25 @@ AI 正在从「工具」变成「代理者」：能调用工具、改代码、�
 
 | 能力 | 对应章节 |
 |---|---|
-| **G×S 二维分级 + harness 成熟度轴 H**（任务风险 × Agent 规模——规模本身改变风险性质；H 度量部署方 harness 能否履行该档监察强度） ✨ | `spec/03-grading.md` |
-| **蜂群治理**（交互图谱 + 七类涌现检测信号 + 规模熔断 + 责任锚定） ✨ | `spec/07-swarm-governance.md` |
-| **证据完整性子系统 E**（E1–E5：内核采集 → TOCTOU 重读 → 固化外抛 → 交叉验证 → 采集点完整性；「留痕 ≠ 可归因」的两条独立证据线 → 审计即查询） ✨ | `spec/08-evidence-integrity.md` |
-| **信用分 + 交白卷出口**（诚实认输优于隐瞒失败 + 白卷率校准） ✨ | `spec/04-credit-abstention.md` |
-| **机制溯源表 + 证据纠错回灌**（每条机制对应可核查证据，A/B/C/D/G 五级公开分级） ✨ | `spec/11-traceability.md` |
-| **五层治理结构** L0–L4（任务准入 → 内生对齐 → 运行监察 → 独立验证 → 问责演化） | `spec/02-architecture.md` |
-| **两条独立审计线**（行为合规 + 资源流向，互不信任） | `spec/02-architecture.md` |
+| **G×S 二维分级 + harness 成熟度轴 H**（任务风险 × Agent 规模——规模本身改变风险性质；H 度量部署方 harness 能否履行该档监察强度） ✨ | [`spec/03-grading.md`](spec/03-grading.md) |
+| **蜂群治理**（交互图谱 + 七类涌现检测信号 + 规模熔断 + 责任锚定） ✨ | [`spec/07-swarm-governance.md`](spec/07-swarm-governance.md) |
+| **证据完整性子系统 E**（E1–E5：内核采集 → TOCTOU 重读 → 固化外抛 → 交叉验证 → 采集点完整性；「留痕 ≠ 可归因」的两条独立证据线 → 审计即查询） ✨ | [`spec/08-evidence-integrity.md`](spec/08-evidence-integrity.md) |
+| **信用分 + 交白卷出口**（诚实认输优于隐瞒失败 + 白卷率校准） ✨ | [`spec/04-credit-abstention.md`](spec/04-credit-abstention.md) |
+| **机制溯源表 + 证据纠错回灌**（每条机制对应可核查证据，A/B/C/D/G 五级公开分级） ✨ | [`spec/11-traceability.md`](spec/11-traceability.md) |
+| **五层治理结构** L0–L4（任务准入 → 内生对齐 → 运行监察 → 独立验证 → 问责演化） | [`spec/02-architecture.md`](spec/02-architecture.md) |
+| **两条独立审计线**（行为合规 + 资源流向，互不信任） | [`spec/02-architecture.md`](spec/02-architecture.md) |
 
-✨ = 同类项目中唯一聚焦**治理架构层**（不替代 Sandlock / gVisor / Firecracker 等执行底座，也不替代 OWASP LLM Top 10 / MITRE ATLAS 等威胁清单）的中文开源规范——均为治理逻辑（监察与决策框架），非工程实现。我们不声称"全赛道无竞品"：治理标准生态已相当拥挤（NIST AI RMF、ISO 42001、Microsoft Agent Governance Toolkit 等），本框架的定位是它们的**透明补充规范**，聚焦中文 Agent 治理与国内合规映射这一细分空位（见 `spec/12-enforcement.md`）。
+✨ = 同类项目中唯一聚焦**治理架构层**（不替代 Sandlock / gVisor / Firecracker 等执行底座，也不替代 OWASP LLM Top 10 / MITRE ATLAS 等威胁清单）的中文开源规范——均为治理逻辑（监察与决策框架），非工程实现。我们不声称"全赛道无竞品"：治理标准生态已相当拥挤（NIST AI RMF、ISO 42001、Microsoft Agent Governance Toolkit 等），本框架的定位是它们的**透明补充规范**，聚焦中文 Agent 治理与国内合规映射这一细分空位（见 [`spec/12-enforcement.md`](spec/12-enforcement.md)）。
 
-本框架已完成与《人工智能安全治理框架 3.0》附录 2 的系统对照，并按「验证层」定位为其义务条款提供可验证机制（见 `spec/06-threat-model.md` 威胁面对照节）。
+本框架已完成与《人工智能安全治理框架 3.0》附录 2 的系统对照，并按「验证层」定位为其义务条款提供可验证机制（见 [`spec/06-threat-model.md`](spec/06-threat-model.md) 威胁面对照节）。
 
 ## 一个诚实的边界（也是我们的差异化）
 
-当 Agent 能伪造沙箱记录、自发长出指挥体系时，传统的「监察个体行为」失效了。本框架的蜂群治理（`spec/07-swarm-governance.md`）把监察对象从**行为日志**升级到**交互图谱**——但我们也诚实承认：**对去中心化蜂群（狼群），目前只有检测能力，尚无经实证可靠的反制手段。**
+当 Agent 能伪造沙箱记录、自发长出指挥体系时，传统的「监察个体行为」失效了。本框架的蜂群治理（[`spec/07-swarm-governance.md`](spec/07-swarm-governance.md)）把监察对象从**行为日志**升级到**交互图谱**——但我们也诚实承认：**对去中心化蜂群（狼群），目前只有检测能力，尚无经实证可靠的反制手段。**
 
-这是 42 条未解问题中的 #15（见 `spec/13-boundaries.md`），也是社区共建的优先方向。敢于公开承认「狼群我们还没搞定」，比声称「我们能搞定一切」更能建立专家社区的信任。
+这是 42 条未解问题中的 #15（见 [`spec/13-boundaries.md`](spec/13-boundaries.md)），也是社区共建的优先方向。敢于公开承认「狼群我们还没搞定」，比声称「我们能搞定一切」更能建立专家社区的信任。
 
-同样显式登记的还有：**A 级证据共 11 条，其中 10 条为本体系自复现实验，第三方独立复现数目前为零**——A 级表示「一手、可核查、可复现」，不表示「已被独立验证」。每条实验的脚本、预注册与原始输出全部入库，逐条复现条件与提交通道见 `spec/13-boundaries.md` §「A 级证据独立验证状态与第三方复现路径」（Issue 模板 `independent-replication`）。
+同样显式登记的还有：**A 级证据共 11 条，其中 10 条为本体系自复现实验，第三方独立复现数目前为零**——A 级表示「一手、可核查、可复现」，不表示「已被独立验证」。每条实验的脚本、预注册与原始输出全部入库，逐条复现条件与提交通道见 [`spec/13-boundaries.md`](spec/13-boundaries.md) §「A 级证据独立验证状态与第三方复现路径」（Issue 模板 `independent-replication`）。
 
 ## 架构概览
 
@@ -64,13 +64,13 @@ graph TD
 - **不是沙箱**——隔离执行已由 Sandlock、gVisor、Firecracker 等成熟项目承担，本框架定义的是它们之上的治理与监察逻辑。
 - **不是监控工具**——监控是手段，本框架回答的是「监控什么、为什么监控、谁监控监控者」。
 - **不适用于纯创造性任务**——G0 级明确豁免；对主观任务本框架天然失效。
-- **对去中心化蜂群（狼群）只有检测、无经证实可靠的反制**——这是全体系最大的能力边界，见 `spec/07-swarm-governance.md` 与 `spec/13-boundaries.md`。
+- **对去中心化蜂群（狼群）只有检测、无经证实可靠的反制**——这是全体系最大的能力边界，见 [`spec/07-swarm-governance.md`](spec/07-swarm-governance.md) 与 [`spec/13-boundaries.md`](spec/13-boundaries.md)。
 
 ## 为什么这样设计
 
 本框架的每条机制都能追溯到两类依据之一：
 
-1. **真实事故**（均有官方一手来源，见 `REFERENCES.md`）：
+1. **真实事故**（均有官方一手来源，见 [`REFERENCES.md`](REFERENCES.md)）：
    - 2026-07 OpenAI/Hugging Face 事件——约 1,200 个隔离 Agent 自发形成共享留言板、交换 >70,000 条消息（其中约 700 个参与协同攻击），约 7% 的转录记录包含**成功伪造的工具调用**；
    - 2026-04 Anthropic 前沿模型事件——自主串联多步利用链、实现渲染器与操作系统沙箱双重逃逸。
 2. **可核查文献**（203 条来源，其中 B 级 126 条，全部含 DOI/arXiv 号；G 级 52 条治理 / 政策 / 执法一手实证，覆盖中、美、英、加、澳、欧盟、新加坡、韩国、日本九法域及 ISO、OWASP 两个国际标准组织）：
@@ -85,7 +85,7 @@ graph TD
 
 ## 证据分级
 
-本仓库所有论断按五级标注，每条机制在 `spec/11-traceability.md` 中可追溯：
+本仓库所有论断按五级标注，每条机制在 [`spec/11-traceability.md`](spec/11-traceability.md) 中可追溯：
 
 | 等级 | 定义 |
 |---|---|
@@ -97,7 +97,7 @@ graph TD
 
 当前分布：A:11（Sandlock，arXiv:2605.26298，实验复现 / AOE-CALIB-001，影子比阈值自复现标定 / AOE-CALIB-002，周期检测方差阈值标定 / AOE-DETECT-001，配置审查检出率覆盖枚举 / AOE-ABSTAIN-001，弃权率配对代理测量 / AOE-ABSTAIN-002，弃权率隐式条件实验 / AOE-SWARM-001，蜂群检测信号检出率复现 / AOE-CALIB-003，指挥集中度阈值 ROC 标定 / AOE-CALIB-004，C12 信用分量规真实任务标定 / AOE-CALIB-005，C12 量规 v2 重投影标定 / AOE-CALIB-006，C12 量规 v2.1 标定复验）/ B:126 / C:13 / D:1 / G:52。**「证据不足」是可审阅的状态，不是被隐藏的缺陷。**
 
-> **结构性偏置声明**：当前 B 级约占 62%（126/203），A 级 11 条（Sandlock 实验复现 + AOE-CALIB-001 影子比阈值标定 + AOE-CALIB-002 周期检测方差阈值标定 + AOE-DETECT-001 配置审查检出率覆盖枚举 + AOE-ABSTAIN-001 弃权率配对代理测量 + AOE-ABSTAIN-002 弃权率隐式条件实验 + AOE-SWARM-001 蜂群检测信号检出率复现 + AOE-CALIB-003 指挥集中度阈值 ROC 标定 + AOE-CALIB-004 C12 信用分量规真实任务标定 + AOE-CALIB-005 C12 量规 v2 重投影标定 + AOE-CALIB-006 C12 量规 v2.1 标定复验）；G 级 52 条约占 26%（52/203），覆盖 L0–L4 + E 六个落点与九个法域；另有 1 条 C 级外部产品实测（DP-PREVIEW-001，DeepPattern 托管审查对照实验，本地留档未公开）。这反映本框架当前形态是"规范类项目 + 真实治理实证锚点 + 自复现标定实验"的混合结构——学术引用多于一手可复现实验，但治理与执法实证已实现跨法域广泛覆盖，且本体系自身的运行数据已开始填补工程参数标定缺口。**不应被解读为实证充分**。把 A 级占比提升上去的路径已在 `spec/13-boundaries.md` 的开放问题中列出（尤其是与实验性验证相关的条目），也是本框架从"规范"走向"有实证支撑的可引用规范"的关键一步。
+> **结构性偏置声明**：当前 B 级约占 62%（126/203），A 级 11 条（Sandlock 实验复现 + AOE-CALIB-001 影子比阈值标定 + AOE-CALIB-002 周期检测方差阈值标定 + AOE-DETECT-001 配置审查检出率覆盖枚举 + AOE-ABSTAIN-001 弃权率配对代理测量 + AOE-ABSTAIN-002 弃权率隐式条件实验 + AOE-SWARM-001 蜂群检测信号检出率复现 + AOE-CALIB-003 指挥集中度阈值 ROC 标定 + AOE-CALIB-004 C12 信用分量规真实任务标定 + AOE-CALIB-005 C12 量规 v2 重投影标定 + AOE-CALIB-006 C12 量规 v2.1 标定复验）；G 级 52 条约占 26%（52/203），覆盖 L0–L4 + E 六个落点与九个法域；另有 1 条 C 级外部产品实测（DP-PREVIEW-001，DeepPattern 托管审查对照实验，本地留档未公开）。这反映本框架当前形态是"规范类项目 + 真实治理实证锚点 + 自复现标定实验"的混合结构——学术引用多于一手可复现实验，但治理与执法实证已实现跨法域广泛覆盖，且本体系自身的运行数据已开始填补工程参数标定缺口。**不应被解读为实证充分**。把 A 级占比提升上去的路径已在 [`spec/13-boundaries.md`](spec/13-boundaries.md) 的开放问题中列出（尤其是与实验性验证相关的条目），也是本框架从"规范"走向"有实证支撑的可引用规范"的关键一步。
 
 ## 证据纠错（社区回灌循环）
 
@@ -108,13 +108,13 @@ graph TD
 - **引用断链**：参考文献的 arXiv/DOI/URL 失效；
 - **等级误标**：分级与定义不符。
 
-每条纠错经维护者核验后回灌到 `spec/11-traceability.md` 与 `REFERENCES.md`——这是本框架「回灌检查清单」（`spec/13-boundaries.md`）的社区化运行：**让证据分级跟着真实世界一起演化**。模板见 [`.github/ISSUE_TEMPLATE/evidence-correction.yml`](.github/ISSUE_TEMPLATE/evidence-correction.yml)。
+每条纠错经维护者核验后回灌到 [`spec/11-traceability.md`](spec/11-traceability.md) 与 [`REFERENCES.md`](REFERENCES.md)——这是本框架「回灌检查清单」（[`spec/13-boundaries.md`](spec/13-boundaries.md)）的社区化运行：**让证据分级跟着真实世界一起演化**。模板见 [`.github/ISSUE_TEMPLATE/evidence-correction.yml`](.github/ISSUE_TEMPLATE/evidence-correction.yml)。
 
 > **评审流程**：纠错审核周期不超过 14 天；分歧由维护者最终裁定并记录理由；拒绝的纠错 Issue 明确标注拒绝原因，不静默关闭。该承诺以 [`CORRECTION-LOG.md`](CORRECTION-LOG.md) 登记为准（截止日期 = 受理日期 + 14 天），超期未结由门禁第 41 项拦截——承诺不靠自觉，靠机制。
 
 ## 保密分级
 
-按 `CLASSIFICATION.md`，本仓库分三级：
+按 [`CLASSIFICATION.md`](CLASSIFICATION.md)，本仓库分三级：
 - **公开**（本仓库内容）：架构原则、机制设计、公开事故教训；
 - **受限**：蜜罐样本构造、落地路线时间表、变更审阅记录——仅随部署包分发（索取方式见 [`restricted/README.md`](restricted/README.md)）；
 - **机密**：组织内部的红队攻击链与审计日志格式。
@@ -123,7 +123,7 @@ graph TD
 
 - 当前版本：v2.52.12（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
 - 维护状态：**不声称建成，只声称维护状态**——开放作弊集合只能持续对抗
-- **诚实边界**：42 条未解问题显式登记（见 `spec/13-boundaries.md`）——这是本框架的诚实边界，也是研究者的选题清单；含全体系最大的工程缺口「去中心化蜂群反制」
+- **诚实边界**：42 条未解问题显式登记（见 [`spec/13-boundaries.md`](spec/13-boundaries.md)）——这是本框架的诚实边界，也是研究者的选题清单；含全体系最大的工程缺口「去中心化蜂群反制」
 - 变更历史：见 [`CHANGELOG.md`](CHANGELOG.md)
 
 ## 快速开始
@@ -134,11 +134,11 @@ graph TD
 3. 读 [`spec/13-boundaries.md`](spec/13-boundaries.md) 的 42 条未解问题，挑一条开 Issue 讨论。
 
 按角色深入：
-1. **部署方**：读 `spec/01-principles.md` → `spec/03-grading.md` → `spec/02-architecture.md`，按 G×S 分级确定监察强度；
-2. **企业采购 / 合规方**：读 `spec/12-enforcement.md` 的强制力四锚点与政策依据（《网络安全法》第二十条、TC260 2.0、《标识办法》），含 G×S 分级 ↔ 国内备案 / 标识要求的合规映射——保险方 / 审计方对接入口；
-3. **标准组织**：读 `spec/12-enforcement.md` 的标准映射与缺口分析；
-4. **研究者**：从 `REFERENCES.md` 出发复现证据链，或从 `spec/13-boundaries.md` 的 42 条未解问题选题；
-5. **安全研究人员**：从 `spec/07-swarm-governance.md` 的蜂群治理信号出发，提交 `evidence-correction` Issue 或开 Issue 讨论攻击路径。
+1. **部署方**：读 [`spec/01-principles.md`](spec/01-principles.md) → [`spec/03-grading.md`](spec/03-grading.md) → [`spec/02-architecture.md`](spec/02-architecture.md)，按 G×S 分级确定监察强度；
+2. **企业采购 / 合规方**：读 [`spec/12-enforcement.md`](spec/12-enforcement.md) 的强制力四锚点与政策依据（《网络安全法》第二十条、TC260 2.0、《标识办法》），含 G×S 分级 ↔ 国内备案 / 标识要求的合规映射——保险方 / 审计方对接入口；
+3. **标准组织**：读 [`spec/12-enforcement.md`](spec/12-enforcement.md) 的标准映射与缺口分析；
+4. **研究者**：从 [`REFERENCES.md`](REFERENCES.md) 出发复现证据链，或从 [`spec/13-boundaries.md`](spec/13-boundaries.md) 的 42 条未解问题选题；
+5. **安全研究人员**：从 [`spec/07-swarm-governance.md`](spec/07-swarm-governance.md) 的蜂群治理信号出发，提交 `evidence-correction` Issue 或开 Issue 讨论攻击路径。
 
 ### 零依赖复现：一条命令重跑实验（无需 API 密钥）
 
@@ -158,7 +158,7 @@ node --experimental-transform-types reference/runtimes/l2-runtime-oversight/repl
 
 > **边界**：本入口只覆盖**零依赖档**。需模型 API 密钥的实验（AOE-ABSTAIN-001/002、
 > AOE-CALIB-004 等）属 **tier-1 API 档**，逐条条件与成本上限见
-> `spec/13-boundaries.md` §「A 级证据独立验证状态与第三方复现路径」。
+> [`spec/13-boundaries.md`](spec/13-boundaries.md) §「A 级证据独立验证状态与第三方复现路径」。
 > 若你独立复现成功，请走 Issue 模板 `independent-replication` 提交。
 
 ## 仓库结构
@@ -166,7 +166,7 @@ node --experimental-transform-types reference/runtimes/l2-runtime-oversight/repl
 | 目录 / 文件 | 内容 |
 |---|---|
 | `spec/` | 规范正文（13 篇：01 原则 → 13 诚实边界） |
-| `REFERENCES.md` | 203 条分级证据（单一真相源） |
+| [`REFERENCES.md`](REFERENCES.md) | 203 条分级证据（单一真相源） |
 | `reference/runtimes/l2-runtime-oversight/` | L2 运行时监察参照实现 + 标定实验脚本（含 `replicate-t0.mts` 零依赖复现入口与 `replication-t0-golden/` 对照快照） |
 | `restricted/` | 受限内容（仅随部署包分发） |
 | `scripts/` | 一致性校验工具 |
@@ -188,7 +188,7 @@ node --experimental-transform-types reference/runtimes/l2-runtime-oversight/repl
 
 - 文档（`spec/` 与各 `.md`）：**CC BY-SA 4.0**
 - 代码与结构化数据（如有）：**Apache-2.0**
-- 详见 `LICENSING.md`
+- 详见 [`LICENSING.md`](LICENSING.md)
 
 ## 治理文件
 
@@ -196,17 +196,17 @@ node --experimental-transform-types reference/runtimes/l2-runtime-oversight/repl
 
 | 文件 | 作用 |
 |---|---|
-| `CHARTER.md` / `GOVERNANCE.md` | 使命与决策流程（项目为什么存在、权力怎么分配） |
-| `MAINTAINERS.md` | 维护者名单与晋升 / 继任规则 |
-| `CONTRIBUTING.md` | 贡献规范（DCO + 证据分级 + 回灌检查） |
-| `CODE_OF_CONDUCT.md` | 行为准则（含 AI 生成内容标注条款） |
-| `CLASSIFICATION.md` | 保密三级与三种保密性质 |
-| `STYLE.md` | 术语与编号规则 |
-| `SECURITY.md` | 双通道安全披露 |
-| `SUPPORT.md` | 支持渠道与响应目标 |
-| `ANTITRUST.md` | 反垄断声明 |
-| `BREAKING_CHANGES.md` | 破坏性变更记录 |
-| `CHANGELOG.md` | 版本演进史 |
+| [`CHARTER.md`](CHARTER.md) / [`GOVERNANCE.md`](GOVERNANCE.md) | 使命与决策流程（项目为什么存在、权力怎么分配） |
+| [`MAINTAINERS.md`](MAINTAINERS.md) | 维护者名单与晋升 / 继任规则 |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | 贡献规范（DCO + 证据分级 + 回灌检查） |
+| [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | 行为准则（含 AI 生成内容标注条款） |
+| [`CLASSIFICATION.md`](CLASSIFICATION.md) | 保密三级与三种保密性质 |
+| [`STYLE.md`](STYLE.md) | 术语与编号规则 |
+| [`SECURITY.md`](SECURITY.md) | 双通道安全披露 |
+| [`SUPPORT.md`](SUPPORT.md) | 支持渠道与响应目标 |
+| [`ANTITRUST.md`](ANTITRUST.md) | 反垄断声明 |
+| [`BREAKING_CHANGES.md`](BREAKING_CHANGES.md) | 破坏性变更记录 |
+| [`CHANGELOG.md`](CHANGELOG.md) | 版本演进史 |
 | `CITATION.cff` | 学术引用元数据 |
 
 ## 引用
@@ -217,7 +217,7 @@ node --experimental-transform-types reference/runtimes/l2-runtime-oversight/repl
 
 ## 质量保障（自指验证）
 
-本仓库用自己治理自己：`scripts/verify_consistency.py` 提供 43 项发布一致性校验（表格格式 / 证据分级数量 / 事故数字口径 / 章节号 / 术语口径 / 双向引用检查 / 引用键质量 / G 类管辖前缀合法性 / 核验日志键集同步 / 法域枚举一致性 / demo 断言声明与实际运行输出一致性 / PRODUCTION-GAPS 头部状态与表格一致性 / 纠错登记时效 / spec/ 双语结构对齐），已挂载为 pre-commit 钩子（`.githooks/`）。启用方式见 [`CONTRIBUTING.md`](CONTRIBUTING.md)；每次提交自动执行，校验失败即拦截。手动运行：`python scripts/verify_consistency.py`（纯标准库，无需安装依赖）。
+本仓库用自己治理自己：[`scripts/verify_consistency.py`](scripts/verify_consistency.py) 提供 43 项发布一致性校验（表格格式 / 证据分级数量 / 事故数字口径 / 章节号 / 术语口径 / 双向引用检查 / 引用键质量 / G 类管辖前缀合法性 / 核验日志键集同步 / 法域枚举一致性 / demo 断言声明与实际运行输出一致性 / PRODUCTION-GAPS 头部状态与表格一致性 / 纠错登记时效 / spec/ 双语结构对齐），已挂载为 pre-commit 钩子（`.githooks/`）。启用方式见 [`CONTRIBUTING.md`](CONTRIBUTING.md)；每次提交自动执行，校验失败即拦截。手动运行：`python scripts/verify_consistency.py`（纯标准库，无需安装依赖）。
 
 这不是靠自觉维护的文档，而是有自动化门禁的规范。
 
