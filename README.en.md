@@ -168,11 +168,11 @@ This entry point runs in CI on every push/PR.
 
 | Directory / file | Contents |
 |---|---|
-| `spec/` | Specification body (13 documents: 01 principles → 13 honest boundaries) |
+| [`spec/`](spec/) | Specification body (13 documents: 01 principles → 13 honest boundaries) |
 | [`REFERENCES.md`](REFERENCES.md) | 203 graded evidence sources (single source of truth) |
-| `restricted/` | Restricted content (distributed only with deployment packages) |
-| `scripts/` | Consistency-check tooling |
-| `.github/` | Issue / PR templates and code ownership |
+| [`restricted/`](restricted/) | Restricted content (distributed only with deployment packages) |
+| [`scripts/`](scripts/) | Consistency-check tooling |
+| [`.github/`](.github/) | Issue / PR templates and code ownership |
 
 ## Relationship to related projects
 
@@ -188,7 +188,7 @@ This entry point runs in CI on every push/PR.
 
 ## License
 
-- Documentation (`spec/` and all `.md`): **CC BY-SA 4.0**
+- Documentation ([`spec/`](spec/) and all `.md`): **CC BY-SA 4.0**
 - Code and structured data (if any): **Apache-2.0**
 - See [`LICENSING.md`](LICENSING.md)
 

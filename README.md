@@ -165,12 +165,12 @@ node --experimental-transform-types reference/runtimes/l2-runtime-oversight/repl
 
 | 目录 / 文件 | 内容 |
 |---|---|
-| `spec/` | 规范正文（13 篇：01 原则 → 13 诚实边界） |
+| [`spec/`](spec/) | 规范正文（13 篇：01 原则 → 13 诚实边界） |
 | [`REFERENCES.md`](REFERENCES.md) | 203 条分级证据（单一真相源） |
-| `reference/runtimes/l2-runtime-oversight/` | L2 运行时监察参照实现 + 标定实验脚本（含 `replicate-t0.mts` 零依赖复现入口与 `replication-t0-golden/` 对照快照） |
-| `restricted/` | 受限内容（仅随部署包分发） |
-| `scripts/` | 一致性校验工具 |
-| `.github/` | Issue / PR 模板与代码归属 |
+| [`reference/runtimes/l2-runtime-oversight/`](reference/runtimes/l2-runtime-oversight/) | L2 运行时监察参照实现 + 标定实验脚本（含 [`replicate-t0.mts`](reference/runtimes/l2-runtime-oversight/replicate-t0.mts) 零依赖复现入口与 [`replication-t0-golden/`](reference/runtimes/l2-runtime-oversight/replication-t0-golden/) 对照快照） |
+| [`restricted/`](restricted/) | 受限内容（仅随部署包分发） |
+| [`scripts/`](scripts/) | 一致性校验工具 |
+| [`.github/`](.github/) | Issue / PR 模板与代码归属 |
 
 ## 与相关项目的关系
 
@@ -186,7 +186,7 @@ node --experimental-transform-types reference/runtimes/l2-runtime-oversight/repl
 
 ## 许可证
 
-- 文档（`spec/` 与各 `.md`）：**CC BY-SA 4.0**
+- 文档（[`spec/`](spec/) 与各 `.md`）：**CC BY-SA 4.0**
 - 代码与结构化数据（如有）：**Apache-2.0**
 - 详见 [`LICENSING.md`](LICENSING.md)
 
