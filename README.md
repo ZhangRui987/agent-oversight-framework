@@ -43,7 +43,7 @@ AI 正在从「工具」变成「代理者」：能调用工具、改代码、�
 
 这是 42 条未解问题中的 #15（见 [`spec/13-boundaries.md`](spec/13-boundaries.md)），也是社区共建的优先方向。敢于公开承认「狼群我们还没搞定」，比声称「我们能搞定一切」更能建立专家社区的信任。
 
-同样显式登记的还有：**A 级证据共 11 条，其中 10 条为本体系自复现实验，第三方独立复现数目前为零**——A 级表示「一手、可核查、可复现」，不表示「已被独立验证」。每条实验的脚本、预注册与原始输出全部入库，逐条复现条件与提交通道见 [`spec/13-boundaries.md`](spec/13-boundaries.md) §「A 级证据独立验证状态与第三方复现路径」（Issue 模板 `independent-replication`）。
+同样显式登记的还有：**A 级证据共 11 条，其中 10 条为本体系自复现实验，第三方独立复现数目前为零**——A 级表示「一手、可核查、可复现」，不表示「已被独立验证」。每条实验的脚本、预注册与原始输出全部入库，逐条复现条件与提交通道见 [`spec/13-boundaries.md`](spec/13-boundaries.md) §「A 级证据独立验证状态与第三方复现路径」（Issue 模板 [`independent-replication`](https://github.com/ZhangRui987/agent-oversight-framework/issues/new?template=independent-replication.yml)）。
 
 ## 架构概览
 
@@ -101,7 +101,7 @@ graph TD
 
 ## 证据纠错（社区回灌循环）
 
-本仓库的 A/B/C/D/G 分级是**开放的可审阅状态**，不是终审。任何人都可以用 `evidence-correction` Issue 模板提交：
+本仓库的 A/B/C/D/G 分级是**开放的可审阅状态**，不是终审。任何人都可以用 [`evidence-correction`](https://github.com/ZhangRui987/agent-oversight-framework/issues/new?template=evidence-correction.yml) Issue 模板提交：
 
 - **证据升级**：某条 C/D 级材料找到了 A/B 级一手来源（附 arXiv/DOI/URL）；
 - **证据降级**：某条 A/B 级来源发现利益关联、断链或属二手转述；
@@ -138,7 +138,7 @@ graph TD
 2. **企业采购 / 合规方**：读 [`spec/12-enforcement.md`](spec/12-enforcement.md) 的强制力四锚点与政策依据（《网络安全法》第二十条、TC260 2.0、《标识办法》），含 G×S 分级 ↔ 国内备案 / 标识要求的合规映射——保险方 / 审计方对接入口；
 3. **标准组织**：读 [`spec/12-enforcement.md`](spec/12-enforcement.md) 的标准映射与缺口分析；
 4. **研究者**：从 [`REFERENCES.md`](REFERENCES.md) 出发复现证据链，或从 [`spec/13-boundaries.md`](spec/13-boundaries.md) 的 42 条未解问题选题；
-5. **安全研究人员**：从 [`spec/07-swarm-governance.md`](spec/07-swarm-governance.md) 的蜂群治理信号出发，提交 `evidence-correction` Issue 或开 Issue 讨论攻击路径。
+5. **安全研究人员**：从 [`spec/07-swarm-governance.md`](spec/07-swarm-governance.md) 的蜂群治理信号出发，提交 [`evidence-correction`](https://github.com/ZhangRui987/agent-oversight-framework/issues/new?template=evidence-correction.yml) Issue 或开 Issue 讨论攻击路径。
 
 ### 零依赖复现：一条命令重跑实验（无需 API 密钥）
 
@@ -159,7 +159,7 @@ node --experimental-transform-types reference/runtimes/l2-runtime-oversight/repl
 > **边界**：本入口只覆盖**零依赖档**。需模型 API 密钥的实验（AOE-ABSTAIN-001/002、
 > AOE-CALIB-004 等）属 **tier-1 API 档**，逐条条件与成本上限见
 > [`spec/13-boundaries.md`](spec/13-boundaries.md) §「A 级证据独立验证状态与第三方复现路径」。
-> 若你独立复现成功，请走 Issue 模板 `independent-replication` 提交。
+> 若你独立复现成功，请走 Issue 模板 [`independent-replication`](https://github.com/ZhangRui987/agent-oversight-framework/issues/new?template=independent-replication.yml) 提交。
 
 ## 仓库结构
 
@@ -207,7 +207,7 @@ node --experimental-transform-types reference/runtimes/l2-runtime-oversight/repl
 | [`ANTITRUST.md`](ANTITRUST.md) | 反垄断声明 |
 | [`BREAKING_CHANGES.md`](BREAKING_CHANGES.md) | 破坏性变更记录 |
 | [`CHANGELOG.md`](CHANGELOG.md) | 版本演进史 |
-| `CITATION.cff` | 学术引用元数据 |
+| [`CITATION.cff`](CITATION.cff) | 学术引用元数据 |
 
 ## 引用
 

@@ -43,7 +43,7 @@ When agents can forge sandbox logs and spontaneously grow command hierarchies, t
 
 This is open problem **#15** of 42 (see [`spec/13-boundaries.md`](spec/13-boundaries.md)), and a priority direction for community co-development. Publicly admitting "we haven't solved wolf-packs yet" builds more trust with the expert community than claiming "we can handle everything."
 
-Also explicitly registered: **10 of the 11 grade-A evidence items are self-reproduction experiments by this framework, and the count of independent third-party replications is currently zero** — grade A means "first-hand, verifiable, reproducible", not "independently verified". Every experiment's script, preregistration, and raw output are in the repository; the per-item replication conditions and submission channel are in [`spec/13-boundaries.md`](spec/13-boundaries.md) § "Independent-verification status of grade-A evidence and the third-party replication path" (issue template `independent-replication`).
+Also explicitly registered: **10 of the 11 grade-A evidence items are self-reproduction experiments by this framework, and the count of independent third-party replications is currently zero** — grade A means "first-hand, verifiable, reproducible", not "independently verified". Every experiment's script, preregistration, and raw output are in the repository; the per-item replication conditions and submission channel are in [`spec/13-boundaries.md`](spec/13-boundaries.md) § "Independent-verification status of grade-A evidence and the third-party replication path" (issue template [`independent-replication`](https://github.com/ZhangRui987/agent-oversight-framework/issues/new?template=independent-replication.yml)).
 
 ## Architecture overview
 
@@ -100,7 +100,7 @@ Current distribution: A:11 (Sandlock, arXiv:2605.26298, experimental reproductio
 
 ## Evidence correction (community back-propagation loop)
 
-The A/B/C/D/G grading in this repository is an **open, reviewable state**, not a final verdict. Anyone can submit via the `evidence-correction` issue template:
+The A/B/C/D/G grading in this repository is an **open, reviewable state**, not a final verdict. Anyone can submit via the [`evidence-correction`](https://github.com/ZhangRui987/agent-oversight-framework/issues/new?template=evidence-correction.yml) issue template:
 
 - **Evidence upgrade**: a C/D-graded source found an A/B primary source (attach arXiv/DOI/URL);
 - **Evidence downgrade**: an A/B-graded source is found to have conflicts of interest, dead links, or to be secondhand relay;
@@ -137,7 +137,7 @@ By role:
 2. **Enterprise procurement / compliance**: read the four coercion anchors and policy basis in [`spec/12-enforcement.md`](spec/12-enforcement.md) (Article 20 of the *Cybersecurity Law*, TC260 2.0, the *Labeling Measures*), including the compliance mapping of G×S grading ↔ domestic filing/labeling requirements — the entry point for insurers / auditors;
 3. **Standards organizations**: read the standard mappings and gap analysis in [`spec/12-enforcement.md`](spec/12-enforcement.md);
 4. **Researchers**: reproduce the evidence chain from [`REFERENCES.md`](REFERENCES.md), or select a topic from the 42 open problems in [`spec/13-boundaries.md`](spec/13-boundaries.md);
-5. **Security researchers**: starting from the swarm-governance signals in [`spec/07-swarm-governance.md`](spec/07-swarm-governance.md), submit an `evidence-correction` issue or open an issue to discuss attack paths.
+5. **Security researchers**: starting from the swarm-governance signals in [`spec/07-swarm-governance.md`](spec/07-swarm-governance.md), submit an [`evidence-correction`](https://github.com/ZhangRui987/agent-oversight-framework/issues/new?template=evidence-correction.yml) issue or open an issue to discuss attack paths.
 
 ### Zero-dependency replication: rerun the experiments with one command (no API keys)
 
@@ -162,7 +162,7 @@ This entry point runs in CI on every push/PR.
 > **tier-1 API tier**; per-item conditions and cost ceilings are in
 > [`spec/13-boundaries.md`](spec/13-boundaries.md) § "Independent-verification status of grade-A evidence and the
 > third-party replication path". If your independent replication succeeds, submit it via
-> the `independent-replication` issue template.
+> the [`independent-replication`](https://github.com/ZhangRui987/agent-oversight-framework/issues/new?template=independent-replication.yml) issue template.
 
 ## Repository structure
 
@@ -209,7 +209,7 @@ This repository governs itself by its own specification (meta-governance):
 | [`ANTITRUST.md`](ANTITRUST.md) | Antitrust statement |
 | [`BREAKING_CHANGES.md`](BREAKING_CHANGES.md) | Record of breaking changes |
 | [`CHANGELOG.md`](CHANGELOG.md) | Version history |
-| `CITATION.cff` | Academic citation metadata |
+| [`CITATION.cff`](CITATION.cff) | Academic citation metadata |
 
 ## Citation
 
