@@ -196,6 +196,10 @@ DSec (arXiv:2609.22978, DeepSeek's production-grade sandbox platform for agentic
 - ④ Citation anchors must use arXiv:2609.22978 with section numbers; the WeChat retelling is not a citable source.
 
 
+## The time-scale axis of chronic/cumulative harm (added in v2.52.17)
+
+This framework's existing threat modeling defaults to event/transaction granularity. The sok-commerce-2026 entry distinguishes **acute transaction-level attacks** (injection-triggered unauthorized transactions, tools altering transaction parameters after reasoning) from **chronic cumulative harms** — position drift via subtle oracle feeding (O2P) and below-threshold payment structuring (N2C) — noting that the latter "requires metrics over days/weeks rather than per-transaction analysis." The L2 "periodic touch" signal implies periodic observation, but **an adversary deliberately spreading harm below the oversight period** (all single-window metrics normal, anomaly visible only in cross-window aggregation) has never been explicitly registered as a threat. This section registers the time-scale axis as a known modeling boundary; scoping evaluation of cumulative-detection metrics (cross-window baseline drift, exposure aggregation) is recorded in open problem #43. Domain-transfer caveat: the evidence base for this axis is financial/on-chain scenarios; what transfers to general-purpose runtime agents is the axis itself, not the specific attack shapes.
+
 ## Consequences of the modeling gap
 If the oversight framework is designed for "single agents" while the real threat is a "700-agent swarm", then even if every single agent is perfectly overseen, the framework still fails — because the danger comes not from any single agent's behavior, but from the connections between them. This is not a matter of quantity but of quality. The swarm-governance chapter addresses it head-on.
 
