@@ -103,6 +103,10 @@ Three further points from that paper fold into this framework: ① it extends th
 
 ⚠️ Grade B. Limitation: this is an **assurance-oriented framework account** (the paper's own words: "develops an assurance-oriented account"); the three case studies instantiate the framework rather than validate it, and its six-dimension measurement framework provides **no empirically calibrated thresholds**. This framework adopts only the weakest-link composition rule and the proposition that the assurance apparatus is itself an attack surface; it does **not** adopt any specific dimensional threshold as a pass line.
 
+
+
+**Methodological self-reference note (added in v2.52.19; see open problem #43):** the "mutual witnessing" principle in this section also binds this framework's own methodology — the independence assumption of the "six-AI cross-validation" rests on verifier heterogeneity, while "verifier homogeneity" (signers/verifiers sharing one base model family, so a single generalized attack compromises all of them at once) has been explicitly registered as a threat in open problem #43 (source 【键: sok-commerce-2026】). Until that item is ruled on (whether verifier heterogeneity becomes a methodological mandate), this framework's cross-validation must not be described as "having an independence guarantee" — a registered assumption gap takes precedence over methodological narrative.
+
 Handling of cross-validation inconsistency (removing the absolute "isolate immediately on any inconsistency" wording): graded handling by the granularity and persistence of the inconsistency — record → sample-review → isolate. See the fault-tolerance bandwidth below.
 
 ## Behavioral-layer × representation-layer dual witness: extending "mutual witness" from collection paths to detection channels (added this round)
