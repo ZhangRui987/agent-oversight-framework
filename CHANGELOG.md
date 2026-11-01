@@ -1,6 +1,23 @@
 # 变更日志
 
 
+## v2.52.13（2026-11-01）— PAP×PACT 消费侧治理协议入库轮（minor）
+
+### 背景
+
+复核触发器命中（`MetaSierraPAP×DecagonPACT×AOF映射分析_v1.md` §6 条件①②，2026-10-07 挂起）：Sierra 于 2026-10-09 发布 PAP v0.1 草案（Poppy，personalagentprotocol.org；35 家 design partners 一手名单），Decagon PACT 于 2026-10-06 定稿开源（Apache-2.0，openpactprotocol.org/spec + 参考实现 + e2e 一致性测试套件）。2026-11-01 一手复核：机制与公告一致（支付仍缺席 v0.1、reference implementation 未发布、scopes 与公告同级），入库限定②据此改写为「草案 + RI 未发布」。
+
+### 改动
+
+- REFERENCES：新增 2 条 B 级——sierra-pap-2026（PAP v0.1 草案：双层权限 / 五构件 / 35 家 design partners / 与 UCP 互补；COI + 草案时效 + 域迁移 + 义务不效能 + 格局未收敛五重限定）；decagon-pact-2026（PACT 开源：身份/权威分离 / 四元绑定委托 token / 每动作签名回执 / scope 信息暴露面门控 / e2e 一致性套件 / 加入 PAP WG 竞合；同族五重限定）；注脚计数与演化链同步（203→205 / B126→128）。
+- spec/02（双语同轮）：业界对照增补新段「Meta+Sierra PAP × Decagon PACT——治理的消费侧准入化」——「治理即基础设施」第四、五条产业线（消费侧准入基础设施）+ PACT 四项结构同构 + 义务生产实证（Amazon 屏蔽 Muse，TechCrunch/CNBC 一手锚点；Cloudflare 降为背景句）。
+- spec/07（双语同轮）：「签名即认领」工程化对接段追加「授权半边」注记——与 SIGSTORE-A2A 身份半边并列（§9.4 预裁决经用户确认落 spec/07）。
+- README / README.en：badge / 计数行 / 分布行 / 偏置声明（G 占比 26%→25%）/ 仓库结构表 / 版本 badge / 当前版本行 / APA（203→205、B 126→128、版本 →2.52.13）。
+- VERSION / CITATION.cff → 2.52.13；VERIFICATION-LOG 新增 2 行核验记录；门禁脚本计数断言与 docstring 同步（11 处）。
+- 未解问题 42 不变；门禁 43 项不变；demo 断言声明不变。
+
+证据计数 203→205（B 126→128，A/C/D/G 不变）。
+
 ## v2.52.12（2026-10-20）— 双语债清偿轮：第 43 项豁免表清零（patch）
 
 ### 背景
