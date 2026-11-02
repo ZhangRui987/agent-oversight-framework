@@ -1,6 +1,20 @@
 # 变更日志
 
 
+## v2.52.22（2026-11-03）— 调度执行侧产业线：DeepSeek Super-agent 入库（patch）
+
+### 背景
+
+2026-10-31 DeepSeek Harness 团队发布 Super-agent 架构文章并开源研究原型 dsh-superagent-prototype（MIT）。经 P1 一手核验（GitHub API 对 README 与 docs/000/002/007 逐文件 blob 级核定，快照钉死单 commit 6337fc8）：文章提出 Router/Worker 双层、事件驱动、异步多信道、存算分离与外部 Watchdog 五思路；开源原型实装的监察面集中于授权门禁（准入表 / Mandate / Policy 版本化与撤销 / observe 影子模式默认）。其授权语义（内容不可改权限、执行者不可自证 stop、先影子后放行）与本体系高度同构，补上产业线矩阵缺位的「调度执行侧」象限——此前治理要么是外售产品（AgentCore / OASP / Octop），要么是交易对手方准入协议（PAP×PACT），要么是公共部门框架（ARC / CAISI）。
+
+### 改动
+
+- REFERENCES 新增 1 条 B 级（deepseek-superagent-2026），212 条来源（B 134）；注脚演化链顺手续写。
+- spec/02 双语新增「调度执行侧」产业线增补段（六项限定随行：COI / 文章级与仓库级事实分开引用 / Watchdog 机制细节二手禁引 / 义务不效能 / 时效钉死 commit / 措辞红线——禁写「实现了运行时监察」类单向受认可表述）。
+- VERIFICATION-LOG 新增 1 行（GitHub API 逐文件核定记录，含未采信的二手转写声明）。
+- README 双语计数与版本联动（badge / 顶部声明 / 分布行 / 结构性偏置声明 / 仓库结构表 + 版本三处）；CITATION.cff 版本更新并顺带修正 date-released 滞后（2026-10-07 → 2026-11-03，字段不在门禁覆盖内、诚实性修正）。
+- 门禁 43 项全 PASS（计数断言实测派生，verify_consistency.py 零改动）。
+
 ## v2.52.21（2026-11-02）— 复现答疑入口：Discussions 开通 + 文档数字补正（patch）
 
 ### 背景
