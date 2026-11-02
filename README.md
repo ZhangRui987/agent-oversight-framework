@@ -1,6 +1,6 @@
 # AI 执行与监察体系（Agent Oversight Framework）
 
-[![Version](https://img.shields.io/badge/version-2.52.20-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.52.21-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (133/211)](https://img.shields.io/badge/evidence-B_133%2F211-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -43,7 +43,7 @@ AI 正在从「工具」变成「代理者」：能调用工具、改代码、�
 
 这是 43 条未解问题中的 #15（见 [`spec/13-boundaries.md`](spec/13-boundaries.md)），也是社区共建的优先方向。敢于公开承认「狼群我们还没搞定」，比声称「我们能搞定一切」更能建立专家社区的信任。
 
-同样显式登记的还有：**A 级证据共 11 条，其中 10 条为本体系自复现实验，第三方独立复现数目前为零**——A 级表示「一手、可核查、可复现」，不表示「已被独立验证」。每条实验的脚本、预注册与原始输出全部入库，逐条复现条件与提交通道见 [`spec/13-boundaries.md`](spec/13-boundaries.md) §「A 级证据独立验证状态与第三方复现路径」（Issue 模板 [`independent-replication`](https://github.com/ZhangRui987/agent-oversight-framework/issues/new?template=independent-replication.yml)）。
+同样显式登记的还有：**A 级证据共 12 条，其中 11 条为本体系自复现实验，第三方独立复现数目前为零**——A 级表示「一手、可核查、可复现」，不表示「已被独立验证」。每条实验的脚本、预注册与原始输出全部入库，逐条复现条件与提交通道见 [`spec/13-boundaries.md`](spec/13-boundaries.md) §「A 级证据独立验证状态与第三方复现路径」（Issue 模板 [`independent-replication`](https://github.com/ZhangRui987/agent-oversight-framework/issues/new?template=independent-replication.yml)）。
 
 ## 架构概览
 
@@ -121,7 +121,7 @@ graph TD
 
 ## 状态
 
-- 当前版本：v2.52.20（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
+- 当前版本：v2.52.21（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
 - 维护状态：**不声称建成，只声称维护状态**——开放作弊集合只能持续对抗
 - **诚实边界**：43 条未解问题显式登记（见 [`spec/13-boundaries.md`](spec/13-boundaries.md)）——这是本框架的诚实边界，也是研究者的选题清单；含全体系最大的工程缺口「去中心化蜂群反制」
 - 变更历史：见 [`CHANGELOG.md`](CHANGELOG.md)
@@ -160,6 +160,8 @@ node --experimental-transform-types reference/runtimes/l2-runtime-oversight/repl
 > AOE-CALIB-004 等）属 **tier-1 API 档**，逐条条件与成本上限见
 > [`spec/13-boundaries.md`](spec/13-boundaries.md) §「A 级证据独立验证状态与第三方复现路径」。
 > 若你独立复现成功，请走 Issue 模板 [`independent-replication`](https://github.com/ZhangRui987/agent-oversight-framework/issues/new?template=independent-replication.yml) 提交。
+>
+> 跑不起来、或不确定输出算不算通过？到 [Discussions「复现答疑」](https://github.com/ZhangRui987/agent-oversight-framework/discussions/categories/q-a) 提问。**过程性疑问放讨论区，已出结论的复现结果走上面的 Issue 模板**——失败也是数据。
 
 ## 仓库结构
 
@@ -213,7 +215,7 @@ node --experimental-transform-types reference/runtimes/l2-runtime-oversight/repl
 
 见 [`CITATION.cff`](CITATION.cff)。
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.52.20). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.52.21). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## 质量保障（自指验证）
 

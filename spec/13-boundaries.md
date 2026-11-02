@@ -70,11 +70,12 @@
 - **AOE-ABSTAIN-001**（弃权率配对代理，v2.33.0）：`calibrate-abstention-pairs.mts` + 预注册 `EXPERIMENT-DESIGN-AOE-ABSTAIN-001.md` + 报告。需四家模型 API 密钥 × 384 调用；384 条响应原文随运行输出落档，可对照核验而无需重跑。
 - **AOE-ABSTAIN-002**（弃权率隐式条件，v2.34.0）：`calibrate-abstain-implicit.mts` + 预注册 `EXPERIMENT-DESIGN-AOE-ABSTAIN-002.md` + 报告。需四家模型 API 密钥 × 192 调用（有效 185）。
 - **AOE-SWARM-001**（蜂群信号检出率，v2.35.0）：`calibrate-swarm-detection.mts` + 预注册 `EXPERIMENT-DESIGN-AOE-SWARM-001.md` + 报告。零依赖，clone 即可重跑。
+- **AOE-SWARM-002**（蜂群信号规模档位扩展，v2.52.20）：`calibrate-swarm-scale.mts` + 预注册 `EXPERIMENT-DESIGN-AOE-SWARM-002.md`（commit 4eec446 先于执行入库）+ 报告 `CALIBRATION-REPORT-SWARM-SCALE.md` + 原始留痕 `CALIBRATION-SWARM-SCALE-RAW-1793593047736.json`。零依赖，clone 即可重跑；**尚未纳入 tier-0 批**（需先补对照快照与确定性分档，随下次 tier-0 扩充处理）。
 - **AOE-CALIB-003**（指挥集中度 ROC 标定，v2.37.0）：`calibrate-concentration-threshold.mts` + 预注册 `EXPERIMENT-DESIGN-AOE-CALIB-003.md` + 报告。零依赖，clone 即可重跑。
 - **AOE-CALIB-004**（C12 信用分量规真实任务标定，v2.43.0）：`calibrate-c12-real-tasks.mts` + 预注册 `EXPERIMENT-DESIGN-AOE-CALIB-004.md`（v2.42.1 先于执行入库）+ 报告 `CALIBRATION-REPORT-C12.md` + 留痕 `CALIBRATION-C12-RAW-1789391056906.json`。需四家模型 API 密钥 × 约 2000 调用（本次实测 11.92 元等值）；320 episode 逐轮响应与事件序列随留痕入库，可对照核验而无需重跑。⚠️ kimi 段 37 episode 受 API 故障影响（报告 §7 偏差 1），复现时建议加强 kimi 退避。
-- 第 9 条 **Sandlock**（arXiv:2605.26298）为外部一手文献（非本体系实验），其验证义务在原作者侧，本体系承担的是引用正确性（已按 arXiv 记录核验）。
+- 第 10 条 **Sandlock**（arXiv:2605.26298）为外部一手文献（非本体系实验），其验证义务在原作者侧，本体系承担的是引用正确性（已按 arXiv 记录核验）。
 
-**tier-0 零依赖档统一复现入口（v2.50.0 新增）**：上列 8 条 AOE 实验中，「零依赖」的 9 个脚本（AOE-SWARM-001、AOE-CALIB-003、AOE-DETECT-001、AOE-CALIB-002 的三个脚本、AOE-CALIB-001 路径 A、以及 AOE-CALIB-005/006 的再投影与复验脚本）可由单一入口一次复跑：
+**tier-0 零依赖档统一复现入口（v2.50.0 新增）**：上列 9 条 AOE 实验中，除 AOE-SWARM-002（v2.52.20 新增，尚未纳入本批）外的 8 条里，「零依赖」的 9 个脚本（AOE-SWARM-001、AOE-CALIB-003、AOE-DETECT-001、AOE-CALIB-002 的三个脚本、AOE-CALIB-001 路径 A、以及 AOE-CALIB-005/006 的再投影与复验脚本）可由单一入口一次复跑：
 
 ```bash
 node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts

@@ -1,0 +1,63 @@
+title: "[复现] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        这里是**复现答疑**区：跑不起来、不确定输出算不算通过、结果与报告不一致——都发在这里。
+
+        已出结论的正式复现登记请走 Issue 模板 `independent-replication`；本区只收过程性疑问，两边记录不混。
+
+        > ⚠️ **不要粘贴任何 API key、私有仓库地址或客户数据。** tier-0 复现包本身零密钥、零网络，正常提问不需要这些。
+  - type: input
+    id: os_env
+    attributes:
+      label: 运行环境（操作系统 + 版本）
+      placeholder: "例如 Windows 11 / macOS 14.5 / Ubuntu 22.04"
+    validations:
+      required: true
+  - type: input
+    id: node_version
+    attributes:
+      label: Node 版本（`node -v` 原样输出）
+      description: 复现包要求 Node ≥ 22（用到 `node:sqlite`）
+      placeholder: "v22.11.0"
+    validations:
+      required: true
+  - type: textarea
+    id: command_and_summary
+    attributes:
+      label: 执行的命令与输出汇总
+      description: 完整命令 + 汇总表里的 通过 / 警告 / 失败 计数
+      placeholder: |
+        node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts
+        通过 X / 警告 Y / 失败 Z
+    validations:
+      required: true
+  - type: textarea
+    id: error_output
+    attributes:
+      label: 报错或异常输出
+      description: 粘贴前 20 行文本，不要截图（截图无法检索，也复制不进 issue）
+      render: shell
+    validations:
+      required: false
+  - type: dropdown
+    id: problem_kind
+    attributes:
+      label: 你判断这属于哪一类
+      options:
+        - 环境 / 依赖问题（装不上、跑不起来）
+        - 判定口径疑问（跑出来了，不确定算不算通过）
+        - 结果与报告不一致（数字漂移 / 结构断言失败 / 极性相反）
+        - 其他
+    validations:
+      required: true
+  - type: checkboxes
+    id: hygiene
+    attributes:
+      label: 提交前确认
+      options:
+        - label: 本次提问中未包含任何 API key、私有仓库地址或客户数据
+          required: true
+        - label: 我使用的是干净 clone，或已在提问中说明对仓库做过的改动
+          required: true
