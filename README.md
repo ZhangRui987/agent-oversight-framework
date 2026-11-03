@@ -1,6 +1,6 @@
 # AI 执行与监察体系（Agent Oversight Framework）
 
-[![Version](https://img.shields.io/badge/version-2.55.1-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.55.2-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (134/212)](https://img.shields.io/badge/evidence-B_135%2F213-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -121,7 +121,7 @@ graph TD
 
 ## 状态
 
-- 当前版本：v2.55.1（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
+- 当前版本：v2.55.2（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
 - 维护状态：**不声称建成，只声称维护状态**——开放作弊集合只能持续对抗
 - **诚实边界**：43 条未解问题显式登记（见 [`spec/13-boundaries.md`](spec/13-boundaries.md)）——这是本框架的诚实边界，也是研究者的选题清单；含全体系最大的工程缺口「去中心化蜂群反制」
 - 变更历史：见 [`CHANGELOG.md`](CHANGELOG.md)
@@ -163,6 +163,18 @@ node --experimental-transform-types reference/runtimes/l2-runtime-oversight/repl
 >
 > 跑不起来、或不确定输出算不算通过？到 [Discussions「复现答疑」](https://github.com/ZhangRui987/agent-oversight-framework/discussions/categories/q-a) 提问。**过程性疑问放讨论区，已出结论的复现结果走上面的 Issue 模板**——失败也是数据。
 
+### 不止复现：审计面板（V1）
+
+规范要经得起复现，也要能被"看"。[`tools/audit-panel/`](tools/audit-panel/) 是本仓库三位一体（规范 + 参照实现 + 审计面板）的第三件：读取参照实现**真实执行**产生的审计事件，按三层证据分级（事件可复现性 / 规则效能 / 条款级）展示每条行为被哪条规则拦截、依据有多硬、映射《人工智能安全治理框架 3.0》附件 2 的哪一条；并提供**独立重放校验**——日志说了什么不算数，用同一套规则重新裁决一遍、比对一致才算数。
+
+```bash
+node --experimental-transform-types tools/audit-panel/scenario/export-events.mts   # 导出审计事件（确定性输出：同版本框架两次运行逐字节一致）
+node --experimental-transform-types tools/audit-panel/rules/replay.mts             # 重放校验（当前基线 9/9 MATCH + 孤儿信号清单）
+node --experimental-transform-types tools/audit-panel/server/server.mts            # 起面板 → http://127.0.0.1:7727
+```
+
+同样零安装、零密钥、零网络。数据由七组确定性场景真实调用 `EntryGuard` / `ExitGuard` / `ResourceLedger` 产生——不是手写日志；时间戳为合成值以保证可复现，页面明示。诚实边界页内建（含"审计链只记录拒绝、放行不留痕""配置审查依赖固定字段名"等六条）。命令行入口与边界全表见 [`tools/audit-panel/README.md`](tools/audit-panel/README.md)。
+
 ## 仓库结构
 
 | 目录 / 文件 | 内容 |
@@ -170,6 +182,7 @@ node --experimental-transform-types reference/runtimes/l2-runtime-oversight/repl
 | [`spec/`](spec/) | 规范正文（13 篇：01 原则 → 13 诚实边界） |
 | [`REFERENCES.md`](REFERENCES.md) | 213 条分级证据（单一真相源） |
 | [`reference/runtimes/l2-runtime-oversight/`](reference/runtimes/l2-runtime-oversight/) | L2 运行时监察参照实现 + 标定实验脚本（含 [`replicate-t0.mts`](reference/runtimes/l2-runtime-oversight/replicate-t0.mts) 零依赖复现入口与 [`replication-t0-golden/`](reference/runtimes/l2-runtime-oversight/replication-t0-golden/) 对照快照） |
+| [`tools/audit-panel/`](tools/audit-panel/) | 审计面板 V1：事件导出 / 独立链验证 / 重放校验 / Web 三视图（数据来自参照实现真实执行；边界声明内建页面） |
 | [`restricted/`](restricted/) | 受限内容（仅随部署包分发） |
 | [`scripts/`](scripts/) | 一致性校验工具 |
 | [`.github/`](.github/) | Issue / PR 模板与代码归属 |
@@ -215,7 +228,7 @@ node --experimental-transform-types reference/runtimes/l2-runtime-oversight/repl
 
 见 [`CITATION.cff`](CITATION.cff)。
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.55.1). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.55.2). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## 质量保障（自指验证）
 
