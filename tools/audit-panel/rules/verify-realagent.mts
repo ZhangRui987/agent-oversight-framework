@@ -57,8 +57,17 @@ function scenarioOf(sessionId: string): (typeof SCENARIOS)[number] | undefined {
   return m ? SCENARIOS.find((s) => s.id === m[1]) : undefined;
 }
 
-function main(): void {
-  const lines = readFileSync(FILE, 'utf-8').split('\n').filter((l) => l.trim().length > 0);
+export interface RealagentVerifyResult {
+  ok: boolean;
+  fails: Fail[];
+  eventCount: number;
+  totalTokens: number | null;
+  model: string;
+}
+
+/** 核心复核（可导出复用：server 启动时当场执行）。 */
+export function verifyRealagentFile(file: string): RealagentVerifyResult {
+  const lines = readFileSync(file, 'utf-8').split('\n').filter((l) => l.trim().length > 0);
   const meta = JSON.parse(lines[0]!) as Record<string, unknown>;
   const events = lines.slice(1).map((l) => JSON.parse(l) as Record<string, unknown>);
   const fails: Fail[] = [];
@@ -177,6 +186,20 @@ function main(): void {
     }
   }
 
+  return {
+    ok: fails.length === 0,
+    fails,
+    eventCount: events.length,
+    totalTokens: typeof meta.total_tokens === 'number' ? meta.total_tokens : null,
+    model: String((meta.llm as Record<string, unknown>)?.model ?? '?'),
+  };
+}
+
+function main(): void {
+  const r = verifyRealagentFile(FILE);
+  const fails = r.fails;
+  const meta = { data_class: 'llm-in-the-loop', total_tokens: r.totalTokens, llm: { model: r.model } } as Record<string, unknown>;
+  const events = Array.from({ length: r.eventCount }, (_, i) => ({ seq: i + 1 }));
   // —— 输出 ——
   const ok = fails.length === 0;
   const out = [

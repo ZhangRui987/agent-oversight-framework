@@ -28,6 +28,9 @@ import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildReportHtml } from './report.mts';
+import { verifyChainFile } from '../rules/verify-chain.mts';
+import { replayFile } from '../rules/replay.mts';
+import { verifyRealagentFile } from '../rules/verify-realagent.mts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PANEL_ROOT = resolve(HERE, '..');
@@ -112,6 +115,23 @@ try {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 当场验证（启动时快照）：面板不只展示数据，还在每次启动时自证一遍。
+// 与"重放不进服务"的旧决策不矛盾——那反对的是展示会漂移的缓存数字；
+// 这里是启动时快照 + 明确标注执行时间，服务不重启结果不变，谁质疑当场重启验证。
+// ─────────────────────────────────────────────────────────────────────────────
+
+const verifiedAt = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+const bootVerification = {
+  verifiedAt,
+  chain: { ...verifyChainFile(DATA_FILE), file: 'data/events.jsonl (V1 确定性)' },
+  replay: { ...replayFile(DATA_FILE), file: 'data/events.jsonl (V1 确定性)' },
+  realagentVerify: realagent
+    ? { ...verifyRealagentFile(REALAGENT_FILE), file: 'data/realagent-events.jsonl (V2)' }
+    : { ok: false, fails: [{ seq: '-', reason: 'V2 数据未生成' }], file: 'data/realagent-events.jsonl (V2)', eventCount: 0, totalTokens: null as number | null, model: '-' },
+};
+const allVerified = bootVerification.chain.ok && bootVerification.replay.ok && bootVerification.realagentVerify.ok;
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 证据卡聚合（三层分级）
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -180,10 +200,10 @@ function buildEvidence(): EvidenceCard[] {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const CSV_COLUMNS = [
-  'seq', 'ts', 'ts_mode', 'session_id', 'agent_id', 'event_type', 'category',
-  'rule_id', 'rule_name', 'source_scenario', 'detail', 'measured', 'threshold',
+  'source', 'seq', 'ts', 'ts_mode', 'event_reproducibility', 'session_id', 'agent_id', 'event_type', 'category',
+  'rule_id', 'rule_name', 'scenario_or_session', 'detail', 'measured', 'threshold',
   'findings', 'chain_hash', 'chain_prev', 'spec_ref', 'tc260_measures', 'tc260_risks',
-  'efficiency_grade', 'efficiency_basis', 'replay_kind',
+  'efficiency_grade', 'efficiency_basis', 'replay_kind', 'model',
 ] as const;
 
 function csvEscape(v: unknown): string {
@@ -195,16 +215,29 @@ function csvEscape(v: unknown): string {
   return s;
 }
 
+/** 单事件 → CSV 行。V1 与 V2 合并导出（source 列区分），列名全量统一。 */
+function csvRow(e: PanelEvent, source: 'v1-deterministic' | 'v2-llm'): string[] {
+  const isV1 = source === 'v1-deterministic';
+  const run = (e.run ?? {}) as Record<string, unknown>;
+  return [
+    source, e.seq, e.ts, e.ts_mode,
+    isV1 ? '可重跑（确定性场景）' : String(e.event_reproducibility ?? '不可确认'),
+    e.session_id, e.agent_id, e.event_type, e.category,
+    e.rule_id, e.rule_name,
+    isV1 ? e.source_scenario : e.session_id,
+    e.detail, e.measured, e.threshold,
+    e.findings ?? null, e.chain_hash, e.chain_prev, e.spec_ref, e.tc260_measures,
+    e.tc260_risks, e.efficiency_grade, e.efficiency_basis,
+    e.replay ? (e.replay as Record<string, unknown>).kind : null,
+    isV1 ? null : (run.model ?? null),
+  ];
+}
+
 function buildCsv(): string {
   const rows = [CSV_COLUMNS.join(',')];
-  for (const e of data.events) {
-    rows.push([
-      e.seq, e.ts, e.ts_mode, e.session_id, e.agent_id, e.event_type, e.category,
-      e.rule_id, e.rule_name, e.source_scenario, e.detail, e.measured, e.threshold,
-      e.findings ?? null, e.chain_hash, e.chain_prev, e.spec_ref, e.tc260_measures,
-      e.tc260_risks, e.efficiency_grade, e.efficiency_basis,
-      e.replay ? (e.replay as Record<string, unknown>).kind : null,
-    ].map(csvEscape).join(','));
+  for (const e of data.events) rows.push(csvRow(e, 'v1-deterministic').map(csvEscape).join(','));
+  if (realagent) {
+    for (const e of realagent.events) rows.push(csvRow(e, 'v2-llm').map(csvEscape).join(','));
   }
   // BOM：Excel 识别 UTF-8 的前提，缺失即乱码。
   return '\uFEFF' + rows.join('\r\n') + '\r\n';
@@ -267,6 +300,8 @@ const server = createServer((req, res) => {
         });
       }
       return sendJson(res, 200, { meta: realagent.meta, events: realagent.events });
+    case '/api/verification':
+      return sendJson(res, 200, { ...bootVerification, allVerified });
     case '/api/evidence':
       return sendJson(res, 200, { cards: evidenceCache, chain: data.meta.chain });
     case '/api/boundaries':
@@ -286,7 +321,7 @@ const server = createServer((req, res) => {
     }
     case '/report': {
       // 打印友好审计报告：浏览器打开后 Ctrl+P 存 PDF（零依赖 PDF 路径）。
-      const html = Buffer.from(buildReportHtml(data, realagent), 'utf-8');
+      const html = Buffer.from(buildReportHtml(data, realagent, bootVerification), 'utf-8');
       res.writeHead(200, { 'Content-Type': MIME['.html'], 'Content-Length': html.length });
       return res.end(html);
     }
@@ -301,15 +336,19 @@ for (const a of process.argv.slice(2)) {
 }
 
 server.listen(port, '127.0.0.1', () => {
+  const v = bootVerification;
   console.log('');
-  console.log('Agent 行为审计面板 · V1');
+  console.log('Agent 行为审计面板 · V1 + V2');
   console.log('─'.repeat(58));
-  console.log(`  数据        ${DATA_FILE}`);
-  console.log(`  事件        ${data.meta.event_count} 条 | 框架 v${data.meta.framework.version} | 门禁 ${data.meta.gates_count ?? '?'} 项`);
-  console.log(`  时间戳模式  ${String(data.meta.ts_mode ?? 'synthetic-fixed')}（合成值，非真实时钟）`);
+  console.log(`  数据        V1 ${data.meta.event_count} 条（确定性）| V2 ${realagent ? realagent.meta.event_count + ' 条（LLM-in-the-loop）' : '未生成'}`);
+  console.log(`  框架        v${data.meta.framework.version} | 门禁 ${data.meta.gates_count ?? '?'} 项`);
+  console.log(`  当场验证    链 ${v.chain.ok ? 'PASS' : 'FAIL'} · 重放 ${v.replay.matched}/${v.replay.total} · V2 复核 ${v.realagentVerify.ok ? 'PASS' : 'FAIL'}（${verifiedAt}）`);
   console.log(`  地址        http://127.0.0.1:${port}`);
+  console.log(`  报告        http://127.0.0.1:${port}/report （浏览器 Ctrl+P 存 PDF）`);
   console.log('');
-  console.log('  重放校验不在本服务内执行（保持只读快）。命令行：');
+  console.log('  上述验证为本服务启动时快照；质疑时重跑服务或用 CLI 独立复核：');
+  console.log('    node --experimental-transform-types tools/audit-panel/rules/verify-chain.mts');
   console.log('    node --experimental-transform-types tools/audit-panel/rules/replay.mts');
+  console.log('    node --experimental-transform-types tools/audit-panel/rules/verify-realagent.mts');
   console.log('');
 });

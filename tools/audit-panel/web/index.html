@@ -69,6 +69,12 @@
   th { background: #fafbfc; color: var(--ink-2); font-weight: 600; }
   td.mono { font-family: var(--mono); font-size: 11.5px; }
   .warn { background: var(--orange-bg); color: var(--orange); border-radius: 8px; padding: 10px 14px; font-size: 12.5px; margin-bottom: 14px; }
+  .verifybar { max-width: 1060px; margin: 10px auto 0; padding: 8px 28px; font-size: 12px; font-family: var(--mono); display: flex; gap: 18px; flex-wrap: wrap; }
+  .verifybar .v { display: inline-flex; align-items: center; gap: 5px; }
+  .v-ok { color: var(--green); font-weight: 600; }
+  .v-bad { color: var(--red); font-weight: 600; }
+  .v-time { color: var(--ink-3); }
+  .badge.orphan { color: #6b21a8; background: #f3e8ff; }
 </style>
 </head>
 <body>
@@ -84,6 +90,7 @@
     <button class="export" id="btn-export">↓ 导出 CSV</button>
   </nav>
 </header>
+<div id="verifybar" class="verifybar loading">当场验证中…</div>
 <main>
   <div id="view" class="loading">加载中…</div>
 </main>

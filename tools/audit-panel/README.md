@@ -1,6 +1,6 @@
 # Agent 行为审计面板（audit-panel）
 
-> 状态：**V1 + V2 real-agent 可用**（事件导出 / 独立链验证 / 重放校验 / Web 三视图 / CSV 导出 / LLM-in-the-loop）。
+> 状态：**V1 + V2 real-agent 可用**（事件导出 / 独立链验证 / 重放校验 / Web 四视图 / CSV 全量导出 / LLM-in-the-loop / 启动时当场验证 / 审计报告）。
 > 本目录是 [agent-oversight-framework](../../README.md) 的**参照实现附属工具**，不是独立项目。
 
 ---
@@ -168,9 +168,10 @@ tools/audit-panel/
 
 ## 未实现（不要在别处声称已实现）
 
-- `mapping/` 独立 JSON 文件（映射表已抽至 `rules/rule-map.mts` 共用；条款号已逐条对照原文 p.38–45 核对，见附件 2 二、防范措施 7 类 34 细项）
-- PDF 报告模板（V2 后续）
-- V2 的重放校验（V2 事件不可复现，重放语义需要另行设计——当前重放仅覆盖 V1 确定性数据）
+- 条款映射已外置为 [`mapping/tc260-3.0.json`](mapping/tc260-3.0.json)（含 `_meta.verification` 核验字段；条款号已逐条对照原文 p.38–45 核对）
+- PDF 直出（当前路线：`/report` 打印友好 HTML + 浏览器 Ctrl+P；服务端 PDF 库不引入——破坏零依赖）
+- V2 的**行为重放**（V2 事件不可复现，重放语义不成立；替代方案 = `verify-realagent.mts` 静态复核：拦截声明 vs 场景白名单常量 / 预算数值 / 产物终态）
+- 面板页面的验证条为**服务启动时快照**，不实时刷新——数据是快照不是流
 
 ## 与框架的关系
 

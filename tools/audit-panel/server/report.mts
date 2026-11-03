@@ -12,9 +12,18 @@ import type { Meta, PanelEvent } from './server.mts';
 
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+interface BootVerification {
+  verifiedAt: string;
+  chain: { ok: boolean; fails: Array<{ seq: unknown; reason: string }>; eventCount: number };
+  replay: { ok: boolean; failFast: string[]; matched: number; total: number; orphans: Array<{ seq: number; category: string; detail: string }> };
+  realagentVerify: { ok: boolean; fails: Array<{ seq: unknown; reason: string }>; eventCount: number };
+  allVerified: boolean;
+}
+
 export function buildReportHtml(
   v1: { meta: Meta; events: PanelEvent[] },
   v2: { meta: Meta; events: PanelEvent[] } | null,
+  verification: BootVerification,
 ): string {
   const m1 = v1.meta;
   const now = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
@@ -76,6 +85,17 @@ export function buildReportHtml(
 <h1>Agent 行为审计报告</h1>
 <p>框架版本 <b>v${esc(String(m1.framework.version))}</b> · 门禁 ${esc(String(m1.gates_count))} 项（脚本实测）· 证据 213 条（A12/B135/C13/D1/G52）· 报告生成于 ${esc(now)}<br>
 数据来源：参照实现（reference/runtimes/l2-runtime-oversight）真实执行——V1 为确定性场景（可字节复现），V2 为真实 LLM 行为流（不可复现）。</p>
+
+<h2>〇、验证结果（本报告所引数据在生成前经过如下机器验证）</h2>
+<table>
+  <thead><tr><th>验证</th><th>对象</th><th>结果</th><th>明细</th></tr></thead>
+  <tbody>
+    <tr><td>落盘链重算</td><td>V1 ${verification.chain.eventCount} 事件</td><td class="c">${verification.chain.ok ? 'PASS' : 'FAIL'}</td><td>${verification.chain.ok ? '逐条重算一致；meta 一致；seq 连续' : verification.chain.fails.map((f) => esc(f.reason)).join('；')}</td></tr>
+    <tr><td>重放校验</td><td>V1 ${verification.replay.total} 判定</td><td class="c">${verification.replay.ok ? 'PASS' : 'FAIL'}</td><td>${verification.replay.matched}/${verification.replay.total} MATCH；孤儿信号 ${verification.replay.orphans.length} 条（框架无处置通道）</td></tr>
+    <tr><td>V2 静态复核</td><td>V2 ${verification.realagentVerify.eventCount} 事件</td><td class="c">${verification.realagentVerify.ok ? 'PASS' : 'FAIL'}</td><td>${verification.realagentVerify.ok ? '白名单声明一致 · 预算数值成立 · 产物与声明相符' : verification.realagentVerify.fails.map((f) => esc(f.reason)).join('；')}</td></tr>
+  </tbody>
+</table>
+<p class="note">验证执行于 ${esc(verification.verifiedAt)}（服务启动时快照）。独立复核命令：verify-chain.mts / replay.mts / verify-realagent.mts。</p>
 
 <h2>一、V1 · 确定性门禁事件（七场景，两次运行逐字节一致）</h2>
 <table>

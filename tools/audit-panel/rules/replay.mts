@@ -76,17 +76,6 @@ function buildOutputPolicy(decl: OutputPolicyDecl, tool: string) {
 // 重放执行器
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface ReplayOutcome {
-  seq: number;
-  scenario: string;
-  kind: string;
-  logged: string;
-  replayed: string;
-  match: boolean;
-  note?: string;
-  extra?: string;
-}
-
 /** 丢弃型 audit：重放过程不得往任何真实日志写东西。 */
 const nullAudit = { append: () => null };
 
@@ -175,9 +164,30 @@ function parseArgs(argv: string[]): { file: string } {
   return { file };
 }
 
-function main(): void {
-  const args = parseArgs(process.argv.slice(2));
-  const lines = readFileSync(args.file, 'utf-8').split('\n').filter((l) => l.trim().length > 0);
+export interface ReplayOutcome {
+  seq: number;
+  scenario: string;
+  kind: string;
+  logged: string;
+  replayed: string;
+  match: boolean;
+  note?: string;
+  extra?: string;
+}
+
+export interface ReplayFileResult {
+  ok: boolean;
+  outcomes: ReplayOutcome[];
+  failFast: string[];
+  orphans: Array<{ seq: number; category: string; detail: string }>;
+  frameworkVersion: string;
+  matched: number;
+  total: number;
+}
+
+/** 核心重放（可导出复用：server 启动时当场执行）。 */
+export function replayFile(file: string): ReplayFileResult {
+  const lines = readFileSync(file, 'utf-8').split('\n').filter((l) => l.trim().length > 0);
   const meta = JSON.parse(lines[0]!) as Record<string, unknown>;
   const events = lines.slice(1).map((l) => JSON.parse(l) as Record<string, unknown>);
 
@@ -233,21 +243,39 @@ function main(): void {
     }
   }
 
-  // —— 孤儿信号清单：记了但没人处置 ——
+  // —— 孤儿信号清单：记了但没人处理 ——
   const ledgerEvents = events.filter((e) => e.event_type === 'ledger_signal');
   // 处置事件的形态：框架中不存在（无 disposition / handled / resolved 类事件类型）。
   // 若未来框架新增处置通道，这里必须同步，否则孤儿判定会永远为真。
-  const DISPOSAL_TYPES = new Set<string>([]); // 当前为空——如实反映框架现状
-  const orphans = ledgerEvents.filter((e) => !DISPOSAL_TYPES.has(String(e.event_type)));
+  const DISPOSAL_TYPES = new Set<string>([]);
+  const orphans = ledgerEvents
+    .filter((e) => !DISPOSAL_TYPES.has(String(e.event_type)))
+    .map((e) => ({ seq: Number(e.seq), category: String(e.category), detail: String(e.detail) }));
 
-  // —— 输出 ——
   const matched = outcomes.filter((o) => o.match).length;
+  const fw = (meta.framework as Record<string, unknown> | undefined)?.version;
+  return {
+    ok: failFast.length === 0,
+    outcomes,
+    failFast,
+    orphans,
+    frameworkVersion: typeof fw === 'string' ? fw : 'unknown',
+    matched,
+    total: outcomes.length,
+  };
+}
+
+function main(): void {
+  const args = parseArgs(process.argv.slice(2));
+  const r = replayFile(args.file);
+  const { outcomes, failFast, orphans } = r;
+
   const out = [
     '',
     '审计重放校验（独立重执行 · 与看板的分界线）',
     '─'.repeat(58),
     `  文件            ${args.file}`,
-    `  框架版本        v${String((meta.framework as Record<string, unknown>)?.version ?? 'unknown')}`,
+    `  框架版本        v${r.frameworkVersion}`,
     `  判定条目        ${outcomes.length}（ledger 场景按信号组比对）`,
     '',
   ];
@@ -258,10 +286,10 @@ function main(): void {
   }
 
   out.push('');
-  out.push(`  重放一致性      ${matched}/${outcomes.length}${matched === outcomes.length ? '  ✓' : '  ✗'}`);
+  out.push(`  重放一致性      ${r.matched}/${r.total}${r.matched === r.total ? '  ✓' : '  ✗'}`);
   out.push(`  孤儿信号        ${orphans.length} 条（处置事件 0 条——框架不存在处置通道，PRODUCTION-GAPS G5）`);
   for (const o of orphans) {
-    out.push(`    [seq ${String(o.seq).padStart(2)}] ${String(o.category)} — ${String(o.detail).slice(0, 60)}…`);
+    out.push(`    [seq ${String(o.seq).padStart(2)}] ${o.category} — ${o.detail.slice(0, 60)}…`);
   }
   out.push('');
 

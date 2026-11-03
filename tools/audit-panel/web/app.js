@@ -4,11 +4,36 @@
 
 const view = document.getElementById('view');
 const foot = document.getElementById('foot');
-const state = { meta: null, events: [], evidence: null, boundaries: null };
+const verifybar = document.getElementById('verifybar');
+const state = { meta: null, events: [], evidence: null, boundaries: null, verification: null, orphanSeqs: new Set() };
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const gradeBadge = (g) => `<span class="badge g${esc(g)}">效能 ${esc(g)} 级</span>`;
 const fmtKV = (obj) => !obj ? '—' : Object.entries(obj).map(([k, v]) => `${esc(k)}=${esc(v)}`).join('；');
+
+// ─────────────────────────────────────────────
+// 当场验证条：loadVerification（服务启动时快照，非实时）
+// ─────────────────────────────────────────────
+
+async function loadVerification() {
+  try {
+    const r = await fetch('/api/verification');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const v = await r.json();
+    state.verification = v;
+    state.orphanSeqs = new Set(v.replay.orphans.map((o) => o.seq));
+    const mark = (ok) => ok ? '<span class="v-ok">✓ PASS</span>' : '<span class="v-bad">✗ FAIL</span>';
+    verifybar.className = 'verifybar';
+    verifybar.innerHTML =
+      `<span class="v">落盘链 ${mark(v.chain.ok)} <span class="v-time">${v.chain.eventCount} 事件重算一致</span></span>` +
+      `<span class="v">重放 ${mark(v.replay.ok)} <span class="v-time">${v.replay.matched}/${v.replay.total} MATCH</span></span>` +
+      `<span class="v">V2 静态复核 ${mark(v.realagentVerify.ok)} <span class="v-time">${v.realagentVerify.eventCount} 事件</span></span>` +
+      `<span class="v v-time">启动时快照 ${esc(v.verifiedAt)} · 独立复核：verify-chain / replay / verify-realagent</span>`;
+  } catch (e) {
+    verifybar.className = 'verifybar';
+    verifybar.innerHTML = `<span class="v-bad">✗ 当场验证失败：${esc(e.message)}</span>`;
+  }
+}
 
 // ─────────────────────────────────────────────
 // 时间线：loadTimeline / renderTimeline
@@ -37,11 +62,12 @@ function renderTimeline() {
   for (const e of state.events) {
     const cls = e.event_type === 'ledger_signal' ? 'signal' : 'deny';
     const badge = cls === 'signal' ? '<span class="badge signal">信号·未拦截</span>' : '<span class="badge deny">拦截</span>';
+    const orphan = state.orphanSeqs.has(e.seq) ? '<span class="badge orphan">孤儿信号·无处置</span>' : '';
     html.push(`
 <section class="card ev ${cls}" data-seq="${e.seq}">
   <div class="ev-head" onclick="this.parentElement.classList.toggle('open')">
     <span class="seq">#${String(e.seq).padStart(2, '0')}</span>
-    ${badge}
+    ${badge}${orphan}
     <span class="rule">${esc(e.rule_id)} ${esc(e.rule_name)}</span>
     <span class="detail">${esc(e.detail)}</span>
   </div>
@@ -236,4 +262,5 @@ document.getElementById('btn-export').addEventListener('click', () => {
   window.location.href = '/api/export';
 });
 
+loadVerification();
 loadTimeline();
