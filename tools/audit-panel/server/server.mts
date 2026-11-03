@@ -27,6 +27,7 @@ import { createServer } from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildReportHtml } from './report.mts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PANEL_ROOT = resolve(HERE, '..');
@@ -39,7 +40,7 @@ const DEFAULT_PORT = 7727;
 // 数据加载（只读一次，驻内存）
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface Meta {
+export interface Meta {
   record_type: string;
   schema_version: string;
   framework: { version: string; entry: string };
@@ -54,7 +55,7 @@ interface Meta {
   [k: string]: unknown;
 }
 
-interface PanelEvent {
+export interface PanelEvent {
   record_type: string;
   seq: number;
   event_type: string;
@@ -282,6 +283,12 @@ const server = createServer((req, res) => {
         'Content-Disposition': `attachment; filename="audit-events-v${data.meta.framework.version}.csv"`,
       });
       return res.end(buf);
+    }
+    case '/report': {
+      // 打印友好审计报告：浏览器打开后 Ctrl+P 存 PDF（零依赖 PDF 路径）。
+      const html = Buffer.from(buildReportHtml(data, realagent), 'utf-8');
+      res.writeHead(200, { 'Content-Type': MIME['.html'], 'Content-Length': html.length });
+      return res.end(html);
     }
     default:
       return sendFile(res, normalize(join(WEB_ROOT, url)));

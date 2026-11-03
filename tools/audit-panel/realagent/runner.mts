@@ -312,8 +312,17 @@ function main(): void {
       const rule = RULE_BY_CATEGORY[category];
       if (!rule) throw new Error(`未登记的事件类别：${category}（seq=${raw.seq}）——先在 rules/rule-map.mts 登记`);
 
-      const measured = (d.measured as Record<string, number> | undefined) ?? null;
-      const threshold = (d.threshold as Record<string, number> | undefined) ?? null;
+      const measured0 = (d.measured as Record<string, number> | undefined) ?? null;
+      const threshold0 = (d.threshold as Record<string, number> | undefined) ?? null;
+      // exit_reject 无原生 measured/threshold（只有 metric/actual/budget）——与 V1 statsOf 同样归一化；
+      // 漏掉会让静态复核器拿不到可复核数值（实测踩过）。
+      let measured = measured0;
+      let threshold = threshold0;
+      if (!measured && raw.type === 'exit_reject' && typeof d.metric === 'string'
+        && typeof d.actual === 'number' && typeof d.budget === 'number') {
+        measured = { [d.metric]: d.actual };
+        threshold = { [d.metric]: d.budget };
+      }
       const findings = Array.isArray(d.findings) ? (d.findings as unknown[]) : null;
       const ts = raw.wallClockTs;
       const sessionId = sessionOf.get(raw.seq) ?? raw.sessionId;
