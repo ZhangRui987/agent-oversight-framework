@@ -1,6 +1,6 @@
 # AI Execution & Oversight Framework
 
-[![Version](https://img.shields.io/badge/version-2.58.1-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.58.2-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (134/212)](https://img.shields.io/badge/evidence-B_135%2F213-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -11,7 +11,7 @@
 
 This repository is a **governance architecture design specification** for AI agent deployers, standards organizations, and researchers — not a sandbox tool, not an observability platform, not a rule engine. It answers "why govern, how to govern, and where the boundary is."
 
-**Positioning**: this framework is a **transparent supplement and teaching case** to ai-safe2 / NIST AI RMF / ISO 42001 — focused on evidence-grading transparency and self-correction, **not a replacement for comprehensive GRC standards** (complementary to, not competing with, ai-safe2 — see "Relationship to related projects"). It is also a **Chinese-language AI agent governance specification** aimed at Chinese readers and aligned with domestic classification-and-grading regulation and labeling/filing requirements (the *Interim Measures for the Management of Generative AI Services*, the *Measures for the Labeling of AI-Generated Synthetic Content*, and Article 20 of the *Cybersecurity Law*). Its scale circuit-breakers and watchdog mechanisms are structurally homologous to the "circuit breaker / safety stop-switch" control measures proposed in **TC260《人工智能安全治理框架》2.0 §4.2.3** — this framework is a swarm-level concretization of a regulator-endorsed concept.
+**Positioning**: this framework is a **transparent supplement and teaching case** to ai-safe2 / NIST AI RMF / ISO 42001 — focused on evidence-grading transparency and self-correction, **not a replacement for comprehensive GRC standards** (complementary to, not competing with, ai-safe2 — see "Relationship to related projects"). It is also a **Chinese-language AI agent governance specification** aimed at Chinese readers and aligned with domestic classification-and-grading regulation and labeling/filing requirements (the *Interim Measures for the Management of Generative AI Services*, the *Measures for the Labeling of AI-Generated Synthetic Content*, and Article 20 of the *Cybersecurity Law*). Its scale circuit-breakers and watchdog mechanisms are structurally homologous to the "circuit breaker / safety stop-switch" control measures proposed in **TC260《人工智能安全治理框架》2.0 §4.2.3** — this framework is a swarm-level concretization of a regulator-endorsed concept; the same control idea is carried forward and made concrete in the *AI Safety Governance Framework 3.0* (September 2026), whose Annex 2 II.5(5) requires parameterizing execution steps, invocation frequency, duration and resource consumption, with pausing/termination and human handoff on abnormal loops (this framework's spec/10 resource ledger and spec/07 swarm circuit-breaker are the verification-layer implementation of that requirement).
 
 > **Maintainer**: independently maintained ([@ZhangRui987](https://github.com/ZhangRui987)), not a corporate project. Released open source as an "AI governance architecture design specification"; no commercial support; community contributions welcome, including joint development with enterprises / institutions.
 
@@ -120,7 +120,7 @@ Per [`CLASSIFICATION.md`](CLASSIFICATION.md), this repository has three levels:
 
 ## Status
 
-- Current version: v2.58.1 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
+- Current version: v2.58.2 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
 - Maintenance status: **does not claim "built"; claims only "maintained"** — an open cheating set can only be countered continuously
 - **Honest boundary**: 43 open problems explicitly registered (see [`spec/13-boundaries.md`](spec/13-boundaries.md)) — this framework's honest boundary and a problem list for researchers; includes the system's largest engineering gap, "decentralized-swarm countermeasures"
 - Change history: see [`CHANGELOG.md`](CHANGELOG.md)
@@ -239,11 +239,11 @@ This repository governs itself by its own specification (meta-governance):
 
 See [`CITATION.cff`](CITATION.cff).
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.58.1). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.58.2). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## Quality assurance (self-referential verification)
 
-This repository governs itself with itself: [`scripts/verify_consistency.py`](scripts/verify_consistency.py) provides 45 release-consistency checks (table format / evidence-grade counts / incident-number conventions / section numbering / terminology / bidirectional reference checks / citation-key quality / G-grade jurisdictional-prefix validity / verification-log key-set sync / jurisdiction-enumeration consistency / demo assertion declarations vs. actual runtime output / production-gaps header-state vs. table consistency / correction-log timeliness / spec bilingual structural alignment), mounted as a pre-commit hook (`.githooks/`). See [`CONTRIBUTING.md`](CONTRIBUTING.md) for enabling; every commit runs it automatically and blocks on failure. Manual run: `python scripts/verify_consistency.py` (pure standard library, no dependencies to install).
+This repository governs itself with itself: [`scripts/verify_consistency.py`](scripts/verify_consistency.py) provides 45 release-consistency checks (table format / evidence-grade counts / incident-number conventions / section numbering / terminology / bidirectional reference checks / citation-key quality / G-grade jurisdictional-prefix validity / verification-log key-set sync / jurisdiction-enumeration consistency / demo assertion declarations vs. actual runtime output / production-gaps header-state vs. table consistency / correction-log timeliness / spec bilingual structural alignment / spec/11 line-count declarations vs. bilingual reality / spec/13 open-problems register integrity), mounted as a pre-commit hook (`.githooks/`). See [`CONTRIBUTING.md`](CONTRIBUTING.md) for enabling; every commit runs it automatically and blocks on failure. Manual run: `python scripts/verify_consistency.py` (pure standard library, no dependencies to install).
 
 This is not a document maintained by good faith alone; it is a specification with an automated gate.
 

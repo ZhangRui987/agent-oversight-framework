@@ -5,7 +5,7 @@
 
 ## Why
 
-This repository is authored in Chinese — deliberately. It aims to be the first structured **Chinese-language** governance specification for AI agent oversight, aligned with domestic regulatory frameworks (TC260《人工智能安全治理框架》2.0、《生成式人工智能服务管理暂行办法》、《人工智能生成合成内容标识办法》、《网络安全法》第二十条).
+This repository is authored in Chinese — deliberately. It aims to be the first structured **Chinese-language** governance specification for AI agent oversight, aligned with domestic regulatory frameworks (TC260《人工智能安全治理框架》2.0 — carried forward in the 2026 *3.0* edition, whose Annex 2 on agent risk management this repository maps against —、《生成式人工智能服务管理暂行办法》、《人工智能生成合成内容标识办法》、《网络安全法》第二十条).
 
 But the substance is language-independent: evidence grading (A/B/C/D), swarm governance mechanisms, the evidence-integrity subsystem, and the voluntary-abstention exit are useful far beyond the Chinese-speaking community.
 

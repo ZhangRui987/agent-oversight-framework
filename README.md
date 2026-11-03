@@ -1,6 +1,6 @@
 # AI 执行与监察体系（Agent Oversight Framework）
 
-[![Version](https://img.shields.io/badge/version-2.58.1-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.58.2-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (134/212)](https://img.shields.io/badge/evidence-B_135%2F213-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -11,7 +11,7 @@
 
 本仓库是一份面向 AI Agent 部署方、标准组织与研究者的**治理架构设计规范**——不是沙箱工具，不是观测平台，不是规则引擎，而是「为什么治理、怎么治理、边界在哪」的完整设计文档。
 
-**定位**：本框架是 ai-safe2 / NIST AI RMF / ISO 42001 的**透明补充规范与教学案例**——聚焦证据分级透明度与自校正机制，**不替代综合 GRC 标准**（与 ai-safe2 互补而非竞争，见「与相关项目的关系」）。同时是**面向中文读者、对接国内分类分级监管与标识/备案要求的中文 AI Agent 治理规范**（《生成式人工智能服务管理暂行办法》《人工智能生成合成内容标识办法》《网络安全法》第二十条等）。其规模熔断与看门狗机制与 **TC260《人工智能安全治理框架》2.0 §4.2.3** 提出的「熔断器 / 安全停止开关」控制措施同构——本框架是监管已背书概念在蜂群级的具体落地。
+**定位**：本框架是 ai-safe2 / NIST AI RMF / ISO 42001 的**透明补充规范与教学案例**——聚焦证据分级透明度与自校正机制，**不替代综合 GRC 标准**（与 ai-safe2 互补而非竞争，见「与相关项目的关系」）。同时是**面向中文读者、对接国内分类分级监管与标识/备案要求的中文 AI Agent 治理规范**（《生成式人工智能服务管理暂行办法》《人工智能生成合成内容标识办法》《网络安全法》第二十条等）。其规模熔断与看门狗机制与 **TC260《人工智能安全治理框架》2.0 §4.2.3** 提出的「熔断器 / 安全停止开关」控制措施同构——本框架是监管已背书概念在蜂群级的具体落地；该控制思路在《人工智能安全治理框架 3.0》（2026 年 9 月）中延续并具体化——附件 2 二、5(5) 要求对执行步骤、调用频次、执行时长与资源消耗参数化，并对异常循环暂停终止转人工（本体系 spec/10 资源账本与 spec/07 规模熔断为该要求的验证层实现）。
 
 > **维护者**：个人独立维护（[@ZhangRui987](https://github.com/ZhangRui987)），非企业项目。本框架作为「AI 治理架构设计规范」开源，不提供商业支持，欢迎社区贡献；也欢迎企业 / 机构共建。
 
@@ -121,7 +121,7 @@ graph TD
 
 ## 状态
 
-- 当前版本：v2.58.1（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
+- 当前版本：v2.58.2（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
 - 维护状态：**不声称建成，只声称维护状态**——开放作弊集合只能持续对抗
 - **诚实边界**：43 条未解问题显式登记（见 [`spec/13-boundaries.md`](spec/13-boundaries.md)）——这是本框架的诚实边界，也是研究者的选题清单；含全体系最大的工程缺口「去中心化蜂群反制」
 - 变更历史：见 [`CHANGELOG.md`](CHANGELOG.md)
@@ -237,11 +237,11 @@ node --experimental-transform-types tools/audit-panel/server/server.mts
 
 见 [`CITATION.cff`](CITATION.cff)。
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.58.1). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.58.2). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## 质量保障（自指验证）
 
-本仓库用自己治理自己：[`scripts/verify_consistency.py`](scripts/verify_consistency.py) 提供 45 项发布一致性校验（表格格式 / 证据分级数量 / 事故数字口径 / 章节号 / 术语口径 / 双向引用检查 / 引用键质量 / G 类管辖前缀合法性 / 核验日志键集同步 / 法域枚举一致性 / demo 断言声明与实际运行输出一致性 / PRODUCTION-GAPS 头部状态与表格一致性 / 纠错登记时效 / spec/ 双语结构对齐），已挂载为 pre-commit 钩子（`.githooks/`）。启用方式见 [`CONTRIBUTING.md`](CONTRIBUTING.md)；每次提交自动执行，校验失败即拦截。手动运行：`python scripts/verify_consistency.py`（纯标准库，无需安装依赖）。
+本仓库用自己治理自己：[`scripts/verify_consistency.py`](scripts/verify_consistency.py) 提供 45 项发布一致性校验（表格格式 / 证据分级数量 / 事故数字口径 / 章节号 / 术语口径 / 双向引用检查 / 引用键质量 / G 类管辖前缀合法性 / 核验日志键集同步 / 法域枚举一致性 / demo 断言声明与实际运行输出一致性 / PRODUCTION-GAPS 头部状态与表格一致性 / 纠错登记时效 / spec/ 双语结构对齐 / spec/11 行数声明与双语实测一致 / spec/13 未解登记册完整性），已挂载为 pre-commit 钩子（`.githooks/`）。启用方式见 [`CONTRIBUTING.md`](CONTRIBUTING.md)；每次提交自动执行，校验失败即拦截。手动运行：`python scripts/verify_consistency.py`（纯标准库，无需安装依赖）。
 
 这不是靠自觉维护的文档，而是有自动化门禁的规范。
 
