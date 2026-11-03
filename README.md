@@ -1,6 +1,6 @@
 # AI 执行与监察体系（Agent Oversight Framework）
 
-[![Version](https://img.shields.io/badge/version-2.58.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.58.1-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (134/212)](https://img.shields.io/badge/evidence-B_135%2F213-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -121,7 +121,7 @@ graph TD
 
 ## 状态
 
-- 当前版本：v2.58.0（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
+- 当前版本：v2.58.1（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
 - 维护状态：**不声称建成，只声称维护状态**——开放作弊集合只能持续对抗
 - **诚实边界**：43 条未解问题显式登记（见 [`spec/13-boundaries.md`](spec/13-boundaries.md)）——这是本框架的诚实边界，也是研究者的选题清单；含全体系最大的工程缺口「去中心化蜂群反制」
 - 变更历史：见 [`CHANGELOG.md`](CHANGELOG.md)
@@ -163,17 +163,26 @@ node --experimental-transform-types reference/runtimes/l2-runtime-oversight/repl
 >
 > 跑不起来、或不确定输出算不算通过？到 [Discussions「复现答疑」](https://github.com/ZhangRui987/agent-oversight-framework/discussions/categories/q-a) 提问。**过程性疑问放讨论区，已出结论的复现结果走上面的 Issue 模板**——失败也是数据。
 
-### 不止复现：审计面板（V1）
+### 不止复现：审计面板（V1 + V2）
 
 规范要经得起复现，也要能被"看"。[`tools/audit-panel/`](tools/audit-panel/) 是本仓库三位一体（规范 + 参照实现 + 审计面板）的第三件：读取参照实现**真实执行**产生的审计事件，按三层证据分级（事件可复现性 / 规则效能 / 条款级）展示每条行为被哪条规则拦截、依据有多硬、映射《人工智能安全治理框架 3.0》附件 2 的哪一条；并提供**独立重放校验**——日志说了什么不算数，用同一套规则重新裁决一遍、比对一致才算数。
 
 ```bash
-node --experimental-transform-types tools/audit-panel/scenario/export-events.mts   # 导出审计事件（确定性输出：同版本框架两次运行逐字节一致）
-node --experimental-transform-types tools/audit-panel/rules/replay.mts             # 重放校验（当前基线 9/9 MATCH + 孤儿信号清单）
-node --experimental-transform-types tools/audit-panel/server/server.mts            # 起面板 → http://127.0.0.1:7727
+# ① 生成审计事件（确定性输出：同版本框架两次运行逐字节一致）
+node --experimental-transform-types tools/audit-panel/scenario/export-events.mts
+# ② 独立链验证（逐条重算哈希链，可检出任何篡改；--tamper-demo 看演示）
+node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts --tamper-demo
+# ③ 重放校验（用同一套规则重新裁决，比对日志——当前基线 9/9 MATCH）
+node --experimental-transform-types tools/audit-panel/rules/replay.mts
+# ④ 起面板 → http://127.0.0.1:7727（顶部验证条为启动时当场执行的三件验证）
+node --experimental-transform-types tools/audit-panel/server/server.mts
 ```
 
-同样零安装、零密钥、零网络。数据由七组确定性场景真实调用 `EntryGuard` / `ExitGuard` / `ResourceLedger` 产生——不是手写日志；时间戳为合成值以保证可复现，页面明示。诚实边界页内建（含"审计链只记录拒绝、放行不留痕""配置审查依赖固定字段名"等六条）。命令行入口与边界全表见 [`tools/audit-panel/README.md`](tools/audit-panel/README.md)。
+同样零安装、零密钥、零网络。数据由七组确定性场景真实调用 `EntryGuard` / `ExitGuard` / `ResourceLedger` 产生——不是手写日志；时间戳为合成值以保证可复现，页面明示。面板含四个视图（时间线 / real-agent 会话 / 证据卡 / 诚实边界）与审计报告（`/report`，浏览器 Ctrl+P 存 PDF）。
+
+**进阶（可选，需自备 API key）**：[`tools/audit-panel/realagent/`](tools/audit-panel/realagent/) 让一个真实 LLM Agent（默认 DeepSeek，OpenAI 兼容）在同样的三件套包裹下执行任务——四类诱导场景的拦截全部随链留痕，页面如实标注「不可复现 · 自测性质行为记录，不支撑效能断言」。
+
+**按你的目的使用**：看效果 = ①+④；独立复核 = ②+③（外加 md5 比对重跑导出）；出审计材料 = ④ + 面板「导出 CSV」+ `/report`；跑真实 LLM 会话 = realagent。全部命令、边界声明与核验记录见 [`tools/audit-panel/README.md`](tools/audit-panel/README.md)。
 
 ## 仓库结构
 
@@ -228,7 +237,7 @@ node --experimental-transform-types tools/audit-panel/server/server.mts         
 
 见 [`CITATION.cff`](CITATION.cff)。
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.58.0). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.58.1). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## 质量保障（自指验证）
 

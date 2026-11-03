@@ -1,6 +1,6 @@
 # AI Execution & Oversight Framework
 
-[![Version](https://img.shields.io/badge/version-2.58.0-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.58.1-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (134/212)](https://img.shields.io/badge/evidence-B_135%2F213-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -120,7 +120,7 @@ Per [`CLASSIFICATION.md`](CLASSIFICATION.md), this repository has three levels:
 
 ## Status
 
-- Current version: v2.58.0 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
+- Current version: v2.58.1 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
 - Maintenance status: **does not claim "built"; claims only "maintained"** — an open cheating set can only be countered continuously
 - **Honest boundary**: 43 open problems explicitly registered (see [`spec/13-boundaries.md`](spec/13-boundaries.md)) — this framework's honest boundary and a problem list for researchers; includes the system's largest engineering gap, "decentralized-swarm countermeasures"
 - Change history: see [`CHANGELOG.md`](CHANGELOG.md)
@@ -166,17 +166,26 @@ This entry point runs in CI on every push/PR.
 >
 > Stuck, or unsure how to read the verdict? Ask in [Discussions](https://github.com/ZhangRui987/agent-oversight-framework/discussions/categories/q-a). **Process questions go to Discussions; concluded replication results go through the issue template above** — a failure is data too.
 
-### Beyond replication: the audit panel (V1)
+### Beyond replication: the audit panel (V1 + V2)
 
 A specification should survive replication — and it should also be *visible*. [`tools/audit-panel/`](tools/audit-panel/) is the third piece of this repository's trinity (specification + reference implementation + audit panel): it reads audit events produced by **real execution** of the reference implementation, shows for each behavior which rule intercepted it, how strong the evidence is (three layers: event reproducibility / rule effectiveness grade / clause level), and which clause of the TC260 *AI Safety Governance Framework 3.0* Annex 2 it maps to. It also provides **independent replay verification** — what the log says doesn't count until the same rules, re-executed, agree with it.
 
 ```bash
-node --experimental-transform-types tools/audit-panel/scenario/export-events.mts   # export audit events (deterministic: byte-identical across runs of the same framework version)
-node --experimental-transform-types tools/audit-panel/rules/replay.mts             # replay verification (current baseline 9/9 MATCH + orphan-signal list)
-node --experimental-transform-types tools/audit-panel/server/server.mts            # launch panel → http://127.0.0.1:7727
+# 1) export audit events (deterministic: byte-identical across runs of the same framework version)
+node --experimental-transform-types tools/audit-panel/scenario/export-events.mts
+# 2) independent chain verification (recomputes the hash chain; detects any tampering)
+node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts --tamper-demo
+# 3) replay verification (re-adjudicate with the same rules; current baseline 9/9 MATCH)
+node --experimental-transform-types tools/audit-panel/rules/replay.mts
+# 4) launch panel → http://127.0.0.1:7727 (top bar = the three verifications, executed at startup)
+node --experimental-transform-types tools/audit-panel/server/server.mts
 ```
 
-Same discipline: zero installs, zero keys, zero network. Events are produced by seven deterministic scenarios that really invoke `EntryGuard` / `ExitGuard` / `ResourceLedger` — not hand-written logs; timestamps are synthetic values to guarantee reproducibility, and the panel says so. The honest-boundaries view is built in (including "the audit chain records only denials — allowances leave no trace" and "config review depends on fixed field names", six entries in total). CLI entry points and the full boundary list: [`tools/audit-panel/README.md`](tools/audit-panel/README.md).
+Same discipline: zero installs, zero keys, zero network. Events are produced by seven deterministic scenarios that really invoke `EntryGuard` / `ExitGuard` / `ResourceLedger` — not hand-written logs; timestamps are synthetic values to guarantee reproducibility, and the panel says so. The panel has four views (timeline / real-agent sessions / evidence cards / honest boundaries) plus an audit report (`/report`, Ctrl+P in the browser to save as PDF).
+
+**Advanced (optional, bring your own API key)**: [`tools/audit-panel/realagent/`](tools/audit-panel/realagent/) runs a real LLM agent (DeepSeek by default, OpenAI-compatible) under the same three-piece oversight — interceptions from four inducement scenarios are all recorded on-chain, and the page honestly labels them "non-reproducible · self-tested behavioral record, supports no effectiveness claim".
+
+**Use it by purpose**: just look = 1+4; independent verification = 2+3 (plus an md5 comparison of a re-export); produce audit material = 4 + "export CSV" + `/report`; run real LLM sessions = realagent. All commands, boundary declarations and verification records: [`tools/audit-panel/README.md`](tools/audit-panel/README.md).
 
 ## Repository structure
 
@@ -230,7 +239,7 @@ This repository governs itself by its own specification (meta-governance):
 
 See [`CITATION.cff`](CITATION.cff).
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.58.0). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.58.1). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## Quality assurance (self-referential verification)
 
