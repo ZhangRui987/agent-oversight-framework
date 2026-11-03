@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent 行为审计面板 · V1</title>
+<style>
+  :root {
+    --ink: #1a2332; --ink-2: #4a5568; --ink-3: #8894a6;
+    --line: #e2e7ee; --bg: #f6f8fa; --card: #ffffff;
+    --red: #c0392b; --red-bg: #fdecea;
+    --orange: #b26a00; --orange-bg: #fff3e0;
+    --green: #1e7e34; --green-bg: #e8f5e9;
+    --yellow: #8a6d00; --yellow-bg: #fff8e1;
+    --blue: #155a9a; --blue-bg: #e3f2fd;
+    --mono: ui-monospace, Consolas, "Courier New", monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; background: var(--bg); color: var(--ink); font-size: 14px; line-height: 1.6; }
+  header { background: var(--card); border-bottom: 1px solid var(--line); padding: 18px 28px 0; }
+  header h1 { font-size: 19px; font-weight: 650; }
+  header .sub { color: var(--ink-3); font-size: 12.5px; margin-top: 2px; }
+  nav { display: flex; gap: 4px; margin-top: 14px; }
+  nav button { border: none; background: none; padding: 9px 16px; font-size: 14px; color: var(--ink-2); cursor: pointer; border-bottom: 2.5px solid transparent; }
+  nav button.active { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
+  nav .spacer { flex: 1; }
+  nav .export { color: var(--blue); font-weight: 600; }
+  main { max-width: 1060px; margin: 20px auto 40px; padding: 0 28px; }
+  .loading { color: var(--ink-3); padding: 40px 0; text-align: center; }
+  .err { background: var(--red-bg); color: var(--red); border: 1px solid #f2c4bd; border-radius: 8px; padding: 14px 18px; }
+  footer { max-width: 1060px; margin: 0 auto 30px; padding: 12px 28px; color: var(--ink-3); font-size: 12px; font-family: var(--mono); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; margin-bottom: 10px; }
+  .ev { border-left: 4px solid var(--line); }
+  .ev.deny { border-left-color: var(--red); }
+  .ev.signal { border-left-color: var(--orange); }
+  .ev-head { display: flex; align-items: baseline; gap: 10px; cursor: pointer; }
+  .ev-head .seq { font-family: var(--mono); color: var(--ink-3); font-size: 12px; min-width: 44px; }
+  .badge { font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 9px; white-space: nowrap; }
+  .badge.deny { color: var(--red); background: var(--red-bg); }
+  .badge.signal { color: var(--orange); background: var(--orange-bg); }
+  .badge.gA { color: var(--green); background: var(--green-bg); }
+  .badge.gC { color: var(--yellow); background: var(--yellow-bg); }
+  .badge.gG { color: var(--blue); background: var(--blue-bg); }
+  .ev-head .rule { font-weight: 600; }
+  .ev-head .cat { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+  .ev-head .detail { color: var(--ink-2); font-size: 13px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ev-body { display: none; margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 10px; font-size: 13px; }
+  .ev.open .ev-body { display: block; }
+  .kv { display: grid; grid-template-columns: 130px 1fr; gap: 3px 12px; margin: 6px 0; }
+  .kv dt { color: var(--ink-3); }
+  .kv dd { font-family: var(--mono); font-size: 12.5px; word-break: break-all; }
+  .tc { background: var(--blue-bg); color: var(--blue); border-radius: 6px; padding: 8px 12px; margin: 6px 0; font-size: 12.5px; }
+  .tc b { font-weight: 650; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 12px; }
+  .ecard { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .ecard h3 { font-size: 14.5px; margin-bottom: 2px; }
+  .ecard .meta { color: var(--ink-3); font-size: 12px; margin-bottom: 8px; }
+  .ecard .basis { font-size: 12.5px; color: var(--ink-2); margin-top: 8px; }
+  .ecard .tc260 { font-size: 12px; margin-top: 8px; color: var(--blue); }
+  .bc { border-left: 4px solid var(--blue); }
+  .bc h3 { font-size: 14px; margin-bottom: 4px; }
+  .bc p { font-size: 13px; color: var(--ink-2); }
+  .bc .ref { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); margin-top: 6px; }
+  .gap { background: var(--yellow-bg); border: 1px solid #efe2b0; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; font-size: 12.5px; }
+  .gap b { color: var(--yellow); }
+  h2.sec { font-size: 15px; margin: 18px 0 10px; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; font-size: 12.5px; }
+  th, td { text-align: left; padding: 7px 12px; border-bottom: 1px solid var(--line); }
+  th { background: #fafbfc; color: var(--ink-2); font-weight: 600; }
+  td.mono { font-family: var(--mono); font-size: 11.5px; }
+  .warn { background: var(--orange-bg); color: var(--orange); border-radius: 8px; padding: 10px 14px; font-size: 12.5px; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Agent 行为审计面板</h1>
+  <div class="sub">行为级 · 证据分层 · TC260 框架 3.0 条款映射 —— 读取框架 L2 参照实现的真实执行事件</div>
+  <nav>
+    <button data-view="timeline" class="active">门禁时间线</button>
+    <button data-view="evidence">证据卡</button>
+    <button data-view="boundaries">诚实边界</button>
+    <div class="spacer"></div>
+    <button class="export" id="btn-export">↓ 导出 CSV</button>
+  </nav>
+</header>
+<main>
+  <div id="view" class="loading">加载中…</div>
+</main>
+<footer id="foot"></footer>
+<script src="/app.js"></script>
+</body>
+</html>

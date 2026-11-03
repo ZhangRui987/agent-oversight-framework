@@ -837,6 +837,16 @@ function main(): void {
     /* VERSION 缺失不阻断导出，但 meta 会显式标 unknown */
   }
 
+  // 门禁项数由脚本实测派生（数 ^check( 行），不手写——与 README 计数声明同一来源。
+  let gatesCount: number | null = null;
+  try {
+    const gateSrc = readFileSync(resolve(REPO_ROOT, 'scripts/verify_consistency.py'), 'utf-8');
+    const m = gateSrc.match(/^check\(/gm);
+    gatesCount = m ? m.length : null;
+  } catch {
+    /* 门禁脚本缺失不阻断导出 */
+  }
+
   const meta = {
     record_type: 'meta',
     schema_version: SCHEMA_VERSION,
@@ -846,6 +856,7 @@ function main(): void {
       version: frameworkVersion,
       entry: 'reference/runtimes/l2-runtime-oversight/index.ts',
     },
+    gates_count: gatesCount,
     session_id: SESSION_ID,
     agent_id: AGENT_ID,
     event_count: events.length,

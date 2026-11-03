@@ -1,6 +1,6 @@
 # Agent 行为审计面板（audit-panel）
 
-> 状态：**V1 数据层 + 重放校验已可用**（事件导出 / 独立链验证 / 重放校验）。Web 三视图与服务端尚未实现。
+> 状态：**V1 可用**（事件导出 / 独立链验证 / 重放校验 / Web 三视图 / CSV 导出）。
 > 本目录是 [agent-oversight-framework](../../README.md) 的**参照实现附属工具**，不是独立项目。
 
 ---
@@ -20,9 +20,12 @@ node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts 
 
 # 3) 重放校验（对每条拦截独立重执行规则，比对日志裁决——审计与看板的分界线）
 node --experimental-transform-types tools/audit-panel/rules/replay.mts
+
+# 4) 起面板（浏览器打开 http://127.0.0.1:7727）
+node --experimental-transform-types tools/audit-panel/server/server.mts
 ```
 
-第二条验证**文件没被改过**；第三条验证**日志说的是否为真**。两者互补，缺一不可。
+第二条验证**文件没被改过**；第三条验证**日志说的是否为真**；第四条把前两步的成果变成可看、可导出的界面。四条命令均零安装、不联网。
 
 > 第三条命令（`server/server.mts` 起服务 + 浏览器打开）属于 V1 待实现部分，见「未实现」。
 
@@ -124,19 +127,21 @@ tools/audit-panel/
 │   └── verify-chain.mts    ✅ 独立链验证（可检出篡改）
 ├── rules/
 │   └── replay.mts          ✅ 重放校验（独立重执行 + 孤儿信号清单）
+├── server/
+│   └── server.mts          ✅ node:http 单文件（4 只读端点 + 静态页；重放不在服务内执行，保持只读）
+├── web/
+│   ├── index.html          ✅ 三视图单页（时间线 / 证据卡 / 诚实边界）
+│   └── app.js              ✅ loadXxx / renderXxx 配对模式，零框架
 ├── data/
 │   └── events.jsonl        ✅ 产物（9 事件，入库作 golden）
-├── server/                 ⬜ V1 待实现（node:http，4 个只读端点）
-├── web/                    ⬜ V1 待实现（时间线 / 证据卡 / 诚实边界 三视图）
 ├── mapping/                ⬜ 待抽取（当前映射内联于 export-events.mts 的 RULE_BY_CATEGORY）
 └── README.md
 ```
 
 ## 未实现（不要在别处声称已实现）
 
-- Web 三视图与服务端 API
-- CSV / PDF 导出
 - `mapping/tc260-3.0.json` 外置（当前映射表内联，条款号已逐条对照原文 p.38–45 核对，见附件 2 二、防范措施 7 类 34 细项）
+- PDF 报告模板（V2）
 - V2 的 LLM-in-the-loop 场景（需 `OVERSIGHT_LLM_API_KEY`）
 
 ## 与框架的关系
