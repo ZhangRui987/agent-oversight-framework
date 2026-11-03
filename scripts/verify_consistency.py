@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """发布一致性校验（推送前 / pre-commit 用）。
 
-校验项（共 43 项 = 43 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
+校验项（共 44 项 = 44 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
   1. 全仓库无 [TABLE START/END] 伪标记
   2. 所有 Markdown 表格表头后都有 |---| 分隔行
   3. 表格每行列数与分隔行一致
@@ -73,6 +73,12 @@
          一致」，不校验「同一文件头尾一致」。本项把头部显式「当前状态」行钉死到正文
          表格实测 ✅/❌ 集合：任一侧变化未同步即 FAIL。
   43. spec/ 双语结构对齐（X.md ↔ X.en.md 标题层级序列一致；v2.52.11 新增）
+  44. spec/11 行数声明 == 双语实测（v2.52.25 新增）
+      —— 教训来源：2026-11-03 内部审计实测发现 spec/11 双语行数声明「现为 55 行」自
+         v2.28.0 起漂移（主表实际 93 行，低估 38 行），伴随门禁全绿存活约 30 个版本。
+         结构性根源与第 40/42 项同构：声明靠手工续写、无守卫。本项把声明钉死到实测：
+         门禁机器统计主表数据行（CAE 三标记 + 竖线分隔），与双语声明数字逐一比对。
+         原则同前：任何可验证数字，要么生成、要么校验，不写第三种。
       —— 实测（2026-10-14）：5/13 对存在标题数量或层级序列漂移——双语同步此前
          仅靠人工纪律，门禁对英文版检查面远窄于中文（同「声明 vs 实际」盲区族）。
          机制：逐对提取 ^#+ 标题层级序列比对；已实测漂移的 5 对按完整序列指纹
@@ -935,6 +941,40 @@ check(
     "spec/ 双语结构对齐（标题层级序列一致；已知漂移按豁免表公示）",
     not _bl_bad,
     "; ".join(_bl_bad[:3]),
+)
+
+# ── 44. spec/11 行数声明 == 双语实测（v2.52.25 新增，防声明链漂移） ──────────
+# 教训来源：2026-11-03 内部审计实测发现 spec/11 双语行数声明「现为 55 行」自
+# v2.28.0 起漂移（主表实际 93 行，低估 38 行），伴随每轮门禁全绿存活约 30 个版本。
+# 声明锚点：zh「当前 N 行」/ en「currently has N data rows」（spec/11 L15，双语各一）。
+# 实测口径：主表区（至「标准引注 / Standard citations」节前）内含 CAE 三标记与
+# 「 | 」分隔的行数——与第 37 项（每行 CAE 三段齐全）互补：37 管行内结构，44 管行数。
+def _count_s11_rows(_region, _m1, _m2, _m3):
+    _n = 0
+    for _ln in _region.splitlines():
+        if " | " in _ln and _m1 in _ln and _m2 in _ln and _m3 in _ln:
+            _n += 1
+    return _n
+
+_s11z = read(os.path.join(ROOT, "spec", "11-traceability.md"))
+_s11e = read(os.path.join(ROOT, "spec", "11-traceability.en.md"))
+assert "## 标准引注" in _s11z and "## Standard citations" in _s11e, "spec/11 节锚点缺失"
+_s11z_n = _count_s11_rows(_s11z.split("## 标准引注")[0], "主张", "论证", "证据")
+_s11e_n = _count_s11_rows(_s11e.split("## Standard citations")[0], "Claim", "Argument", "Evidence")
+_s11z_decl = re.search(r"当前 (\d+) 行", _s11z)
+_s11e_decl = re.search(r"currently has (\d+) data rows", _s11e)
+_s11_bad = []
+if not _s11z_decl or not _s11e_decl:
+    _s11_bad.append("spec/11 行数声明句缺失或格式变更（zh「当前 N 行」/ en「currently has N data rows」）")
+else:
+    if int(_s11z_decl.group(1)) != _s11z_n:
+        _s11_bad.append("zh 声明 %s 行 != 实测 %d 行" % (_s11z_decl.group(1), _s11z_n))
+    if int(_s11e_decl.group(1)) != _s11e_n:
+        _s11_bad.append("en 声明 %s 行 != 实测 %d 行" % (_s11e_decl.group(1), _s11e_n))
+check(
+    "spec/11 行数声明 == 双语实测（v2.52.25 新增）",
+    not _s11_bad,
+    "; ".join(_s11_bad),
 )
 
 # ── 汇总 ─────────────────────────────────────
