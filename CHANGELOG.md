@@ -1,6 +1,18 @@
 # 变更日志
 
 
+## v2.53.0（2026-11-04）：审计面板数据层轮
+
+**背景**：开源推进线新增「规范 + 参照实现 + 审计面板」三位一体中的第三件——Agent 行为审计面板 V1 数据层（基准方案《审计面板_方案_v4.0》，工作区文档）。目标：把 L2 运行时监察的真实执行事件变成可复现、可独立验证、可映射 TC260《人工智能安全治理框架 3.0》条款的 JSONL 证据文件。定位红线：是"给要交合规审计报告的人"的证据工具，不是开发者调试 trace 工具；政策锚点为框架 3.0 §3.2.1 (a)(b)(c)(d) 逐字原文（不用二手概括）。
+
+**变更**：新增 `tools/audit-panel/`（零依赖、零入侵，不改 index.ts / demo.ts 一行）——① `scenario/export-events.mts`：七场景（S1–S7）真实执行 EntryGuard / ExitGuard / ResourceLedger / ConfigReviewer 产出 9 条事件（S1 工具不在白名单 / S2 参数越界 / S3 恶意配置注入 / S4 结果超预算 / S5 输出违规 / S6 完整性校验失败 / S7 资源账本三信号）；鸭子接口注入 RecordingAuditLog 委托真 AppendOnlyAuditLog，保留框架 verifyChain 能力且不读私有字段；② `scenario/verify-chain.mts`：独立验证器（meta 一致性 / seq 连续 / 链重算 / 每条事件有规则与条款依据；`--tamper-demo` 篡改演示）；③ `data/events.jsonl`：9 事件 + meta 首行入库；④ `README.md`：数据来源诚实声明 + 覆盖矩阵 + 六条边界。
+
+**关键设计（两套链分离）**：框架原生 hash 基于真实 Date.now()，且 ledger_signal 的 data 内嵌真实 ts——直接落盘两次运行 md5 不一致（实测）；落盘链改为 `sha256(prev + "|" + JSON.stringify(本行去链字段))`，覆盖落盘内容、可被第三方按 `meta.chain.recompute_recipe` 独立重算。落盘链只证明"文件未被事后篡改"，不能替代框架运行期校验（后者结果见 meta.chain.framework_verified_at_run）。
+
+**诚实边界（如实登记，面板须展示）**：① R1 的 rate-limit / budget-exhausted 仅存在于类型定义（index.ts:704-705），EntryGuard.check 无任何产生分支——属"已声明未实现"；② periodic-egress 故意不覆盖——紧循环触发会产出 0ms 间隔假阳性，验证的是阈值比较而非检测能力，宁缺不假；③ ConfigReviewer 字段名白名单漏检实测：shareScope（语义等价 visibility=org-wide）不触发 share-scope-widened（index.ts:802-804 只认 visibility/share/shareWith/accessLevel），S3 刻意保留漏检样本（报 2 项非 3 项），与 AOE-DETECT-001 混淆变体 77/77 未检出同源；④ 审计链只记录拒绝、放行不留痕——"为什么放过"不可审计，与框架 3.0 §3.2.1(d) 全量记录存在差距；⑤ 资源账本信号全部为孤儿信号（框架无处置通道，PRODUCTION-GAPS G5）；⑥ 时间戳为合成值（BASE_TS + seq*1000），不证明事件真实发生时刻。
+
+**限定**：证据条目、分级计数、未解问题数、门禁项数零变化（45 项门禁实测 PASS）；TC260 条款号逐条对照附件 2 原文 p.38–45 核对（防范措施 7 类 34 细项口径，措施侧 12 条 + 风险侧 9 条）；本目录 README 中文单语，不纳入 spec/ 双语门禁范围；Web 三视图 / 重放校验 / CSV 导出 / mapping 外置属 V1 后续，**未实现**（README「未实现」节已列明，不得在别处声称已完成）；版本联动 v2.52.27→v2.53.0。
+
 ## v2.52.27（2026-11-03）：CoworkOS 学术侧双线收敛注记轮
 
 **背景**：外部材料 CoworkOS（arXiv:2611.03178，人大 NLPIR 牵头六校，2026-11-02 提交预印本；代码 2026-11-03 开源）经五问法评估（工作区登记 `CoworkOS×AOF_外部材料评估登记_v1.md`，含附录 A.1/A.2/A.3 逐节核验）判定为新增候选；因 harness/自改进登记族已有 13 条同亲缘来源，独立新条目边际价值低，裁决落点为对既有条目挂双线收敛注记。
