@@ -1,6 +1,6 @@
 # Agent 行为审计面板（audit-panel）
 
-> 状态：**V1 数据层已可用**（事件导出 + 独立链验证）。Web 三视图与服务端尚未实现。
+> 状态：**V1 数据层 + 重放校验已可用**（事件导出 / 独立链验证 / 重放校验）。Web 三视图与服务端尚未实现。
 > 本目录是 [agent-oversight-framework](../../README.md) 的**参照实现附属工具**，不是独立项目。
 
 ---
@@ -15,11 +15,14 @@
 # 1) 导出审计事件（零依赖，无需 npm/pip install，不联网）
 node --experimental-transform-types tools/audit-panel/scenario/export-events.mts
 
-# 2) 独立验证事件文件（含链重算与篡改演示）
+# 2) 独立验证事件文件（链重算 + 依据字段完整 + 篡改演示）
 node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts --tamper-demo
+
+# 3) 重放校验（对每条拦截独立重执行规则，比对日志裁决——审计与看板的分界线）
+node --experimental-transform-types tools/audit-panel/rules/replay.mts
 ```
 
-第二条命令即验证：meta 自描述一致、seq 连续、**每条事件的 chain_hash 可被独立重算**、每条事件都有规则与条款依据。
+第二条验证**文件没被改过**；第三条验证**日志说的是否为真**。两者互补，缺一不可。
 
 > 第三条命令（`server/server.mts` 起服务 + 浏览器打开）属于 V1 待实现部分，见「未实现」。
 
@@ -99,18 +102,32 @@ md5sum tools/audit-panel/data/events.jsonl   # 应与上一次相同
 
 > 常见错误：把"条款是 G 级"当成"机制有效"。G 类支撑**义务**（"应当做 X"），不支撑**效能**（"X 有效"）。
 
+## 重放校验：日志说的不是"是否为真"的终点
+
+`rules/replay.mts` 对每条拦截/信号做**独立重执行**，比对三方一致性：
+
+```
+日志记录的 category == 事件 replay.expect == 重放器重新执行得到的 category
+```
+
+- 判定输入（白名单、策略声明、预算、结果）由导出器写入每条事件的 `replay` 字段并**随链落盘**——重放不靠"猜当时的配置"，篡改重放输入同样会被链校验检出。
+- 策略谓词不可序列化，契约里是声明式描述（`forbidden-substring` 等），重放器按声明重建。
+- 反向测试：把 seq 1 的 category 篡改为 `config-review-fail`，重放立即 MISMATCH（日志 vs 重执行）并 exit 1。
+- 已知边界：S6 的 `integrityCheck` 是注入钩子（框架默认恒真，G4 未闭合），重放仅验证分支可达性；`ledger_signal` 按信号序比对，且全部按**孤儿信号**报告（框架不存在处置通道，G5）。
+
 ## 目录
 
 ```
 tools/audit-panel/
 ├── scenario/
-│   ├── export-events.mts   ✅ 事件导出（七场景，零依赖，确定性）
+│   ├── export-events.mts   ✅ 事件导出（七场景，零依赖，确定性，含重放规格落盘）
 │   └── verify-chain.mts    ✅ 独立链验证（可检出篡改）
+├── rules/
+│   └── replay.mts          ✅ 重放校验（独立重执行 + 孤儿信号清单）
 ├── data/
 │   └── events.jsonl        ✅ 产物（9 事件，入库作 golden）
 ├── server/                 ⬜ V1 待实现（node:http，4 个只读端点）
 ├── web/                    ⬜ V1 待实现（时间线 / 证据卡 / 诚实边界 三视图）
-├── rules/                  ⬜ V1 待实现（重放校验 + 孤儿信号清单）
 ├── mapping/                ⬜ 待抽取（当前映射内联于 export-events.mts 的 RULE_BY_CATEGORY）
 └── README.md
 ```
@@ -118,7 +135,6 @@ tools/audit-panel/
 ## 未实现（不要在别处声称已实现）
 
 - Web 三视图与服务端 API
-- 重放校验与孤儿信号清单
 - CSV / PDF 导出
 - `mapping/tc260-3.0.json` 外置（当前映射表内联，条款号已逐条对照原文 p.38–45 核对，见附件 2 二、防范措施 7 类 34 细项）
 - V2 的 LLM-in-the-loop 场景（需 `OVERSIGHT_LLM_API_KEY`）
