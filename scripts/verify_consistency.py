@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """发布一致性校验（推送前 / pre-commit 用）。
 
-校验项（共 44 项 = 44 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
+校验项（共 45 项 = 45 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
   1. 全仓库无 [TABLE START/END] 伪标记
   2. 所有 Markdown 表格表头后都有 |---| 分隔行
   3. 表格每行列数与分隔行一致
@@ -78,6 +78,12 @@
          v2.28.0 起漂移（主表实际 93 行，低估 38 行），伴随门禁全绿存活约 30 个版本。
          结构性根源与第 40/42 项同构：声明靠手工续写、无守卫。本项把声明钉死到实测：
          门禁机器统计主表数据行（CAE 三标记 + 竖线分隔），与双语声明数字逐一比对。
+  45. spec/13 未解登记册完整性（行数==编号连续==README 双语声明三方互证；v2.52.26 新增）
+      —— 教训来源：2026-11-03 内部审计中「#41/#42/#43 疑似缺失」经排查为格式假警报，但暴露
+         结构性盲区：spec/13 登记册与 README「43 条未解问题」声明之间无机器互证，登记册
+         加行/删行而声明不动将静默漂移（与第 40/42/44 项同构：声明靠手工续写、无守卫）。
+         本项机器统计双语登记册数据行与首列编号序列：行数双语相等、编号连续 1..N 无跳号
+         无重复，且 N 与 README 双语全部「N 条未解问题 / N open problems」声明逐一比对。
          原则同前：任何可验证数字，要么生成、要么校验，不写第三种。
       —— 实测（2026-10-14）：5/13 对存在标题数量或层级序列漂移——双语同步此前
          仅靠人工纪律，门禁对英文版检查面远窄于中文（同「声明 vs 实际」盲区族）。
@@ -975,6 +981,51 @@ check(
     "spec/11 行数声明 == 双语实测（v2.52.25 新增）",
     not _s11_bad,
     "; ".join(_s11_bad),
+)
+
+# ── 45. spec/13 未解登记册完整性（v2.52.26 新增，行数==编号连续==README 声明三方互证） ──────────
+# 教训来源：2026-11-03 内部审计「#41~#43 疑似缺失」排查为格式假警报，但暴露 spec/13 登记册
+# 与 README「43 条未解问题」声明之间无机器互证。本项与第 44 项同构：机器统计为权威、
+# 声明提取比对——登记册加行/删行而 README 声明不动（或反向）即 FAIL。
+def _s13_scan(path, next_heading):
+    _region = read(path).split(next_heading)[0]
+    _rows, _nums = [], []
+    for _ln in _region.splitlines():
+        _t = _ln.strip()
+        if _t.startswith("| ") and " | " in _t and "---" not in _t:
+            _m = re.match(r"\| (\d+) \|", _ln)
+            if _m:
+                _rows.append(_ln)
+                _nums.append(int(_m.group(1)))
+    return _nums
+
+_s13z_nums = _s13_scan(os.path.join(ROOT, "spec", "13-boundaries.md"), "\n## 自报置信度")
+_s13e_nums = _s13_scan(os.path.join(ROOT, "spec", "13-boundaries.en.md"), "\n## Acceptance boundary")
+_r13z = read(os.path.join(ROOT, "README.md"))
+_r13e = read(os.path.join(ROOT, "README.en.md"))
+_s13z_decls = re.findall(r"(\d+) 条未解问题", _r13z)
+_s13e_decls = re.findall(r"(\d+) open problems", _r13e)
+_s13_bad = []
+if not _s13z_nums or not _s13e_nums:
+    _s13_bad.append("spec/13 登记册数据行缺失或格式变更（期望「| N | ...」行）")
+else:
+    if len(_s13z_nums) != len(_s13e_nums):
+        _s13_bad.append("双语登记册行数不等 zh=%d en=%d" % (len(_s13z_nums), len(_s13e_nums)))
+    for _tag, _nums in (("zh", _s13z_nums), ("en", _s13e_nums)):
+        if _nums != list(range(1, len(_nums) + 1)):
+            _s13_bad.append("%s 登记册编号不连续或有重复（实测 %s）" % (_tag, _nums[:8]))
+    _s13n = len(_s13z_nums)
+    for _tag, _decls in (("zh", _s13z_decls), ("en", _s13e_decls)):
+        if not _decls:
+            _s13_bad.append("README %s 未解问题声明句缺失或格式变更" % _tag)
+        else:
+            for _d in set(_decls):
+                if int(_d) != _s13n:
+                    _s13_bad.append("README %s 声明 %s 条 != 登记册实测 %d 条" % (_tag, _d, _s13n))
+check(
+    "spec/13 未解登记册完整性：行数/编号连续/README 双语声明互证（v2.52.26 新增）",
+    not _s13_bad,
+    "; ".join(_s13_bad),
 )
 
 # ── 汇总 ─────────────────────────────────────
