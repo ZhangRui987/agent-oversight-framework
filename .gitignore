@@ -16,3 +16,11 @@ desktop.ini
 
 # ── 注：开源前准备方案 / B1 清单等内部工作文档 ────────
 # 如误放入本目录，会被推上 GitHub；请确保不入库
+
+# ── V2 real-agent：LLM API key（绝不入库）──────────────
+# .env 只存 OVERSIGHT_LLM_API_KEY；key 泄漏 = 立即去厂商控制台轮换
+.env
+**/.env
+
+# ── V2 real-agent：沙箱工作区（运行产物，不入库）────────
+tools/audit-panel/realagent/workspace/

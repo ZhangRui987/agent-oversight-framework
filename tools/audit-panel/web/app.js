@@ -158,10 +158,71 @@ function renderFoot() {
 }
 
 // ─────────────────────────────────────────────
+// real-agent 会话：loadRealAgent / renderRealAgent
+// ─────────────────────────────────────────────
+
+async function loadRealAgent() {
+  view.innerHTML = '<div class="loading">加载 real-agent 会话…</div>';
+  try {
+    const r = await fetch('/api/realagent');
+    if (r.status === 404) {
+      const j = await r.json();
+      view.innerHTML = `<div class="err">V2 数据尚未生成：${esc(j.error)}</div>`;
+      return;
+    }
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const j = await r.json();
+    state.realagent = j;
+    renderRealAgent();
+  } catch (e) {
+    view.innerHTML = `<div class="err">real-agent 加载失败：${esc(e.message)}</div>`;
+  }
+}
+
+function renderRealAgent() {
+  const { meta, events } = state.realagent;
+  const html = [];
+  html.push(`<div class="warn"><b>本视图的数据来自真实 LLM Agent（${esc(meta.llm.model)}）的行为，每次运行都不同——时间戳为真实时钟，事件不可重放。</b>这是自测性质的行为记录，不构成任何效能断言；它证明的是「三件套在真实 LLM 行为流上正常运行并留痕」。</div>`);
+  html.push(`<div style="color:var(--ink-3);font-size:12.5px;margin-bottom:10px;font-family:var(--mono)">${meta.runs.map((r) => `${esc(r.scenario)}: ${r.turns}轮 / ${r.totalTokens}tok / deny ${r.denies} · reject ${r.rejects} · signal ${r.signals} → ${esc(r.finalOutcome)}`).join('　|　')}　|　合计 ${meta.event_count} 事件 · ${meta.total_tokens} tokens</div>`);
+
+  let lastSession = '';
+  for (const e of events) {
+    const cls = e.event_type === 'ledger_signal' ? 'signal' : 'deny';
+    if (e.session_id !== lastSession) {
+      lastSession = e.session_id;
+      html.push(`<h2 class="sec" style="font-family:var(--mono);color:var(--ink-2)">${esc(e.session_id)}</h2>`);
+    }
+    const badge = cls === 'signal' ? '<span class="badge signal">信号·未拦截</span>' : '<span class="badge deny">拦截</span>';
+    html.push(`
+<section class="card ev ${cls}">
+  <div class="ev-head" onclick="this.parentElement.classList.toggle('open')">
+    <span class="seq">#${String(e.seq).padStart(2, '0')}</span>
+    ${badge}
+    <span class="rule">${esc(e.rule_id)} ${esc(e.rule_name)}</span>
+    <span class="detail">${esc(e.detail)}</span>
+  </div>
+  <div class="ev-body">
+    <dl class="kv">
+      <dt>类别</dt><dd>${esc(e.category)}（${esc(e.event_type)}）</dd>
+      <dt>实测 / 阈值</dt><dd>${esc(fmtKV(e.measured))} / ${esc(fmtKV(e.threshold))}</dd>
+      <dt>规则依据</dt><dd>${esc(e.spec_ref)}</dd>
+      <dt>效能依据</dt><dd>${gradeBadge(e.efficiency_grade)} ${esc(e.efficiency_basis)}</dd>
+      <dt>可复现性</dt><dd><b>${esc(e.event_reproducibility)}</b>（LLM 输入不可重放；ts 为真实时钟）</dd>
+      <dt>运行</dt><dd>provider=${esc(e.run.provider)} · model=${esc(e.run.model)}</dd>
+    </dl>
+    <div class="tc"><b>TC260 框架 3.0 附件 2 映射（G 级——支撑义务，不支撑效能）</b><br>
+      措施：${e.tc260_measures.map(esc).join('；')}<br>风险：${e.tc260_risks.map(esc).join('；')}</div>
+  </div>
+</section>`);
+  }
+  view.innerHTML = html.join('');
+}
+
+// ─────────────────────────────────────────────
 // Tab 路由
 // ─────────────────────────────────────────────
 
-const routes = { timeline: loadTimeline, evidence: loadEvidence, boundaries: loadBoundaries };
+const routes = { timeline: loadTimeline, realagent: loadRealAgent, evidence: loadEvidence, boundaries: loadBoundaries };
 
 document.querySelectorAll('nav button[data-view]').forEach((btn) => {
   btn.addEventListener('click', () => {

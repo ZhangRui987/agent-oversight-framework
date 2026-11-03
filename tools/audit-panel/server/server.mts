@@ -31,6 +31,7 @@ import { fileURLToPath } from 'node:url';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PANEL_ROOT = resolve(HERE, '..');
 const DATA_FILE = join(PANEL_ROOT, 'data', 'events.jsonl');
+const REALAGENT_FILE = join(PANEL_ROOT, 'data', 'realagent-events.jsonl');
 const WEB_ROOT = join(PANEL_ROOT, 'web');
 const DEFAULT_PORT = 7727;
 
@@ -95,6 +96,18 @@ try {
   console.error('✗ 数据加载失败：', err instanceof Error ? err.message : err);
   console.error('  请先运行：node --experimental-transform-types tools/audit-panel/scenario/export-events.mts');
   process.exit(1);
+}
+
+/** V2 real-agent 数据源（可选：文件不存在则该视图提示先生成）。 */
+let realagent: { meta: Meta; events: PanelEvent[] } | null = null;
+try {
+  const raw = readFileSync(REALAGENT_FILE, 'utf-8');
+  const lines = raw.split('\n').filter((l) => l.trim().length > 0);
+  const meta = JSON.parse(lines[0]!) as Meta;
+  const events = lines.slice(1).map((l) => JSON.parse(l) as PanelEvent);
+  if (meta.event_count === events.length) realagent = { meta, events };
+} catch {
+  /* realagent 数据尚未生成——面板如实显示"未生成" */
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -246,6 +259,13 @@ const server = createServer((req, res) => {
       return sendFile(res, join(WEB_ROOT, 'app.js'));
     case '/api/timeline':
       return sendJson(res, 200, { meta: data.meta, events: data.events });
+    case '/api/realagent':
+      if (!realagent) {
+        return sendJson(res, 404, {
+          error: 'real-agent 数据尚未生成。运行：node --experimental-transform-types tools/audit-panel/realagent/runner.mts（需 OVERSIGHT_LLM_API_KEY）',
+        });
+      }
+      return sendJson(res, 200, { meta: realagent.meta, events: realagent.events });
     case '/api/evidence':
       return sendJson(res, 200, { cards: evidenceCache, chain: data.meta.chain });
     case '/api/boundaries':

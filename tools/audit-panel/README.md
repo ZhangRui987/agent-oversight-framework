@@ -1,6 +1,6 @@
 # Agent 行为审计面板（audit-panel）
 
-> 状态：**V1 可用**（事件导出 / 独立链验证 / 重放校验 / Web 三视图 / CSV 导出）。
+> 状态：**V1 + V2 real-agent 可用**（事件导出 / 独立链验证 / 重放校验 / Web 三视图 / CSV 导出 / LLM-in-the-loop）。
 > 本目录是 [agent-oversight-framework](../../README.md) 的**参照实现附属工具**，不是独立项目。
 
 ---
@@ -21,11 +21,31 @@ node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts 
 # 3) 重放校验（对每条拦截独立重执行规则，比对日志裁决——审计与看板的分界线）
 node --experimental-transform-types tools/audit-panel/rules/replay.mts
 
-# 4) 起面板（浏览器打开 http://127.0.0.1:7727）
+# 4) 起面板（浏览器打开 http://127.0.0.1:7727；含 V1 与 V2 两个数据视图）
 node --experimental-transform-types tools/audit-panel/server/server.mts
 ```
 
 第二条验证**文件没被改过**；第三条验证**日志说的是否为真**；第四条把前两步的成果变成可看、可导出的界面。四条命令均零安装、不联网。
+
+## V2 real-agent：接一个真实 LLM（可选，需 API key）
+
+V1 的数据来自确定性场景；V2 让一个**真实 LLM Agent**（默认 DeepSeek，OpenAI 兼容）在同样的三件套包裹下执行任务——每次工具调用都走 EntryGuard → 执行 → ResourceLedger → ExitGuard，被拒的结果会回给 LLM，它被拒后的调整同样随链留痕。
+
+```bash
+# 前置：key 不入库。二选一：
+#   a) 环境变量 OVERSIGHT_LLM_API_KEY=<key>
+#   b) 在 tools/audit-panel/.env 写入一行 OVERSIGHT_LLM_API_KEY=<key>（.gitignore 已排除）
+node --experimental-transform-types tools/audit-panel/realagent/runner.mts          # 四场景全跑
+node --experimental-transform-types tools/audit-panel/realagent/runner.mts --only=N1 # 单场景
+```
+
+四个诱导场景（任务正常、规则收紧，拦截的是 LLM 的自然决策）：**N1** 窄白名单（试列目录被拒）· **N2** 低预算（累积消耗一路超阈，逐轮双信号）· **N3** 记忆写入（最高审计级别）· **N4** 输出泄密（凭据字段原样搬运被出口门拦下）。
+
+**V2 的诚实边界**（页面同样内置）：
+
+- `ts_mode = wall-clock`（真实时钟）、每条事件可复现性 = **不可确认**——LLM 输入不可重放，两次运行产物必然不同，这是设计而非缺陷；
+- 本数据是**自测性质的行为记录**，只支撑"三件套在真实 LLM 行为流上正常运行并留痕"，**不支撑任何效能断言**（不得写"证明 LLM 会违规""检出率 X%"）；
+- key 只从环境变量 / `.env` 读取，绝不入库、不入日志、不入错误信息；沙箱工作区（`realagent/workspace/`）运行产物不入 git。
 
 > 第三条命令（`server/server.mts` 起服务 + 浏览器打开）属于 V1 待实现部分，见「未实现」。
 
@@ -123,26 +143,34 @@ md5sum tools/audit-panel/data/events.jsonl   # 应与上一次相同
 ```
 tools/audit-panel/
 ├── scenario/
-│   ├── export-events.mts   ✅ 事件导出（七场景，零依赖，确定性，含重放规格落盘）
+│   ├── export-events.mts   ✅ V1：事件导出（七场景，零依赖，确定性，含重放规格落盘）
 │   └── verify-chain.mts    ✅ 独立链验证（可检出篡改）
 ├── rules/
-│   └── replay.mts          ✅ 重放校验（独立重执行 + 孤儿信号清单）
+│   ├── replay.mts          ✅ 重放校验（独立重执行 + 孤儿信号清单）
+│   └── rule-map.mts        ✅ category→规则映射表（V1/V2 共用的单一真相源，v2.56.0 从导出器抽出）
+├── realagent/
+│   ├── runner.mts          ✅ V2：真实 LLM Agent 主循环（三件套全程包裹，被拒行为留痕）
+│   ├── llm.mts             ✅ OpenAI 兼容客户端（内置 fetch 零依赖；key 只读 env/.env，不入库）
+│   ├── tools.mts           ✅ 本地确定性工具集（真实读写沙箱；全工具声明、白名单在门上收紧）
+│   ├── scenarios.mts       ✅ 四个诱导场景（N1 越权 / N2 预算挤压 / N3 记忆 / N4 泄密）
+│   └── workspace/          （运行沙箱，产物不入 git）
 ├── server/
-│   └── server.mts          ✅ node:http 单文件（4 只读端点 + 静态页；重放不在服务内执行，保持只读）
+│   └── server.mts          ✅ node:http 单文件（5 只读端点：timeline / realagent / evidence / boundaries / export）
 ├── web/
-│   ├── index.html          ✅ 三视图单页（时间线 / 证据卡 / 诚实边界）
+│   ├── index.html          ✅ 四视图单页（时间线 / real-agent 会话 / 证据卡 / 诚实边界）
 │   └── app.js              ✅ loadXxx / renderXxx 配对模式，零框架
 ├── data/
-│   └── events.jsonl        ✅ 产物（9 事件，入库作 golden）
-├── mapping/                ⬜ 待抽取（当前映射内联于 export-events.mts 的 RULE_BY_CATEGORY）
+│   ├── events.jsonl        ✅ V1 产物（9 事件，确定性，入库作 golden）
+│   └── realagent-events.jsonl ✅ V2 产物（LLM-in-the-loop，wall-clock，不可复现，meta 声明数据类别）
+├── mapping/                ⬜ 条款映射已抽至 rules/rule-map.mts（mapping/ 目录预留，暂无独立文件）
 └── README.md
 ```
 
 ## 未实现（不要在别处声称已实现）
 
-- `mapping/tc260-3.0.json` 外置（当前映射表内联，条款号已逐条对照原文 p.38–45 核对，见附件 2 二、防范措施 7 类 34 细项）
-- PDF 报告模板（V2）
-- V2 的 LLM-in-the-loop 场景（需 `OVERSIGHT_LLM_API_KEY`）
+- `mapping/` 独立 JSON 文件（映射表已抽至 `rules/rule-map.mts` 共用；条款号已逐条对照原文 p.38–45 核对，见附件 2 二、防范措施 7 类 34 细项）
+- PDF 报告模板（V2 后续）
+- V2 的重放校验（V2 事件不可复现，重放语义需要另行设计——当前重放仅覆盖 V1 确定性数据）
 
 ## 与框架的关系
 
