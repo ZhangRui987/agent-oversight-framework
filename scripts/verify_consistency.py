@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """发布一致性校验（推送前 / pre-commit 用）。
 
-校验项（共 45 项 = 45 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
+校验项（共 46 项 = 46 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
   1. 全仓库无 [TABLE START/END] 伪标记
   2. 所有 Markdown 表格表头后都有 |---| 分隔行
   3. 表格每行列数与分隔行一致
@@ -82,6 +82,12 @@
       —— 教训来源：2026-11-03 内部审计中「#41/#42/#43 疑似缺失」经排查为格式假警报，但暴露
          结构性盲区：spec/13 登记册与 README「43 条未解问题」声明之间无机器互证，登记册
          加行/删行而声明不动将静默漂移（与第 40/42/44 项同构：声明靠手工续写、无守卫）。
+  46. 面板入库产物 meta.framework.version 与 VERSION 一致（v2.60.0 新增）
+      —— 教训来源：tools/audit-panel/data/*.jsonl 的 meta 自描述框架版本，两次因「版本联动
+         sed 在产物重生成之后执行」而滞后（v2.55.1 首次、v2.59.0 前再次），靠人工检查偶然
+         抓到。与第 40/42/44/45 项同构：声明/产物靠手工同步、无守卫。本项把入库产物
+         （events.jsonl 与 realagent-events.jsonl）首行的 framework.version 钉死到 VERSION：
+         版本联动后产物未重生成即 FAIL。
          本项机器统计双语登记册数据行与首列编号序列：行数双语相等、编号连续 1..N 无跳号
          无重复，且 N 与 README 双语全部「N 条未解问题 / N open problems」声明逐一比对。
          原则同前：任何可验证数字，要么生成、要么校验，不写第三种。
@@ -97,6 +103,7 @@
 退出码 0 = 全部通过；非 0 = 存在未通过项（pre-commit 将拦截提交）。
 """
 import datetime
+import json
 import os
 import re
 import subprocess
@@ -1026,6 +1033,31 @@ check(
     "spec/13 未解登记册完整性：行数/编号连续/README 双语声明互证（v2.52.26 新增）",
     not _s13_bad,
     "; ".join(_s13_bad),
+)
+
+# ── 46. 面板入库产物 meta.framework.version 与 VERSION 一致（v2.60.0 新增）──
+_p46_version = read(os.path.join(ROOT, "VERSION")).strip()
+_p46_bad = []
+for _p46_name in ("events.jsonl", "realagent-events.jsonl"):
+    _p46_path = os.path.join(ROOT, "tools", "audit-panel", "data", _p46_name)
+    if not os.path.exists(_p46_path):
+        _p46_bad.append("缺少入库产物 %s" % _p46_name)
+        continue
+    _p46_first = open(_p46_path, encoding="utf-8").readline()
+    try:
+        _p46_meta = json.loads(_p46_first)
+        _p46_fv = (_p46_meta.get("framework") or {}).get("version")
+    except Exception:
+        _p46_fv = None
+    if _p46_fv != _p46_version:
+        _p46_bad.append(
+            "%s 的 meta.framework.version=%s != VERSION=%s（版本联动后须重生成产物）"
+            % (_p46_name, _p46_fv, _p46_version)
+        )
+check(
+    "面板入库产物 meta.framework.version 与 VERSION 一致（v2.60.0 新增）",
+    not _p46_bad,
+    "; ".join(_p46_bad),
 )
 
 # ── 汇总 ─────────────────────────────────────

@@ -1,6 +1,6 @@
 # 发布一致性校验 + L2 参照实现断言 + tier-0 复现包（CI）
 # 动机：verify_consistency.py 与 demo.ts 此前只挂在本地 pre-commit，外部读者无法在远端
-#       机器可复现。本 workflow 把 45 项门禁与 153+14 项断言升级为 push/PR 自动执行——
+#       机器可复现。本 workflow 把 46 项门禁与 153+14 项断言升级为 push/PR 自动执行——
 #       让"自动化门禁"从口号变成任何人可核验的事实（采纳豆包深度审查建议 1）。
 # 设计约束：脚本零外部依赖（Python 纯标准库 / Node 内置 node:sqlite + node:crypto），
 #       故 CI 无需安装任何包；三 job 相互独立，可并行。
@@ -15,7 +15,7 @@ on:
 
 jobs:
   consistency-gate:
-    name: 发布一致性校验（45 项）
+    name: 发布一致性校验（46 项）
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -71,3 +71,26 @@ jobs:
       - name: Assert no repo writes (复现不得污染工作区)
         run: git diff --exit-code --stat
 
+
+  audit-panel:
+    name: 审计面板（导出 + 三件独立验证）
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ["22", "24"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Export deterministic audit events
+        run: node --experimental-transform-types tools/audit-panel/scenario/export-events.mts
+      - name: Verify chain (独立链验证)
+        run: node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts
+      - name: Replay verification (重放校验)
+        run: node --experimental-transform-types tools/audit-panel/rules/replay.mts
+      - name: Verify realagent (V2 拦截裁决静态复核)
+        run: node --experimental-transform-types tools/audit-panel/rules/verify-realagent.mts
