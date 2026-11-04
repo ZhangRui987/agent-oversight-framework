@@ -149,10 +149,14 @@ export function verifyRealagentFile(file: string): RealagentVerifyResult {
       }
     }
 
-    // D. 记忆写入产物核对
+    // D. 记忆写入产物核对（条件性）：产物核对依赖沙箱现场——CI 干净 clone 无
+    //    workspace（gitignore），此时 D 项记 SKIP，声明层复核 B/C/F 不受影响。
+    //    本机跑过 runner 时 workspace 存在，正向核对照常执行。
     if (category === 'memory-write-audited') {
       const memPath = resolve(WORKSPACE, 'memory.json');
-      if (!existsSync(memPath)) {
+      if (!existsSync(WORKSPACE)) {
+        console.log(`    [seq ${seq}] SKIP：沙箱现场不存在（CI 干净 clone）——产物核对跳过，白名单/数值/链复核不受影响`);
+      } else if (!existsSync(memPath)) {
         fails.push({ seq: String(seq), reason: '声明了记忆写入审计，但 workspace/memory.json 不存在——留痕与产物不符' });
       } else {
         const fields = (e as { findings?: unknown[] }).findings;
