@@ -1,6 +1,6 @@
 # AI 执行与监察体系（Agent Oversight Framework）
 
-[![Version](https://img.shields.io/badge/version-2.60.1-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.60.2-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (134/212)](https://img.shields.io/badge/evidence-B_135%2F213-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -121,7 +121,7 @@ graph TD
 
 ## 状态
 
-- 当前版本：v2.60.1（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
+- 当前版本：v2.60.2（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
 - 维护状态：**不声称建成，只声称维护状态**——开放作弊集合只能持续对抗
 - **诚实边界**：43 条未解问题显式登记（见 [`spec/13-boundaries.md`](spec/13-boundaries.md)）——这是本框架的诚实边界，也是研究者的选题清单；含全体系最大的工程缺口「去中心化蜂群反制」
 - 变更历史：见 [`CHANGELOG.md`](CHANGELOG.md)
@@ -131,7 +131,8 @@ graph TD
 **快速体验（约 5 分钟）**：
 1. 读 [`spec/01-principles.md`](spec/01-principles.md) 的六条总纲；
 2. 用 [`spec/03-grading.md`](spec/03-grading.md) 的 G×S 表判断你当前任务的监察等级，并按 G → H 耦合下限校验部署方 harness 是否达到该档所需的成熟度；
-3. 读 [`spec/13-boundaries.md`](spec/13-boundaries.md) 的 43 条未解问题，挑一条开 Issue 讨论。
+3. 读 [`spec/13-boundaries.md`](spec/13-boundaries.md) 的 43 条未解问题，挑一条开 Issue 讨论；
+4. **跑起来看**：审计面板四条命令（导出 → 链验证 → 重放 → 起面板），浏览器查看每条治理规则的真实拦截记录与证据分级——见下文「不止复现：审计面板」。
 
 按角色深入：
 1. **部署方**：读 [`spec/01-principles.md`](spec/01-principles.md) → [`spec/03-grading.md`](spec/03-grading.md) → [`spec/02-architecture.md`](spec/02-architecture.md)，按 G×S 分级确定监察强度；
@@ -237,7 +238,7 @@ node --experimental-transform-types tools/audit-panel/server/server.mts
 
 见 [`CITATION.cff`](CITATION.cff)。
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.60.1). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.60.2). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## 质量保障（自指验证）
 
