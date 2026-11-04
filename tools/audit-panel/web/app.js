@@ -5,11 +5,68 @@
 const view = document.getElementById('view');
 const foot = document.getElementById('foot');
 const verifybar = document.getElementById('verifybar');
-const state = { meta: null, events: [], evidence: null, boundaries: null, verification: null, orphanSeqs: new Set() };
+const state = { meta: null, events: [], evidence: null, boundaries: null, verification: null, orphanSeqs: new Set(), filter: { rule: '', cat: '', scen: '' } };
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const gradeBadge = (g) => `<span class="badge g${esc(g)}">效能 ${esc(g)} 级</span>`;
 const fmtKV = (obj) => !obj ? '—' : Object.entries(obj).map(([k, v]) => `${esc(k)}=${esc(v)}`).join('；');
+
+// ─────────────────────────────────────────────
+// 通用：链可视化 + 筛选条 + 展开折叠 + URL 锚点
+// ─────────────────────────────────────────────
+
+/**
+ * 链可视化：seq 方块按事件类型着色，箭头表示 prev 指针方向（seq N 的哈希覆盖 N-1）。
+ * 悬停显示链哈希前缀；点击跳转到对应事件卡片（URL 锚点直达）。
+ * 链校验状态来自 /api/verification 的启动时快照——PASS 绿 / FAIL 红。
+ */
+function chainViz(events, prefix, chainOk) {
+  const boxes = events.map((e) => {
+    const cls = e.event_type === 'ledger_signal' ? 'ck sig' : 'ck deny';
+    const h = String(e.chain_hash || '').slice(0, 10);
+    const p = String(e.chain_prev || '').slice(0, 10);
+    return `<span class="${cls}" title="seq ${e.seq} · ${esc(e.category)}&#10;hash ${esc(h)}…&#10;prev ${esc(p || '(首条)')}…" onclick="jumpTo('${prefix}','${e.seq}')">${e.seq}</span>`;
+  }).join('<span class="cl">→</span>');
+  return `<div class="chainviz"><span class="v-time">审计链：</span>${boxes}<span class="${chainOk ? 'v-ok' : 'v-bad'}">链已校验</span></div>`;
+}
+
+/** 事件过滤（rule_id / category / 场景三维度；V1 按 source_scenario，V2 按 session_id）。 */
+function filteredEvents(events) {
+  const f = state.filter;
+  return events.filter((e) =>
+    (!f.rule || e.rule_id === f.rule) &&
+    (!f.cat || e.category === f.cat) &&
+    (!f.scen || (e.source_scenario ?? e.session_id) === f.scen));
+}
+
+function setFilter(key, val) {
+  state.filter[key] = val;
+  const active = document.querySelector('nav button.active');
+  const v = active ? active.dataset.view : 'timeline';
+  if (v === 'timeline') renderTimeline();
+  else if (v === 'realagent') renderRealAgent();
+}
+
+function toggleAll(prefix, open) {
+  document.querySelectorAll(`section.ev[data-prefix="${prefix}"]`).forEach((el) => el.classList.toggle('open', open));
+}
+
+/** 跳转到某条事件卡片（链图点击 / URL 锚点共用）。 */
+function jumpTo(prefix, seq) {
+  const el = document.getElementById(`${prefix}${seq}`);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    el.classList.add('open');
+    history.replaceState(null, '', `#${prefix}${seq}`);
+  }
+}
+
+/** 页面加载 / hash 变化时应用锚点（#e5 = V1 seq5，#r3 = V2 seq3）。 */
+function applyHash() {
+  const m = location.hash.match(/^#([er])(\d+)$/);
+  if (m) jumpTo(m[1], m[2]);
+}
+window.addEventListener('hashchange', applyHash);
 
 // ─────────────────────────────────────────────
 // 当场验证条：loadVerification（服务启动时快照，非实时）
@@ -54,18 +111,29 @@ async function loadTimeline() {
 
 function renderTimeline() {
   const m = state.meta;
-  const denyN = state.events.filter((e) => e.event_type === 'entry_deny' || e.event_type === 'exit_reject').length;
-  const sigN = state.events.length - denyN;
+  const events = filteredEvents(state.events);
+  const denyN = events.filter((e) => e.event_type === 'entry_deny' || e.event_type === 'exit_reject').length;
+  const sigN = events.length - denyN;
+  const chainOk = !!(state.verification && state.verification.chain.ok);
   const html = [];
   html.push(`<div class="warn"><b>本时间线只包含被拦下的行为。</b>审计链仅记录拒绝（deny / reject / signal），放行不留痕——"为什么放过了某次调用"当前不可审计（边界 B2）。</div>`);
-  html.push(`<div style="color:var(--ink-3);font-size:12.5px;margin-bottom:10px;font-family:var(--mono)">session ${esc(m.session_id)} · ${denyN} 拦截 + ${sigN} 信号 = ${state.events.length} 条 · 时间戳 ${esc(m.ts_mode)}（合成值）· 点击行展开依据</div>`);
-  for (const e of state.events) {
+  html.push(chainViz(events, 'e', chainOk));
+  html.push(`<div class="filters">
+    <select onchange="setFilter('rule',this.value)">${[...new Set(state.events.map((e) => e.rule_id))].sort().map((r) => `<option value="${esc(r)}" ${state.filter.rule === r ? 'selected' : ''}>${esc(r)}</option>`).join('')}</select>
+    <select onchange="setFilter('cat',this.value)">${[...new Set(state.events.map((e) => e.category))].sort().map((c) => `<option value="${esc(c)}" ${state.filter.cat === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>
+    <select onchange="setFilter('scen',this.value)">${[...new Set(state.events.map((e) => e.source_scenario))].sort().map((s) => `<option value="${esc(s)}" ${state.filter.scen === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select>
+    <button class="mini" onclick="toggleAll('e',true)">展开全部</button>
+    <button class="mini" onclick="toggleAll('e',false)">折叠全部</button>
+    <span class="v-time">${events.length}/${state.events.length} 条 · session ${esc(m.session_id)} · 时间戳 ${esc(m.ts_mode)}（合成值）</span>
+  </div>`);
+
+  for (const e of events) {
     const cls = e.event_type === 'ledger_signal' ? 'signal' : 'deny';
     const badge = cls === 'signal' ? '<span class="badge signal">信号·未拦截</span>' : '<span class="badge deny">拦截</span>';
     const orphan = state.orphanSeqs.has(e.seq) ? '<span class="badge orphan">孤儿信号·无处置</span>' : '';
     html.push(`
-<section class="card ev ${cls}" data-seq="${e.seq}">
-  <div class="ev-head" onclick="this.parentElement.classList.toggle('open')">
+<section class="card ev ${cls}" id="e${e.seq}" data-prefix="e" data-seq="${e.seq}">
+  <div class="ev-head" onclick="toggleEv(this.parentElement)">
     <span class="seq">#${String(e.seq).padStart(2, '0')}</span>
     ${badge}${orphan}
     <span class="rule">${esc(e.rule_id)} ${esc(e.rule_name)}</span>
@@ -79,7 +147,7 @@ function renderTimeline() {
       <dt>规则依据</dt><dd>${esc(e.spec_ref)}</dd>
       <dt>效能依据</dt><dd>${gradeBadge(e.efficiency_grade)} ${esc(e.efficiency_basis)}</dd>
       <dt>重放规格</dt><dd>${e.replay ? `已随链落盘（kind=${esc(e.replay.kind)}，expect=${esc(e.replay.expect)}）——重放执行：rules/replay.mts` : '—'}</dd>
-      <dt>链位置</dt><dd>hash ${esc(String(e.chain_hash).slice(0, 16))}… ← prev ${esc(String(e.chain_prev).slice(0, 16))}…</dd>
+      <dt>链位置</dt><dd>hash ${esc(String(e.chain_hash).slice(0, 16))}… ← prev ${esc(String(e.chain_prev).slice(0, 16))}… · 锚点 <a href="#e${e.seq}" onclick="event.preventDefault();jumpTo('e','${e.seq}')">#e${e.seq}</a></dd>
     </dl>
     <div class="tc"><b>TC260 框架 3.0 附件 2 映射（G 级——支撑义务，不支撑效能）</b><br>
       措施：${e.tc260_measures.map(esc).join('；')}<br>风险：${e.tc260_risks.map(esc).join('；')}</div>
@@ -87,6 +155,17 @@ function renderTimeline() {
 </section>`);
   }
   view.innerHTML = html.join('');
+  applyHash();
+}
+
+/** 单卡片展开/折叠（同步 URL 锚点，不污染历史）。 */
+function toggleEv(card) {
+  card.classList.toggle('open');
+  const prefix = card.dataset.prefix;
+  const seq = card.dataset.seq;
+  if (prefix && seq) {
+    history.replaceState(null, '', card.classList.contains('open') ? `#${prefix}${seq}` : location.pathname);
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -206,10 +285,21 @@ async function loadRealAgent() {
 }
 
 function renderRealAgent() {
-  const { meta, events } = state.realagent;
+  const { meta, events: allEvents } = state.realagent;
+  const events = filteredEvents(allEvents);
+  const chainOk = !!(state.verification && state.verification.realagentVerify.ok);
   const html = [];
   html.push(`<div class="warn"><b>本视图的数据来自真实 LLM Agent（${esc(meta.llm.model)}）的行为，每次运行都不同——时间戳为真实时钟，事件不可重放。</b>这是自测性质的行为记录，不构成任何效能断言；它证明的是「三件套在真实 LLM 行为流上正常运行并留痕」。</div>`);
   html.push(`<div style="color:var(--ink-3);font-size:12.5px;margin-bottom:10px;font-family:var(--mono)">${meta.runs.map((r) => `${esc(r.scenario)}: ${r.turns}轮 / ${r.totalTokens}tok / deny ${r.denies} · reject ${r.rejects} · signal ${r.signals} → ${esc(r.finalOutcome)}`).join('　|　')}　|　合计 ${meta.event_count} 事件 · ${meta.total_tokens} tokens</div>`);
+  html.push(chainViz(events, 'r', chainOk));
+  html.push(`<div class="filters">
+    <select onchange="setFilter('rule',this.value)">${[...new Set(allEvents.map((e) => e.rule_id))].sort().map((r) => `<option value="${esc(r)}" ${state.filter.rule === r ? 'selected' : ''}>${esc(r)}</option>`).join('')}</select>
+    <select onchange="setFilter('cat',this.value)">${[...new Set(allEvents.map((e) => e.category))].sort().map((c) => `<option value="${esc(c)}" ${state.filter.cat === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select>
+    <select onchange="setFilter('scen',this.value)">${[...new Set(allEvents.map((e) => e.session_id))].sort().map((s) => `<option value="${esc(s)}" ${state.filter.scen === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select>
+    <button class="mini" onclick="toggleAll('r',true)">展开全部</button>
+    <button class="mini" onclick="toggleAll('r',false)">折叠全部</button>
+    <span class="v-time">${events.length}/${allEvents.length} 条</span>
+  </div>`);
 
   let lastSession = '';
   for (const e of events) {
@@ -220,8 +310,8 @@ function renderRealAgent() {
     }
     const badge = cls === 'signal' ? '<span class="badge signal">信号·未拦截</span>' : '<span class="badge deny">拦截</span>';
     html.push(`
-<section class="card ev ${cls}">
-  <div class="ev-head" onclick="this.parentElement.classList.toggle('open')">
+<section class="card ev ${cls}" id="r${e.seq}" data-prefix="r" data-seq="${e.seq}">
+  <div class="ev-head" onclick="toggleEv(this.parentElement)">
     <span class="seq">#${String(e.seq).padStart(2, '0')}</span>
     ${badge}
     <span class="rule">${esc(e.rule_id)} ${esc(e.rule_name)}</span>
@@ -235,6 +325,7 @@ function renderRealAgent() {
       <dt>效能依据</dt><dd>${gradeBadge(e.efficiency_grade)} ${esc(e.efficiency_basis)}</dd>
       <dt>可复现性</dt><dd><b>${esc(e.event_reproducibility)}</b>（LLM 输入不可重放；ts 为真实时钟）</dd>
       <dt>运行</dt><dd>provider=${esc(e.run.provider)} · model=${esc(e.run.model)}</dd>
+      <dt>锚点</dt><dd><a href="#r${e.seq}" onclick="event.preventDefault();jumpTo('r','${e.seq}')">#r${e.seq}</a></dd>
     </dl>
     <div class="tc"><b>TC260 框架 3.0 附件 2 映射（G 级——支撑义务，不支撑效能）</b><br>
       措施：${e.tc260_measures.map(esc).join('；')}<br>风险：${e.tc260_risks.map(esc).join('；')}</div>
