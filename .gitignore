@@ -24,3 +24,6 @@ desktop.ini
 
 # ── V2 real-agent：沙箱工作区（运行产物，不入库）────────
 tools/audit-panel/realagent/workspace/
+
+# ── V2 real-agent：运行历史归档（本地研究素材，不入库）────────
+tools/audit-panel/data/history/

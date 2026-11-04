@@ -25,7 +25,7 @@
  *   - S6（integrity-check-failed）的 integrityCheck 是注入钩子（框架默认恒真，G4 未闭合），
  *     重放仅验证"钩子返回 false 时分支可达且判定正确"，不证明真实完整性校验有效。
  *   - ledger_signal 是审计信号而非裁决，重放比的是信号 kind 序列；
- *     处置动作框架不存在（G5），故全部信号按孤儿报告。
+ *     处置动作框架不存在（G5；规范层已登记 spec/13 #44），故全部信号按孤儿报告。
  */
 
 import { readFileSync } from 'node:fs';
@@ -246,7 +246,7 @@ export function replayFile(file: string): ReplayFileResult {
   // —— 孤儿信号清单：记了但没人处理 ——
   const ledgerEvents = events.filter((e) => e.event_type === 'ledger_signal');
   // 处置事件的形态：框架中不存在（无 disposition / handled / resolved 类事件类型）。
-  // 若未来框架新增处置通道，这里必须同步，否则孤儿判定会永远为真。
+  // 若未来框架新增处置通道（spec/13 #44 落地时），这里必须同步，否则孤儿判定会永远为真。
   const DISPOSAL_TYPES = new Set<string>([]);
   const orphans = ledgerEvents
     .filter((e) => !DISPOSAL_TYPES.has(String(e.event_type)))
@@ -287,7 +287,7 @@ function main(): void {
 
   out.push('');
   out.push(`  重放一致性      ${r.matched}/${r.total}${r.matched === r.total ? '  ✓' : '  ✗'}`);
-  out.push(`  孤儿信号        ${orphans.length} 条（处置事件 0 条——框架不存在处置通道，PRODUCTION-GAPS G5）`);
+  out.push(`  孤儿信号        ${orphans.length} 条（处置事件 0 条——框架不存在处置通道，PRODUCTION-GAPS G5；规范层已登记 spec/13 #44）`);
   for (const o of orphans) {
     out.push(`    [seq ${String(o.seq).padStart(2)}] ${o.category} — ${o.detail.slice(0, 60)}…`);
   }

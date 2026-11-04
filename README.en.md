@@ -1,6 +1,6 @@
 # AI Execution & Oversight Framework
 
-[![Version](https://img.shields.io/badge/version-2.60.2-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.61.0-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (134/212)](https://img.shields.io/badge/evidence-B_135%2F213-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -120,9 +120,9 @@ Per [`CLASSIFICATION.md`](CLASSIFICATION.md), this repository has three levels:
 
 ## Status
 
-- Current version: v2.60.2 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
+- Current version: v2.61.0 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
 - Maintenance status: **does not claim "built"; claims only "maintained"** — an open cheating set can only be countered continuously
-- **Honest boundary**: 43 open problems explicitly registered (see [`spec/13-boundaries.md`](spec/13-boundaries.md)) — this framework's honest boundary and a problem list for researchers; includes the system's largest engineering gap, "decentralized-swarm countermeasures"
+- **Honest boundary**: 44 open problems explicitly registered (see [`spec/13-boundaries.md`](spec/13-boundaries.md)) — this framework's honest boundary and a problem list for researchers; includes the system's largest engineering gap, "decentralized-swarm countermeasures"
 - Change history: see [`CHANGELOG.md`](CHANGELOG.md)
 
 ## Quick start
@@ -130,14 +130,14 @@ Per [`CLASSIFICATION.md`](CLASSIFICATION.md), this repository has three levels:
 **Quick tour (about 5 minutes)**:
 1. Read the six general principles in [`spec/01-principles.md`](spec/01-principles.md);
 2. Use the G×S table in [`spec/03-grading.md`](spec/03-grading.md) to determine the oversight grade of your current task, and check against the G → H coupling floor whether the deployer harness reaches the maturity required by that grade;
-3. Read the 43 open problems in [`spec/13-boundaries.md`](spec/13-boundaries.md), pick one, and open an issue to discuss;
+3. Read the 44 open problems in [`spec/13-boundaries.md`](spec/13-boundaries.md), pick one, and open an issue to discuss;
 4. **Run it**: the audit panel's four commands (export → chain verification → replay → launch panel), then browse the real interception records and evidence grades of every governance rule in the browser — see "Beyond replication: the audit panel" below.
 
 By role:
 1. **Deployer**: read [`spec/01-principles.md`](spec/01-principles.md) → [`spec/03-grading.md`](spec/03-grading.md) → [`spec/02-architecture.md`](spec/02-architecture.md), determine oversight intensity by G×S grading;
 2. **Enterprise procurement / compliance**: read the four coercion anchors and policy basis in [`spec/12-enforcement.md`](spec/12-enforcement.md) (Article 20 of the *Cybersecurity Law*, TC260 2.0, the *Labeling Measures*), including the compliance mapping of G×S grading ↔ domestic filing/labeling requirements — the entry point for insurers / auditors;
 3. **Standards organizations**: read the standard mappings and gap analysis in [`spec/12-enforcement.md`](spec/12-enforcement.md);
-4. **Researchers**: reproduce the evidence chain from [`REFERENCES.md`](REFERENCES.md), or select a topic from the 43 open problems in [`spec/13-boundaries.md`](spec/13-boundaries.md);
+4. **Researchers**: reproduce the evidence chain from [`REFERENCES.md`](REFERENCES.md), or select a topic from the 44 open problems in [`spec/13-boundaries.md`](spec/13-boundaries.md);
 5. **Security researchers**: starting from the swarm-governance signals in [`spec/07-swarm-governance.md`](spec/07-swarm-governance.md), submit an [`evidence-correction`](https://github.com/ZhangRui987/agent-oversight-framework/issues/new?template=evidence-correction.yml) issue or open an issue to discuss attack paths.
 
 ### Zero-dependency replication: rerun the experiments with one command (no API keys)
@@ -240,7 +240,7 @@ This repository governs itself by its own specification (meta-governance):
 
 See [`CITATION.cff`](CITATION.cff).
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.60.2). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.61.0). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## Quality assurance (self-referential verification)
 
