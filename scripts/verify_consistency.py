@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """发布一致性校验（推送前 / pre-commit 用）。
 
-校验项（共 46 项 = 46 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
+校验项（共 47 项 = 47 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
   1. 全仓库无 [TABLE START/END] 伪标记
   2. 所有 Markdown 表格表头后都有 |---| 分隔行
   3. 表格每行列数与分隔行一致
@@ -96,6 +96,14 @@
          机制：逐对提取 ^#+ 标题层级序列比对；已实测漂移的 5 对按完整序列指纹
          登记入豁免表（诚实公示而非粉饰），修复一对删一对；未登记的新漂移即 FAIL。
          5 对已于 v2.52.12 全部清偿（豁免表清零），双语一致性自此全量门禁守护。
+  47. 处置台账链可重算 + 篡改检出（处置通道阶段 1 新增）
+      —— 教训来源：处置通道阶段 1（spec/13 #44 的工具侧补口）DoD 写「第三方可独立重算」，
+         若只提供 JS 验证器，等于只证明「同一实现能验自己」。本项把四件事钉死：
+         ① Node 生成 20 行样本 → Python 参照实现验链 PASS（键序/分隔符/非 ASCII 任一漂移即失败）；
+         ② 改任意一行内容 → Python 与 Node 必须 FAIL（链有防护力）；
+         ③ 打乱一行键序 → 两端必须 FAIL（键序冻结不是文档口号）；
+         ④ 入库台账 tools/disposition/data/disposition.jsonl 可被 Python 独立验链。
+         与第 40/44/46 项同构：任何可验证声明，要么生成、要么校验，不写第三种。
 
 用法：
   python scripts/verify_consistency.py [仓库根目录，默认脚本所在目录的上级]
@@ -106,8 +114,10 @@ import datetime
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if len(sys.argv) > 1:
@@ -1058,6 +1068,115 @@ check(
     "面板入库产物 meta.framework.version 与 VERSION 一致（v2.60.0 新增）",
     not _p46_bad,
     "; ".join(_p46_bad),
+)
+
+# ── 47. 处置台账链可重算 + 篡改检出（处置通道阶段 1 新增）──────────
+# 教训来源：处置通道阶段 1 的 DoD 写「第三方可独立重算」，但只提供 JS 验证器等于
+# 只证明「同一实现能验自己」。本项把三件事同时钉死：
+#   ① Node 生成 20 行样本 → Python 参照实现验链 PASS（序列化规格漂移即失败）
+#   ② 篡改任意一行的内容 → Python 必须 FAIL（链有防护力，不是常量比对）
+#   ③ 打乱某行键序 → 两端必须 FAIL（键序冻结不是文档口号）
+#   ④ 入库台账 tools/disposition/data/disposition.jsonl → Python 验链 PASS
+# 与第 40/44/46 项同构：任何可验证声明，要么生成、要么校验，不写第三种。
+_p47_dir = os.path.join(ROOT, "tools", "disposition")
+_p47_py = os.path.join(_p47_dir, "verify_chain.py")
+_p47_js = os.path.join(_p47_dir, "verify-chain.mts")
+_p47_gen = os.path.join(_p47_dir, "gen-sample.mts")
+_p47_data = os.path.join(_p47_dir, "data", "disposition.jsonl")
+_p47_bad = []
+
+
+def _p47_run(cmd):
+    return subprocess.run(
+        cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=ROOT, timeout=120,
+    )
+
+
+def _p47_detail(proc):
+    for _ln in proc.stdout.splitlines():
+        _t = _ln.strip()
+        if _t.startswith("[disp") or _t.startswith("失败项"):
+            return _t
+    _tail = [l.strip() for l in (proc.stdout + "\n" + proc.stderr).splitlines() if l.strip()]
+    return _tail[-1][:160] if _tail else "无输出"
+
+
+_p47_tmp = tempfile.mkdtemp(prefix="aof-disposition-")
+try:
+    _p47_missing = [n for n, p in (("verify_chain.py", _p47_py), ("verify-chain.mts", _p47_js),
+                                   ("gen-sample.mts", _p47_gen)) if not os.path.isfile(p)]
+    if _p47_missing:
+        _p47_bad.append("处置台账模块缺失：%s" % "、".join(_p47_missing))
+    else:
+        _p47_sample = os.path.join(_p47_tmp, "sample.jsonl")
+        _p47_gen_proc = _p47_run(["node", "--experimental-transform-types", _p47_gen,
+                                  "--out=" + _p47_sample, "--force"])
+        if _p47_gen_proc.returncode != 0:
+            _p47_bad.append("Node 生成 20 行样本失败：%s" % _p47_detail(_p47_gen_proc))
+        else:
+            # ① 双语言一致
+            _p47_py_ok = _p47_run([sys.executable, _p47_py, _p47_sample])
+            if _p47_py_ok.returncode != 0:
+                _p47_bad.append("Python 验链未通过（序列化规格漂移？）：%s" % _p47_detail(_p47_py_ok))
+            _p47_js_ok = _p47_run(["node", "--experimental-transform-types", _p47_js,
+                                   "--file=" + _p47_sample])
+            if _p47_js_ok.returncode != 0:
+                _p47_bad.append("Node 验链未通过：%s" % _p47_detail(_p47_js_ok))
+
+            with open(_p47_sample, encoding="utf-8") as _f:
+                _p47_lines = [l for l in _f.read().splitlines() if l.strip()]
+
+            # ② 内容篡改必须检出
+            _p47_tampered = os.path.join(_p47_tmp, "tampered.jsonl")
+            _p47_row = json.loads(_p47_lines[4])
+            _p47_row["rationale"] = _p47_row["rationale"] + "（已篡改）"
+            _p47_lines[4] = json.dumps(_p47_row, ensure_ascii=False, separators=(",", ":"))
+            with open(_p47_tampered, "w", encoding="utf-8") as _f:
+                _f.write("\n".join(_p47_lines) + "\n")
+            _p47_tp = _p47_run([sys.executable, _p47_py, _p47_tampered])
+            _p47_tj = _p47_run(["node", "--experimental-transform-types", _p47_js,
+                                "--file=" + _p47_tampered])
+            if _p47_tp.returncode == 0:
+                _p47_bad.append("Python 未检出内容篡改（链无防护力）")
+            if _p47_tj.returncode == 0:
+                _p47_bad.append("Node 未检出内容篡改（链无防护力）")
+
+            # ③ 键序破坏必须检出（值不变，只换键序）
+            _p47_reordered = os.path.join(_p47_tmp, "reordered.jsonl")
+            _p47_row2 = json.loads(_p47_lines[5]) if len(_p47_lines) > 5 else {}
+            if _p47_row2:
+                _p47_rev = {k: _p47_row2[k] for k in reversed(list(_p47_row2.keys()))}
+                _p47_lines2 = list(_p47_lines)
+                _p47_lines2[5] = json.dumps(_p47_rev, ensure_ascii=False, separators=(",", ":"))
+                with open(_p47_reordered, "w", encoding="utf-8") as _f:
+                    _f.write("\n".join(_p47_lines2) + "\n")
+                _p47_rp = _p47_run([sys.executable, _p47_py, _p47_reordered])
+                _p47_rj = _p47_run(["node", "--experimental-transform-types", _p47_js,
+                                    "--file=" + _p47_reordered])
+                if _p47_rp.returncode == 0:
+                    _p47_bad.append("Python 未检出键序破坏（键序未真正冻结）")
+                if _p47_rj.returncode == 0:
+                    _p47_bad.append("Node 未检出键序破坏（键序未真正冻结）")
+
+    # ④ 入库台账可被 Python 独立验链
+    if not os.path.isfile(_p47_data):
+        _p47_bad.append("入库台账缺失：tools/disposition/data/disposition.jsonl")
+    else:
+        _p47_committed = _p47_run([sys.executable, _p47_py, _p47_data])
+        if _p47_committed.returncode != 0:
+            _p47_bad.append("入库台账 Python 验链未通过：%s" % _p47_detail(_p47_committed))
+except FileNotFoundError:
+    _p47_bad.append("未找到 node——本项需 node ≥ 22 生成样本（CI consistency job 已配置 Setup Node）")
+except subprocess.TimeoutExpired:
+    _p47_bad.append("处置台账验链超时（120s）")
+finally:
+    shutil.rmtree(_p47_tmp, ignore_errors=True)
+
+check(
+    "处置台账链可重算 + 篡改检出（Node 生成 → Python 验链 → 篡改/乱序必 FAIL；处置通道阶段 1 新增）",
+    not _p47_bad,
+    "; ".join(_p47_bad),
 )
 
 # ── 汇总 ─────────────────────────────────────

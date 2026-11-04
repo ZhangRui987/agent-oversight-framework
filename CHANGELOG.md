@@ -1,6 +1,21 @@
 # 变更日志
 
 
+## v2.62.0（2026-11-04）：处置通道阶段 1 落地（工具侧独立台账 + 门禁 47 项）
+
+- **背景与定位**：#44（v2.61.0 登记）指出四信号产出 `ledger_signal` 后无任何消费组件。本轮落地其**工具侧最小闭环**——新增独立模块 `tools/disposition/`，框架 `index.ts` **零改动**（`git diff` 为空；14 处独立审计实例与 CI 基线不动），处置事件进框架事件链属阶段 2。
+- **链规则与跨语言可重算（本轮最易失守的一处）**：`sha256(prev + "|" + JSON.stringify(body))`，13 字段键序在 `FIELD_ORDER` 常量冻结、`bodyOf()` 按冻结序重建（不依赖调用方对象顺序）。Python 参照实现强制 `ensure_ascii=False, separators=(',',':')`——v1 设计稿只写「第三方可独立重算」而不冻结序列化，JS `JSON.stringify` 与 Python `json.dumps` 默认的空格与非 ASCII 转义差异会让跨语言复算 100% 失败。实测两端逐字节一致；规格与实现逐条对应记录于模块 README §3.1/§3.2。
+- **模块构成**：`ledger.mts`（append-only 写入 / `disp_seq` 分配 / `supersedes` 同 target 校验 / `reviewed_by` 强制且不得等于 `actor` / 三态派生）/ `verify-chain.mts`（Node，八类检查）/ `verify_chain.py`（Python 纯标准库，八类检查逐条对齐）/ `gen-sample.mts`（20 行确定性样本，覆盖四动作、中文 rationale、空复核人、plan 字段、更正链）/ `demo-converge.mts`（孤儿收敛演示）/ `data/disposition.jsonl` / `README.md`。
+- **门禁第 47 项（46→47，七处声明同步）**：Node 生成 20 行样本 → Python 验链 PASS → 内容篡改必 FAIL → **键序破坏必 FAIL**（值不变只换顺序——「键序冻结」不能只写在文档里）→ 入库台账 Python PASS。项数声明同步 README 双语 / CONTRIBUTING 双语 / ci.yml 两处 / 脚本头注释。
+- **孤儿判定换轨**：`replay.mts` 删除 `DISPOSAL_TYPES` 空集，改为 **target 引用匹配**（`target_seq` + `target_chain_hash` 前 16 hex 双字段校验，不一致判「疑似错位引用」且不计入闭合）并派生三态；**台账缺失或链验证失败 ⇒ 全部按未处置**（失败安全，宁可多报孤儿不可假性闭合）；无台账旧产物行为与旧版逐字一致（3 条全未处置）。CLI 增 `--disposition=`。
+- **面板与报告联动**（只读消费，不写台账——监察与处置职责分离）：server 启动时验台账链 + 新增 `/api/disposition`；web 新增「处置台账」页签（孤儿数 / 三态分布 / 动作分布 / 自报时延 P50·P90 / 固定警示句 / 演示数据提示条），时间线按三态显示徽章；`report.mts` 增台账链验证行并改写「全部为孤儿信号」的边界注记。
+- **端到端演示（不得三条全闭合）**：V1 三条孤儿 → 2 已闭合 + 0 观察中 + 1 未处置（`route_to_human` 归**未处置**——转交人工不等于处置完成，否则「已转人工」会被读成已闭合，演示被读成 #44 已解）。
+- **产物重生成与引用有效性**：`export-events.mts` 重跑后 `events.jsonl` 仅 meta 行变化（`gates_count` 46→47），**事件行逐字节一致**，故演示台账的 `target_chain_hash` 引用仍有效；V2 产物未重跑（meta 自描述字段随版本联动更新，事件体不动）。
+- **诚实边界（随版本明示）**：#44 状态**仍为未解**，只补「阶段 1 已落地（工具侧独立台账）」注记——框架侧仍无处置事件类型，闭合要等 spec/10 条款化 + `index.ts` 事件类型扩展；`data/disposition.jsonl` 为**演示台账**（`actor=demo-operator`、rationale 以「演示数据」开头），非真实运维处置；`actor` 为自报标识不验真（E1/G4 族边界原样复现）；时延为自报值（处置 ts − 信号 ts），跨机时钟差未校正、不可验证。
+- **偏差登记 4 条**（不回改设计稿）：`route_to_human` 归未处置；面板用独立页签而非时间线内嵌；台账落 `tools/disposition/data/`；门禁额外增键序破坏反向测试。
+- 计数变化：门禁 46→47；未解仍 44；版本联动 v2.61.1→v2.62.0
+
+
 ## v2.61.1（2026-11-04）：Release 节奏机制化轮（仓外动作首次入机制）
 
 - **政策条款（CONTRIBUTING 双语「版本管理政策」节）**：minor（X.Y.0）推送后必须创建 GitHub Release（正文沿 CHANGELOG 条目）；patch 可选；v2.61.0 前历史不追（沿 v2.52.11「历史不追」先例）——把 v2.52.11「自本版起每版建发」的口头承诺升格为政策条款。

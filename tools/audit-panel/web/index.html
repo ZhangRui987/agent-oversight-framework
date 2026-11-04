@@ -75,6 +75,17 @@
   .v-bad { color: var(--red); font-weight: 600; }
   .v-time { color: var(--ink-3); }
   .badge.orphan { color: #6b21a8; background: #f3e8ff; }
+  .badge.closed { color: #166534; background: #dcfce7; }
+  .badge.observing { color: #92400e; background: #fef3c7; }
+  .metrics { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .metric { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; min-width: 112px; display: flex; flex-direction: column; }
+  .metric .n { font-size: 22px; font-weight: 700; font-family: var(--mono); line-height: 1.25; }
+  .metric .l { font-size: 11.5px; color: var(--ink-3); }
+  .metric.bad .n { color: var(--red); }
+  .metric.ok .n { color: var(--green); }
+  .metric.warnm .n { color: var(--orange); }
+  td.ok { color: var(--green); font-weight: 600; }
+  td.bad { color: var(--red); font-weight: 600; }
   .chainviz { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
   .ck { min-width: 30px; text-align: center; padding: 2px 7px; border-radius: 6px; font-family: var(--mono); font-size: 11px; cursor: pointer; border: 1px solid transparent; }
   .ck.deny { background: var(--red-bg); color: var(--red); }
@@ -94,6 +105,7 @@
   <nav>
     <button data-view="timeline" class="active">门禁时间线</button>
     <button data-view="realagent">real-agent 会话</button>
+    <button data-view="disposition">处置台账</button>
     <button data-view="evidence">证据卡</button>
     <button data-view="boundaries">诚实边界</button>
     <div class="spacer"></div>

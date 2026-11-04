@@ -1,6 +1,6 @@
 # Agent 行为审计面板（audit-panel）
 
-> 状态：**V1 + V2 real-agent 可用**（事件导出 / 独立链验证 / 重放校验 / Web 四视图 / CSV 全量导出 / LLM-in-the-loop / 启动时当场验证 / 审计报告）。
+> 状态：**V1 + V2 real-agent + 处置台账（阶段 1）可用**（事件导出 / 独立链验证 / 重放校验 / Web 五视图 / CSV 全量导出 / LLM-in-the-loop / 启动时当场验证 / 审计报告）。
 > 本目录是 [agent-oversight-framework](../../README.md) 的**参照实现附属工具**，不是独立项目。
 
 ---
@@ -18,6 +18,7 @@
 | **看效果**（clone 下来跑起来看看） | 命令 ① + ④，浏览器四个标签页 | 否 | 否 |
 | **独立复核**（不信产物，自己验证——复现者 / 评审者） | 命令 ② + ③，外加重跑 ① 后 `md5sum` 与 git 内产物比对；有出入走主仓 `independent-replication` Issue 模板 | 否 | 否 |
 | **出审计材料**（要交报告 / 进 Excel） | 命令 ④ 起服务 → 面板「导出 CSV」（V1+V2 全量 20 条）→ `/report` 页面 Ctrl+P 存 PDF | 否 | 否 |
+| **登记处置 / 看孤儿是否收敛** | `tools/disposition/ledger.mts append` 追加处置 → 面板「处置台账」标签页 | 否 | 否 |
 | **跑真实 LLM 会话**（看三件套拦真 Agent） | `realagent/runner.mts`（四场景）→ `verify-realagent.mts`（静态复核）→ 面板「real-agent 会话」标签 | **是** | 是 |
 | **改代码后回归** | CLI 三件（①②③）+ 主仓 `python scripts/verify_consistency.py` | 否 | 否 |
 
@@ -33,11 +34,15 @@ node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts 
 # 3) 重放校验（对每条拦截独立重执行规则，比对日志裁决——审计与看板的分界线）
 node --experimental-transform-types tools/audit-panel/rules/replay.mts
 
-# 4) 起面板（浏览器打开 http://127.0.0.1:7727；含 V1 与 V2 两个数据视图）
+# 4) 起面板（浏览器打开 http://127.0.0.1:7727；含 V1 / V2 / 处置台账三个数据视图）
 node --experimental-transform-types tools/audit-panel/server/server.mts
+
+# 5) 处置台账（阶段 1：工具侧补口。框架侧仍无处置通道，spec/13 #44 未解）
+python tools/disposition/verify_chain.py                                         # 独立验链（Python 参照实现）
+node --experimental-transform-types tools/disposition/demo-converge.mts --force   # 演示：V1 三条孤儿如何收敛
 ```
 
-第二条验证**文件没被改过**；第三条验证**日志说的是否为真**；第四条把前两步的成果变成可看、可导出的界面。四条命令均零安装、不联网。
+第二条验证**文件没被改过**；第三条验证**日志说的是否为真**；第四条把前两步的成果变成可看、可导出的界面；第五条给「记了之后谁管」一个可核查的载体。上述命令均零安装、不联网。
 
 ## V2 real-agent：接一个真实 LLM（可选，需 API key）
 
@@ -94,8 +99,12 @@ md5sum tools/audit-panel/data/events.jsonl   # 应与上一次相同
    注意区分：`ExitGuard.integrityCheck` 的"占位钩子、默认恒真"属于**工具结果完整性（E5）**，与审计链是两件事。
 2. **审计链只记录拒绝，放行不留痕。** 只在 deny/reject 分支 `append`；allow/accept 不写事件。
    因此本文件不是完整会话，而是"全部被拦下的行为"——"为什么放过了某次调用"当前不可审计。
-3. **资源账本的信号全部是孤儿信号。** 框架不提供任何处置通道（不拦截、不阻断）。spec/10 的设计取向正是"审计而非拦截"，
-   但这也意味着每条信号都"记了但没人处置"。**处置通道缺口已登记为 [spec/13 #44](../../spec/13-boundaries.md) 未解问题**（处置 API / 处置台账 / 处置时限义务的最小形态），落地前孤儿清单作为诚实边界持续展示。
+3. **资源账本信号默认是孤儿；工具侧台账可登记处置，但不构成闭合。** 框架不提供任何处置通道（不拦截、不阻断），spec/10 的设计取向正是"审计而非拦截"，
+   这也意味着每条信号都"记了但没人处置"。**处置通道缺口已登记为 [spec/13 #44](../../spec/13-boundaries.md) 未解问题**（处置 API / 处置台账 / 处置时限义务的最小形态）。
+   阶段 1 在 [`tools/disposition/`](../disposition/README.md) 提供**独立**台账（不放进面板，避免监察者记录自己的处置）：append-only + sha256 链，
+   动作枚举仅 `confirm_false_positive` / `escalate` / `route_to_human` / `park_for_observation`——**不含任何阻断或扣分动作**。
+   三条边界不得省略：① **处置记录存在 ≠ 处置有效**（`confirm_false_positive` 可以一键关掉任何信号，孤儿归零不等于缺口已解）；
+   ② 处置时延 `ts` 为**自报值**，不可验证；③ **框架侧仍无处置事件类型，#44 未闭合**，本台账只是工具侧补口。
 4. **时间戳是合成值。** 落盘 `ts = BASE_TS + seq*1000`，用于保证逐字节可复现；不能据此推断真实发生时刻或间隔。
 5. **契约字段有一半是导出器补写的。** 框架 `AuditEvent` 只有 `{ type, data, ts }`；
    `session_id` / `rule_id` / `spec_ref` / `tc260_*` 均为按映射表补写的元数据。
@@ -147,7 +156,9 @@ md5sum tools/audit-panel/data/events.jsonl   # 应与上一次相同
 - 判定输入（白名单、策略声明、预算、结果）由导出器写入每条事件的 `replay` 字段并**随链落盘**——重放不靠"猜当时的配置"，篡改重放输入同样会被链校验检出。
 - 策略谓词不可序列化，契约里是声明式描述（`forbidden-substring` 等），重放器按声明重建。
 - 反向测试：把 seq 1 的 category 篡改为 `config-review-fail`，重放立即 MISMATCH（日志 vs 重执行）并 exit 1。
-- 已知边界：S6 的 `integrityCheck` 是注入钩子（框架默认恒真，G4 未闭合），重放仅验证分支可达性；`ledger_signal` 按信号序比对，且全部按**孤儿信号**报告（框架不存在处置通道，G5）。
+- 已知边界：S6 的 `integrityCheck` 是注入钩子（框架默认恒真，G4 未闭合），重放仅验证分支可达性；`ledger_signal` 按信号序比对。
+  孤儿判定自阶段 1 起改为 **target 引用匹配**（`target_seq` + `target_chain_hash` 前 16 位），并派生三态（未处置 / 观察中 / 已闭合）；
+  台账不存在或链校验失败时**全部按未处置报告**（宁可多报孤儿，不用不可信记录掩盖缺口）。
 
 ## 目录
 
@@ -166,15 +177,28 @@ tools/audit-panel/
 │   ├── scenarios.mts       ✅ 四个诱导场景（N1 越权 / N2 预算挤压 / N3 记忆 / N4 泄密）
 │   └── workspace/          （运行沙箱，产物不入 git）
 ├── server/
-│   └── server.mts          ✅ node:http 单文件（5 只读端点：timeline / realagent / evidence / boundaries / export）
+│   └── server.mts          ✅ node:http 单文件（6 只读端点：timeline / realagent / disposition / evidence / boundaries / export）
 ├── web/
-│   ├── index.html          ✅ 四视图单页（时间线 / real-agent 会话 / 证据卡 / 诚实边界）
+│   ├── index.html          ✅ 五视图单页（时间线 / real-agent 会话 / 处置台账 / 证据卡 / 诚实边界）
 │   └── app.js              ✅ loadXxx / renderXxx 配对模式，零框架
 ├── data/
 │   ├── events.jsonl        ✅ V1 产物（9 事件，确定性，入库作 golden）
 │   └── realagent-events.jsonl ✅ V2 产物（LLM-in-the-loop，wall-clock，不可复现，meta 声明数据类别）
 ├── mapping/                ⬜ 条款映射已抽至 rules/rule-map.mts（mapping/ 目录预留，暂无独立文件）
 └── README.md
+```
+
+处置台账**不在面板目录内**（职责分离：面板是展示与重放，台账是写入口），位于仓库级 `tools/disposition/`：
+
+```
+tools/disposition/
+├── ledger.mts              ✅ 台账核心（键序冻结 / disp_seq 分配 / supersedes 更正 / 字段校验 / 三态派生）
+├── verify-chain.mts        ✅ Node 验链（键序 · 链重算 · 序号连续 · 复核与更正规则）
+├── verify_chain.py         ✅ Python 参照实现（纯标准库；第三方可独立复算）
+├── gen-sample.mts          ✅ 20 行固定样本（门禁第 47 项的双语言夹具）
+├── demo-converge.mts       ✅ 端到端演示（V1 三条孤儿 → 2 闭合 + 1 未闭合）
+├── data/disposition.jsonl  ✅ 演示台账（actor 以 demo- 标注，非真实运维处置）
+└── README.md               ✅ 链序列化规格 + 动作语义 + 边界
 ```
 
 ## 未实现（不要在别处声称已实现）

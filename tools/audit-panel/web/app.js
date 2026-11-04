@@ -5,7 +5,7 @@
 const view = document.getElementById('view');
 const foot = document.getElementById('foot');
 const verifybar = document.getElementById('verifybar');
-const state = { meta: null, events: [], evidence: null, boundaries: null, verification: null, orphanSeqs: new Set(), filter: { rule: '', cat: '', scen: '' } };
+const state = { meta: null, events: [], evidence: null, boundaries: null, verification: null, disposition: null, orphanSeqs: new Set(), signalStates: new Map(), filter: { rule: '', cat: '', scen: '' } };
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const gradeBadge = (g) => `<span class="badge g${esc(g)}">效能 ${esc(g)} 级</span>`;
@@ -79,13 +79,22 @@ async function loadVerification() {
     const v = await r.json();
     state.verification = v;
     state.orphanSeqs = new Set(v.replay.orphans.map((o) => o.seq));
+    state.signalStates = new Map((v.replay.signals || []).map((s) => [s.seq, s]));
     const mark = (ok) => ok ? '<span class="v-ok">✓ PASS</span>' : '<span class="v-bad">✗ FAIL</span>';
+    const d = v.disposition || { present: false, ok: false, rows: 0 };
+    const dispMark = !d.present
+      ? '<span class="v-time">未创建（全部信号按未处置）</span>'
+      : `${mark(d.ok)} <span class="v-time">${d.rows} 条处置记录</span>`;
     verifybar.className = 'verifybar';
     verifybar.innerHTML =
       `<span class="v">落盘链 ${mark(v.chain.ok)} <span class="v-time">${v.chain.eventCount} 事件重算一致</span></span>` +
       `<span class="v">重放 ${mark(v.replay.ok)} <span class="v-time">${v.replay.matched}/${v.replay.total} MATCH</span></span>` +
+      `<span class="v">处置台账 ${dispMark}</span>` +
       `<span class="v">V2 静态复核 ${mark(v.realagentVerify.ok)} <span class="v-time">${v.realagentVerify.eventCount} 事件</span></span>` +
       `<span class="v v-time">启动时快照 ${esc(v.verifiedAt)} · 独立复核：verify-chain / replay / verify-realagent</span>`;
+    // 时间线可能先于验证返回而渲染（徽章依赖三重态）：到达后补一次渲染，避免首屏缺徽章。
+    const active = document.querySelector('nav button.active');
+    if (active && active.dataset.view === 'timeline' && state.events.length) renderTimeline();
   } catch (e) {
     verifybar.className = 'verifybar';
     verifybar.innerHTML = `<span class="v-bad">✗ 当场验证失败：${esc(e.message)}</span>`;
@@ -109,6 +118,19 @@ async function loadTimeline() {
   }
 }
 
+/**
+ * 处置状态徽章（三态）。
+ * route_to_human 归入「已转人工·未闭合」——转交不等于处置完成，避免被读成已闭合。
+ */
+function dispositionBadge(seq) {
+  const s = state.signalStates.get(seq);
+  if (!s) return '';
+  if (s.state === 'closed') return `<span class="badge closed">已闭合 · disp ${esc(s.disp_seq)}</span>`;
+  if (s.state === 'observing') return `<span class="badge observing">观察中 · disp ${esc(s.disp_seq)}</span>`;
+  if (s.disp_seq) return '<span class="badge orphan">已转人工 · 未闭合</span>';
+  return '<span class="badge orphan">孤儿信号 · 未处置</span>';
+}
+
 function renderTimeline() {
   const m = state.meta;
   const events = filteredEvents(state.events);
@@ -130,7 +152,7 @@ function renderTimeline() {
   for (const e of events) {
     const cls = e.event_type === 'ledger_signal' ? 'signal' : 'deny';
     const badge = cls === 'signal' ? '<span class="badge signal">信号·未拦截</span>' : '<span class="badge deny">拦截</span>';
-    const orphan = state.orphanSeqs.has(e.seq) ? '<span class="badge orphan">孤儿信号·无处置</span>' : '';
+    const orphan = cls === 'signal' ? dispositionBadge(e.seq) : '';
     html.push(`
 <section class="card ev ${cls}" id="e${e.seq}" data-prefix="e" data-seq="${e.seq}">
   <div class="ev-head" onclick="toggleEv(this.parentElement)">
@@ -147,6 +169,7 @@ function renderTimeline() {
       <dt>规则依据</dt><dd>${esc(e.spec_ref)}</dd>
       <dt>效能依据</dt><dd>${gradeBadge(e.efficiency_grade)} ${esc(e.efficiency_basis)}</dd>
       <dt>重放规格</dt><dd>${e.replay ? `已随链落盘（kind=${esc(e.replay.kind)}，expect=${esc(e.replay.expect)}）——重放执行：rules/replay.mts` : '—'}</dd>
+      ${e.event_type === 'ledger_signal' ? `<dt>处置状态</dt><dd>${esc((state.signalStates.get(e.seq) || {}).note || '—')}<br><span class="v-time">台账：tools/disposition/data/disposition.jsonl（工具侧补口，非框架处置通道）</span></dd>` : ''}
       <dt>链位置</dt><dd>hash ${esc(String(e.chain_hash).slice(0, 16))}… ← prev ${esc(String(e.chain_prev).slice(0, 16))}… · 锚点 <a href="#e${e.seq}" onclick="event.preventDefault();jumpTo('e','${e.seq}')">#e${e.seq}</a></dd>
     </dl>
     <div class="tc"><b>TC260 框架 3.0 附件 2 映射（G 级——支撑义务，不支撑效能）</b><br>
@@ -336,10 +359,105 @@ function renderRealAgent() {
 }
 
 // ─────────────────────────────────────────────
+// 处置台账：loadDisposition / renderDisposition
+// 数据源 /api/disposition（只读消费 tools/disposition/ 产物）
+// ─────────────────────────────────────────────
+
+async function loadDisposition() {
+  view.innerHTML = '<div class="loading">加载处置台账…</div>';
+  try {
+    const r = await fetch('/api/disposition');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    state.disposition = await r.json();
+    renderDisposition();
+  } catch (e) {
+    view.innerHTML = `<div class="err">处置台账加载失败：${esc(e.message)}</div>`;
+  }
+}
+
+const ACTION_LABEL = {
+  confirm_false_positive: '判为误报（关闭信号）',
+  escalate: '升级（改变处置等级）',
+  route_to_human: '转人工（未闭合）',
+  park_for_observation: '挂起观察',
+};
+
+function fmtLatency(ms) {
+  if (ms === null || ms === undefined) return '—';
+  if (ms < 0) return `${Math.round(ms / 60000)} 分钟（时钟倒挂）`;
+  const h = Math.floor(ms / 3600000);
+  const m = Math.round((ms % 3600000) / 60000);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+function renderDisposition() {
+  const d = state.disposition;
+  const chainTxt = !d.present
+    ? '台账未创建'
+    : d.chainOk
+      ? `链 PASS（${d.rows} 条，其中被更正 ${d.superseded} 条）`
+      : '链 FAIL（内容不可采信，全部信号按未处置处理）';
+  const isDemo = (d.entries || []).some((e) => String(e.actor).startsWith('demo-'));
+  const html = [];
+
+  html.push(`<div class="warn"><b>处置记录存在 ≠ 处置有效；本页时延为自报值，不可验证。</b><br>${esc(d.boundary)}</div>`);
+  if (isDemo) {
+    html.push(`<div class="gap"><b>当前台账含演示数据：</b>actor 以 <code>demo-</code> 开头、rationale 以「演示数据」开头的记录，用于演示孤儿清单如何收敛，<b>不是真实运维处置</b>。</div>`);
+  }
+  if (d.warning) html.push(`<div class="err">${esc(d.warning)}</div>`);
+
+  html.push(`<div class="metrics">
+    <div class="metric"><span class="n">${d.counts.total}</span><span class="l">账本信号</span></div>
+    <div class="metric bad"><span class="n">${d.counts.unhandled}</span><span class="l">未处置（孤儿）</span></div>
+    <div class="metric warnm"><span class="n">${d.counts.observing}</span><span class="l">观察中</span></div>
+    <div class="metric ok"><span class="n">${d.counts.closed}</span><span class="l">已闭合</span></div>
+    <div class="metric"><span class="n">${d.mismatched}</span><span class="l">错位引用</span></div>
+  </div>`);
+
+  html.push(`<h2 class="sec">动作分布<span class="v-time">（生效处置记录，按动作计）</span></h2>`);
+  const actions = Object.entries(d.actions || {});
+  html.push(actions.length === 0
+    ? '<p class="v-time">暂无处置记录。</p>'
+    : `<table><tr><th>动作</th><th>含义</th><th>条数</th></tr>${actions.map(([a, n]) => `<tr><td class="mono">${esc(a)}</td><td>${esc(ACTION_LABEL[a] || '—')}</td><td>${n}</td></tr>`).join('')}</table>`);
+
+  html.push(`<h2 class="sec">自报处置时延</h2>
+    <table><tr><th>分位</th><th>值</th><th>样本</th><th>口径</th></tr>
+    <tr><td>P50</td><td class="mono">${fmtLatency(d.latency.p50)}</td><td rowspan="2">${d.latency.n} 条生效处置</td><td rowspan="2">${esc(d.latency.note)}${d.latency.negative ? `；另有 ${d.latency.negative} 条时钟倒挂已剔除` : ''}</td></tr>
+    <tr><td>P90</td><td class="mono">${fmtLatency(d.latency.p90)}</td></tr></table>`);
+
+  html.push(`<h2 class="sec">台账记录<span class="v-time">（append-only；被更正的记录保留但不计入当前状态）</span></h2>`);
+  if (!d.entries || d.entries.length === 0) {
+    html.push(`<p class="v-time">台账为空：${esc(chainTxt)}。</p>`);
+  } else {
+    html.push(`<table><tr><th>disp</th><th>目标信号</th><th>动作</th><th>处置者 / 复核</th><th>状态</th><th>自报时延</th><th>依据</th></tr>`);
+    for (const e of d.entries) {
+      const stateCls = e.state === 'closed' ? 'ok' : e.state === 'superseded' ? 'v-time' : 'bad';
+      html.push(`<tr>
+        <td class="mono">${e.disp_seq}${e.supersedes ? `<br><span class="v-time">更正 disp ${e.supersedes}</span>` : ''}</td>
+        <td class="mono">seq ${e.target_seq}<br><span class="v-time">${esc(e.signal_category)}</span></td>
+        <td>${esc(ACTION_LABEL[e.action] || e.action)}${e.plan ? `<br><span class="v-time">预案：${esc(e.plan)}</span>` : ''}</td>
+        <td>${esc(e.actor)}<br><span class="v-time">复核 ${esc(e.reviewed_by || '—')}</span></td>
+        <td class="${stateCls}">${esc(e.state === 'superseded' ? '已被更正' : e.state)}<br><span class="v-time">${esc(e.stateNote)}</span></td>
+        <td class="mono">${fmtLatency(e.latency_ms)}</td>
+        <td>${esc(e.rationale)}<br><span class="v-time">hash ${esc(String(e.chain_hash).slice(0, 16))}…</span></td>
+      </tr>`);
+    }
+    html.push('</table>');
+  }
+
+  html.push(`<h2 class="sec">台账链校验</h2>
+    <table><tr><th>文件</th><th>结果</th><th>说明</th></tr>
+    <tr><td class="mono">${esc(d.file)}</td><td class="${d.chainOk ? 'v-ok' : 'v-bad'}">${esc(chainTxt)}</td>
+    <td>链规则 <code>sha256(prev + "|" + JSON.stringify(body))</code>，键序冻结；<b>Python 参照实现</b>可独立复算：<code>python tools/disposition/verify_chain.py</code>。只能证明「文件未被事后改写」，不能证明处置者身份或时效。</td></tr></table>`);
+
+  view.innerHTML = html.join('');
+}
+
+// ─────────────────────────────────────────────
 // Tab 路由
 // ─────────────────────────────────────────────
 
-const routes = { timeline: loadTimeline, realagent: loadRealAgent, evidence: loadEvidence, boundaries: loadBoundaries };
+const routes = { timeline: loadTimeline, realagent: loadRealAgent, disposition: loadDisposition, evidence: loadEvidence, boundaries: loadBoundaries };
 
 document.querySelectorAll('nav button[data-view]').forEach((btn) => {
   btn.addEventListener('click', () => {

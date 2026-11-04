@@ -18,14 +18,18 @@
  * 用法：
  *   node --experimental-transform-types tools/audit-panel/rules/replay.mts
  *   node --experimental-transform-types tools/audit-panel/rules/replay.mts --file=<路径>
+ *   node --experimental-transform-types tools/audit-panel/rules/replay.mts --disposition=<台账路径>
  *
- * 退出码：0 全部一致 / 1 存在不一致或孤儿信号异常。
+ * 退出码：0 全部一致 / 1 存在不一致。
+ * 孤儿信号不再导致非零退出（v2 起）：孤儿是诚实边界，不是重放错误——数量由输出与面板呈现。
  *
  * 已知边界（输出中会标注）：
  *   - S6（integrity-check-failed）的 integrityCheck 是注入钩子（框架默认恒真，G4 未闭合），
  *     重放仅验证"钩子返回 false 时分支可达且判定正确"，不证明真实完整性校验有效。
  *   - ledger_signal 是审计信号而非裁决，重放比的是信号 kind 序列；
- *     处置动作框架不存在（G5；规范层已登记 spec/13 #44），故全部信号按孤儿报告。
+ *     处置由**独立台账**（tools/disposition/）登记，框架侧仍无处置事件类型（spec/13 #44 未解）。
+ *     孤儿判定 = 「台账中无生效处置」，并派生三态（未处置 / 观察中 / 已闭合）；
+ *     台账链校验失败时不采信其内容（全部按未处置报告），避免用不可信记录掩盖缺口。
  */
 
 import { readFileSync } from 'node:fs';
@@ -38,6 +42,15 @@ import {
   ExitGuard,
   ResourceLedger,
 } from '../../../reference/runtimes/l2-runtime-oversight/index.ts';
+import {
+  DEFAULT_LEDGER_FILE as DEFAULT_DISPOSITION_FILE,
+  indexLedger,
+  readLedger,
+  stateOf,
+  type DispositionAction,
+  type DispositionState,
+} from '../../disposition/ledger.mts';
+import { verifyLedgerFile } from '../../disposition/verify-chain.mts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_FILE = resolve(HERE, '../data/events.jsonl');
@@ -156,12 +169,14 @@ function replayLedger(spec: Record<string, unknown>): { kinds: string[] } {
 // 主流程
 // ─────────────────────────────────────────────────────────────────────────────
 
-function parseArgs(argv: string[]): { file: string } {
+function parseArgs(argv: string[]): { file: string; dispositionFile: string } {
   let file = DEFAULT_FILE;
+  let dispositionFile = DEFAULT_DISPOSITION_FILE;
   for (const a of argv) {
     if (a.startsWith('--file=')) file = resolve(a.slice('--file='.length));
+    else if (a.startsWith('--disposition=')) dispositionFile = resolve(a.slice('--disposition='.length));
   }
-  return { file };
+  return { file, dispositionFile };
 }
 
 export interface ReplayOutcome {
@@ -175,18 +190,48 @@ export interface ReplayOutcome {
   extra?: string;
 }
 
+/** 单条账本信号的处置状态（面板与 CLI 共用同一份派生结果）。 */
+export interface SignalDispositionState {
+  seq: number;
+  category: string;
+  detail: string;
+  state: DispositionState;
+  disp_seq: number | null;
+  action: DispositionAction | null;
+  note: string;
+  /** target_chain_hash 与信号链哈希前 16 位不一致（疑似错位引用）。 */
+  hashMismatch: boolean;
+}
+
+export interface DispositionSummary {
+  file: string;
+  present: boolean;
+  chainOk: boolean;
+  rows: number;
+  superseded: number;
+  counts: { total: number; closed: number; observing: number; unhandled: number };
+  /** 处置引用的链哈希与信号不符（疑似错位引用）——这些记录不计入闭合。 */
+  mismatched: number;
+  actions: Record<string, number>;
+  warning: string | null;
+}
+
 export interface ReplayFileResult {
   ok: boolean;
   outcomes: ReplayOutcome[];
   failFast: string[];
+  /** 未处置的信号（含「已转人工但未闭合」）——孤儿清单。 */
   orphans: Array<{ seq: number; category: string; detail: string }>;
+  /** 全部账本信号的三态（供面板逐条展示）。 */
+  signals: SignalDispositionState[];
+  disposition: DispositionSummary;
   frameworkVersion: string;
   matched: number;
   total: number;
 }
 
 /** 核心重放（可导出复用：server 启动时当场执行）。 */
-export function replayFile(file: string): ReplayFileResult {
+export function replayFile(file: string, dispositionFile: string = DEFAULT_DISPOSITION_FILE): ReplayFileResult {
   const lines = readFileSync(file, 'utf-8').split('\n').filter((l) => l.trim().length > 0);
   const meta = JSON.parse(lines[0]!) as Record<string, unknown>;
   const events = lines.slice(1).map((l) => JSON.parse(l) as Record<string, unknown>);
@@ -243,14 +288,65 @@ export function replayFile(file: string): ReplayFileResult {
     }
   }
 
-  // —— 孤儿信号清单：记了但没人处理 ——
+  // —— 处置状态与孤儿清单（v2 起改为 target 引用匹配）——
+  // 非孤儿 ⇔ 处置台账中存在生效记录（未被 superseded）、target_seq 指向该信号，
+  //          且 target_chain_hash 与信号 chain_hash 前 16 位一致（防错位引用）。
+  // 台账链校验失败 ⇒ 不采信其内容，全部按未处置报告：宁可多报孤儿，不可用不可信记录掩盖缺口。
+  const ledgerVerify = verifyLedgerFile(dispositionFile);
+  const ledgerRows = ledgerVerify.ok ? readLedger(dispositionFile) : [];
+  const index = indexLedger(ledgerRows);
+
   const ledgerEvents = events.filter((e) => e.event_type === 'ledger_signal');
-  // 处置事件的形态：框架中不存在（无 disposition / handled / resolved 类事件类型）。
-  // 若未来框架新增处置通道（spec/13 #44 落地时），这里必须同步，否则孤儿判定会永远为真。
-  const DISPOSAL_TYPES = new Set<string>([]);
-  const orphans = ledgerEvents
-    .filter((e) => !DISPOSAL_TYPES.has(String(e.event_type)))
-    .map((e) => ({ seq: Number(e.seq), category: String(e.category), detail: String(e.detail) }));
+  const signals: SignalDispositionState[] = ledgerEvents.map((e) => {
+    const seq = Number(e.seq);
+    const base = stateOf(seq, index);
+    const row = index.current.get(seq) ?? null;
+    const expected = String(e.chain_hash ?? '').slice(0, 16);
+    const hashMismatch = row !== null && row.target_chain_hash !== expected;
+    let note = base.note;
+    if (hashMismatch) note = `处置引用的链哈希 ${row!.target_chain_hash} 与信号 ${expected} 不符（疑似错位引用）`;
+    else if (!ledgerVerify.present) note = '台账未创建，按未处置报告';
+    else if (!ledgerVerify.ok) note = '台账链校验失败，处置状态不可采信';
+    return {
+      seq,
+      category: String(e.category),
+      detail: String(e.detail),
+      state: hashMismatch ? 'unhandled' : base.state,
+      disp_seq: base.disp_seq,
+      action: base.action,
+      note,
+      hashMismatch,
+    };
+  });
+
+  const orphans = signals
+    .filter((s) => s.state === 'unhandled')
+    .map((s) => ({ seq: s.seq, category: s.category, detail: s.detail }));
+
+  const counts = {
+    total: signals.length,
+    closed: signals.filter((s) => s.state === 'closed').length,
+    observing: signals.filter((s) => s.state === 'observing').length,
+    unhandled: signals.filter((s) => s.state === 'unhandled').length,
+  };
+  const actions: Record<string, number> = {};
+  for (const row of index.current.values()) actions[row.action] = (actions[row.action] ?? 0) + 1;
+
+  const disposition: DispositionSummary = {
+    file: dispositionFile,
+    present: ledgerVerify.present,
+    chainOk: ledgerVerify.ok,
+    rows: ledgerVerify.rows,
+    superseded: index.superseded.size,
+    counts,
+    mismatched: signals.filter((s) => s.hashMismatch).length,
+    actions,
+    warning: !ledgerVerify.present
+      ? '处置台账未创建——全部信号按未处置报告'
+      : !ledgerVerify.ok
+        ? `处置台账链校验失败：${ledgerVerify.fails.map((f) => f.reason).join('；')}`
+        : null,
+  };
 
   const matched = outcomes.filter((o) => o.match).length;
   const fw = (meta.framework as Record<string, unknown> | undefined)?.version;
@@ -259,6 +355,8 @@ export function replayFile(file: string): ReplayFileResult {
     outcomes,
     failFast,
     orphans,
+    signals,
+    disposition,
     frameworkVersion: typeof fw === 'string' ? fw : 'unknown',
     matched,
     total: outcomes.length,
@@ -267,7 +365,7 @@ export function replayFile(file: string): ReplayFileResult {
 
 function main(): void {
   const args = parseArgs(process.argv.slice(2));
-  const r = replayFile(args.file);
+  const r = replayFile(args.file, args.dispositionFile);
   const { outcomes, failFast, orphans } = r;
 
   const out = [
@@ -287,10 +385,18 @@ function main(): void {
 
   out.push('');
   out.push(`  重放一致性      ${r.matched}/${r.total}${r.matched === r.total ? '  ✓' : '  ✗'}`);
-  out.push(`  孤儿信号        ${orphans.length} 条（处置事件 0 条——框架不存在处置通道，PRODUCTION-GAPS G5；规范层已登记 spec/13 #44）`);
-  for (const o of orphans) {
-    out.push(`    [seq ${String(o.seq).padStart(2)}] ${o.category} — ${o.detail.slice(0, 60)}…`);
+
+  const d = r.disposition;
+  const ledgerState = !d.present ? '未创建' : d.chainOk ? `PASS（${d.rows} 条）` : 'FAIL（链校验不通过，处置不采信）';
+  out.push(`  处置台账        ${ledgerState} · ${d.file}`);
+  out.push(`  处置三态        已闭合 ${d.counts.closed} · 观察中 ${d.counts.observing} · 未处置 ${d.counts.unhandled}（合计 ${d.counts.total}）`);
+  out.push(`  孤儿信号        ${orphans.length} 条（未处置；含「已转人工未闭合」）`);
+  for (const s of r.signals) {
+    out.push(`    [seq ${String(s.seq).padStart(2)}] ${s.category} — ${s.state}（${s.note}${s.disp_seq ? ` · disp ${s.disp_seq}` : ''}）`);
   }
+  if (d.warning) out.push(`  ⚠️ ${d.warning}`);
+  if (d.mismatched > 0) out.push(`  ⚠️ ${d.mismatched} 条处置引用的链哈希与信号不符（疑似错位引用），未计入闭合`);
+  out.push('  边界           框架侧仍无处置事件类型（spec/13 #44 未解）；本台账为工具侧补口，不构成 #44 闭合。');
   out.push('');
 
   if (failFast.length > 0) {

@@ -31,11 +31,14 @@ import { buildReportHtml } from './report.mts';
 import { verifyChainFile } from '../rules/verify-chain.mts';
 import { replayFile } from '../rules/replay.mts';
 import { verifyRealagentFile } from '../rules/verify-realagent.mts';
+import { indexLedger, percentile, readLedger, stateOf } from '../../disposition/ledger.mts';
+import { verifyLedgerFile } from '../../disposition/verify-chain.mts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PANEL_ROOT = resolve(HERE, '..');
 const DATA_FILE = join(PANEL_ROOT, 'data', 'events.jsonl');
 const REALAGENT_FILE = join(PANEL_ROOT, 'data', 'realagent-events.jsonl');
+const DISPOSITION_FILE = resolve(PANEL_ROOT, '..', 'disposition', 'data', 'disposition.jsonl');
 const WEB_ROOT = join(PANEL_ROOT, 'web');
 const DEFAULT_PORT = 7727;
 
@@ -124,12 +127,133 @@ const verifiedAt = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' U
 const bootVerification = {
   verifiedAt,
   chain: { ...verifyChainFile(DATA_FILE), file: 'data/events.jsonl (V1 确定性)' },
-  replay: { ...replayFile(DATA_FILE), file: 'data/events.jsonl (V1 确定性)' },
+  replay: { ...replayFile(DATA_FILE, DISPOSITION_FILE), file: 'data/events.jsonl (V1 确定性)' },
+  disposition: {
+    ...verifyLedgerFile(DISPOSITION_FILE),
+    file: 'tools/disposition/data/disposition.jsonl',
+  },
   realagentVerify: realagent
     ? { ...verifyRealagentFile(REALAGENT_FILE), file: 'data/realagent-events.jsonl (V2)' }
     : { ok: false, fails: [{ seq: '-', reason: 'V2 数据未生成' }], file: 'data/realagent-events.jsonl (V2)', eventCount: 0, totalTokens: null as number | null, model: '-' },
 };
-const allVerified = bootVerification.chain.ok && bootVerification.replay.ok && bootVerification.realagentVerify.ok;
+// 台账可选：未创建不拖垮「当场验证」，但一旦存在就必须链校验通过才算全绿。
+const allVerified =
+  bootVerification.chain.ok &&
+  bootVerification.replay.ok &&
+  bootVerification.realagentVerify.ok &&
+  (!bootVerification.disposition.present || bootVerification.disposition.ok);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 处置台账视图（只读消费 tools/disposition/ 的产物）
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface DispositionEntry {
+  disp_seq: number;
+  target_seq: number;
+  target_chain_hash: string;
+  signal_category: string;
+  action: string;
+  actor: string;
+  reviewed_by: string | null;
+  supersedes: number | null;
+  plan: string | null;
+  rationale: string;
+  ts: number;
+  chain_hash: string;
+  /** 该记录是否仍是生效记录（未被 supersedes）。 */
+  effective: boolean;
+  /** 生效记录的三态；被更正的记录标记 superseded。 */
+  state: 'closed' | 'observing' | 'unhandled' | 'superseded';
+  stateNote: string;
+  signal_detail: string | null;
+  /** 自报时延（处置 ts − 信号 ts）；时钟倒挂时为负，统计时剔除并计数。 */
+  latency_ms: number | null;
+}
+
+export interface DispositionView {
+  file: string;
+  present: boolean;
+  chainOk: boolean;
+  rows: number;
+  superseded: number;
+  mismatched: number;
+  counts: { total: number; closed: number; observing: number; unhandled: number };
+  actions: Record<string, number>;
+  latency: { p50: number | null; p90: number | null; n: number; negative: number; note: string };
+  warning: string | null;
+  entries: DispositionEntry[];
+  boundary: string;
+}
+
+function buildDispositionView(): DispositionView {
+  const summary = bootVerification.replay.disposition;
+  const chain = bootVerification.disposition;
+  const rows = chain.present && chain.ok ? readLedger(DISPOSITION_FILE) : [];
+  const index = indexLedger(rows);
+  const signals = new Map(
+    data.events.filter((e) => e.event_type === 'ledger_signal').map((e) => [Number(e.seq), e]),
+  );
+  const supersededBy = new Map<number, number>();
+  for (const r of rows) {
+    if (typeof r.supersedes === 'number') supersededBy.set(r.supersedes, r.disp_seq);
+  }
+
+  const entries: DispositionEntry[] = rows.map((r) => {
+    const current = index.current.get(r.target_seq);
+    const effective = current?.disp_seq === r.disp_seq;
+    const st = effective ? stateOf(r.target_seq, index) : null;
+    const sig = signals.get(r.target_seq);
+    return {
+      disp_seq: r.disp_seq,
+      target_seq: r.target_seq,
+      target_chain_hash: r.target_chain_hash,
+      signal_category: r.signal_category,
+      action: r.action,
+      actor: r.actor,
+      reviewed_by: r.reviewed_by,
+      supersedes: r.supersedes,
+      plan: r.plan,
+      rationale: r.rationale,
+      ts: r.ts,
+      chain_hash: r.chain_hash,
+      effective,
+      state: effective ? st!.state : 'superseded',
+      stateNote: effective ? st!.note : `已被 disp ${supersededBy.get(r.disp_seq) ?? '?'} 更正`,
+      signal_detail: sig ? String(sig.detail) : null,
+      latency_ms: sig ? r.ts - Number(sig.ts) : null,
+    };
+  });
+
+  const latencies = entries
+    .filter((e) => e.effective && typeof e.latency_ms === 'number' && e.latency_ms >= 0)
+    .map((e) => e.latency_ms as number);
+  const negative = entries.filter((e) => e.effective && typeof e.latency_ms === 'number' && e.latency_ms < 0).length;
+
+  return {
+    file: 'tools/disposition/data/disposition.jsonl',
+    present: summary.present,
+    chainOk: summary.chainOk,
+    rows: summary.rows,
+    superseded: summary.superseded,
+    mismatched: summary.mismatched,
+    counts: summary.counts,
+    actions: summary.actions,
+    latency: {
+      p50: percentile(latencies, 50),
+      p90: percentile(latencies, 90),
+      n: latencies.length,
+      negative,
+      note: '自报值（处置 ts − 信号 ts），不可验证；跨机时钟差未校正',
+    },
+    warning: summary.warning,
+    entries,
+    boundary:
+      '处置记录存在 ≠ 处置有效。孤儿归零只说明「有人点过按钮」，不说明缺口已解；' +
+      '框架侧仍无处置事件类型（spec/13 #44 未解），本台账为工具侧补口，不构成 #44 闭合。',
+  };
+}
+
+const dispositionView = buildDispositionView();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 证据卡聚合（三层分级）
@@ -302,6 +426,8 @@ const server = createServer((req, res) => {
       return sendJson(res, 200, { meta: realagent.meta, events: realagent.events });
     case '/api/verification':
       return sendJson(res, 200, { ...bootVerification, allVerified });
+    case '/api/disposition':
+      return sendJson(res, 200, dispositionView);
     case '/api/evidence':
       return sendJson(res, 200, { cards: evidenceCache, chain: data.meta.chain });
     case '/api/boundaries':
@@ -343,6 +469,13 @@ server.listen(port, '127.0.0.1', () => {
   console.log(`  数据        V1 ${data.meta.event_count} 条（确定性）| V2 ${realagent ? realagent.meta.event_count + ' 条（LLM-in-the-loop）' : '未生成'}`);
   console.log(`  框架        v${data.meta.framework.version} | 门禁 ${data.meta.gates_count ?? '?'} 项`);
   console.log(`  当场验证    链 ${v.chain.ok ? 'PASS' : 'FAIL'} · 重放 ${v.replay.matched}/${v.replay.total} · V2 复核 ${v.realagentVerify.ok ? 'PASS' : 'FAIL'}（${verifiedAt}）`);
+  const dv = dispositionView;
+  const dispState = !dv.present
+    ? '未创建'
+    : dv.chainOk
+      ? `链 PASS · 已闭合 ${dv.counts.closed} / 观察中 ${dv.counts.observing} / 未处置 ${dv.counts.unhandled}`
+      : '链 FAIL（处置不采信）';
+  console.log(`  处置台账    ${dispState}`);
   console.log(`  地址        http://127.0.0.1:${port}`);
   console.log(`  报告        http://127.0.0.1:${port}/report （浏览器 Ctrl+P 存 PDF）`);
   console.log('');

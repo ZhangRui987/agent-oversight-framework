@@ -15,7 +15,20 @@ const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '
 interface BootVerification {
   verifiedAt: string;
   chain: { ok: boolean; fails: Array<{ seq: unknown; reason: string }>; eventCount: number };
-  replay: { ok: boolean; failFast: string[]; matched: number; total: number; orphans: Array<{ seq: number; category: string; detail: string }> };
+  replay: {
+    ok: boolean;
+    failFast: string[];
+    matched: number;
+    total: number;
+    orphans: Array<{ seq: number; category: string; detail: string }>;
+    disposition?: {
+      present: boolean;
+      chainOk: boolean;
+      rows: number;
+      counts: { total: number; closed: number; observing: number; unhandled: number };
+    };
+  };
+  disposition?: { present: boolean; ok: boolean; rows: number };
   realagentVerify: { ok: boolean; fails: Array<{ seq: unknown; reason: string }>; eventCount: number };
   allVerified: boolean;
 }
@@ -61,6 +74,10 @@ export function buildReportHtml(
     })
     .join('');
 
+  const disp = verification.replay.disposition;
+  const dispState = disp && disp.present
+    ? `已闭合 ${disp.counts.closed} · 观察中 ${disp.counts.observing} · 未处置 ${disp.counts.unhandled}`
+    : '台账未创建';
   return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -91,7 +108,8 @@ export function buildReportHtml(
   <thead><tr><th>验证</th><th>对象</th><th>结果</th><th>明细</th></tr></thead>
   <tbody>
     <tr><td>落盘链重算</td><td>V1 ${verification.chain.eventCount} 事件</td><td class="c">${verification.chain.ok ? 'PASS' : 'FAIL'}</td><td>${verification.chain.ok ? '逐条重算一致；meta 一致；seq 连续' : verification.chain.fails.map((f) => esc(f.reason)).join('；')}</td></tr>
-    <tr><td>重放校验</td><td>V1 ${verification.replay.total} 判定</td><td class="c">${verification.replay.ok ? 'PASS' : 'FAIL'}</td><td>${verification.replay.matched}/${verification.replay.total} MATCH；孤儿信号 ${verification.replay.orphans.length} 条（框架无处置通道）</td></tr>
+    <tr><td>重放校验</td><td>V1 ${verification.replay.total} 判定</td><td class="c">${verification.replay.ok ? 'PASS' : 'FAIL'}</td><td>${verification.replay.matched}/${verification.replay.total} MATCH；孤儿信号 ${verification.replay.orphans.length} 条（${dispState}；台账为工具侧补口，框架侧无处置事件类型，spec/13 #44 未解）</td></tr>
+    <tr><td>处置台账链</td><td>${disp && disp.present ? `${disp.rows} 条处置记录` : '台账未创建'}</td><td class="c">${!disp || !disp.present ? '—' : disp.chainOk ? 'PASS' : 'FAIL'}</td><td>${!disp || !disp.present ? '无台账：全部信号按未处置报告' : disp.chainOk ? '键序冻结 · 链可重算（Python 参照实现亦可复算）· 复核与更正规则合法' : '链校验不通过：内容不采信，全部按未处置'}</td></tr>
     <tr><td>V2 静态复核</td><td>V2 ${verification.realagentVerify.eventCount} 事件</td><td class="c">${verification.realagentVerify.ok ? 'PASS' : 'FAIL'}</td><td>${verification.realagentVerify.ok ? '白名单声明一致 · 预算数值成立 · 产物与声明相符' : verification.realagentVerify.fails.map((f) => esc(f.reason)).join('；')}</td></tr>
   </tbody>
 </table>
@@ -115,7 +133,7 @@ ${v2Section}
 <p class="note">条款来源：${esc(tcm.source)} · ${esc(tcm.annex)}。${esc(tcm.usage_rule)}核验：${esc(tcm.verification.method)}；${esc(tcm.verification.source_snapshot)}。</p>
 
 <h2>四、边界声明</h2>
-<p class="note">① 审计链只记录拒绝、放行不留痕——"为什么放过了某次调用"不可审计（框架 3.0 §3.2.1(d) 全量记录要求存在差距）；② 资源账本信号全部为孤儿信号（框架无处置通道）；③ 资源账本配置审查依赖固定字段名，等价变体（shareScope vs visibility）会被漏检（AOE-DETECT-001 实测 77/77）；④ E5 结果完整性校验为占位（G4 未闭合），审计链无密钥外部锚定（可整链重算）——本报告不含任何"防篡改"声明。</p>
+<p class="note">① 审计链只记录拒绝、放行不留痕——"为什么放过了某次调用"不可审计（框架 3.0 §3.2.1(d) 全量记录要求存在差距）；② 框架侧无处置通道，账本信号默认是孤儿；工具侧台账（tools/disposition/）可登记处置，但「有记录」不等于「已处置」——孤儿归零不构成 spec/13 #44 闭合；③ 资源账本配置审查依赖固定字段名，等价变体（shareScope vs visibility）会被漏检（AOE-DETECT-001 实测 77/77）；④ E5 结果完整性校验为占位（G4 未闭合），审计链无密钥外部锚定（可整链重算）——本报告不含任何"防篡改"声明。</p>
 
 <div class="foot">本报告由 tools/audit-panel/server.mts /report 端点生成，数据文件为 tools/audit-panel/data/events.jsonl（V1，可复现）与 realagent-events.jsonl（V2，不可复现）。
 链校验与静态复核可独立运行：verify-chain.mts / verify-realagent.mts / replay.mts。本报告不含任何"符合国标 / 通过合规"类表述——条款为 G 级义务来源，验证方法由本面板提供。</div>
