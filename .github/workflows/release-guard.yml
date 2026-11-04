@@ -1,0 +1,33 @@
+# Release 节奏不变量守护（v2.61.1 新增）
+# 动机：v2.52.11 曾承诺「自本版起每版建 GitHub Release」，实际执行一版即停，
+#       v2.52.13–v2.61.0 共 30 个 tag 无 Release——承诺靠纪律维护必然漂移。
+#       外部审查实测指出根因：门禁 46 项覆盖仓内一致性，不覆盖仓外动作。
+# 本 workflow 把承诺变成可校验不变量：最新 minor tag（X.Y.0）必须存在于 Releases 列表
+# （成员判定——不用 /releases/latest：其语义是「最近创建」而非「最新版本」，对补发
+# 历史Release 的场景会误报，实测教育记录见脚本头）。
+# 政策：minor 必发 / patch 可选 / v2.61.0 前历史不追 —— 见 CONTRIBUTING「版本管理政策」。
+# 设计约束：
+#   - 检查脚本纯标准库 + 匿名 API（公共仓库限额内够用）；
+#   - 每日定时 + workflow_dispatch 手动触发——刻意不挂 push 触发：minor 推送与
+#     建 Release 之间存在合法时间窗，push 即查会误报；
+#   - 使用 runner 预装 python3（脚本纯标准库，无需版本钉死）——比再引一个
+#     setup-python 第三方 action 的供应链面更小，与全仓零依赖纪律一致。
+name: release-guard
+
+on:
+  schedule:
+    - cron: '17 21 * * *' # 每日 UTC 21:17（北京 05:17），避开整点高峰
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-invariant:
+    name: 最新 minor tag 必有 Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0（与 ci.yml 同 pin）
+      - name: Check release invariant
+        run: python3 scripts/check_release_invariant.py

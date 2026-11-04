@@ -90,6 +90,15 @@ Background lessons (v2.11.1, initial version): v2.4.1 once appeared in the READM
 
 Revision background (v2.41.0, external-review P2 item): external reviews noted that the release cadence of v2.0 → v2.38 within a single month rendered version numbers uninformative. Three root causes: "adding evidence entries" consumed a minor regardless of grade (a single literature-patrol absorption batch alone produced multiple minors); major had no definition; and no batching guidance existed. After this revision: literature absorption (B/C grades) moves to patch, A/G-grade experiments stay minor, major is explicitly anchored to architecture-class changes, and a "merge the same batch into one release" rule is introduced. The policy is not applied retroactively to historical versions.
 
+**Release cadence (added in v2.61.1)**:
+
+- **A minor version (X.Y.0) must be followed by a GitHub Release** (body taken from the CHANGELOG entry) — upgrading the verbal commitment of v2.52.11 ("every version gets a Release from now on") into a policy clause;
+- Patch releases are optional (the CHANGELOG entry already carries patch-level information);
+- History before v2.61.0 is not backfilled (following the v2.52.11 "no backfill" precedent);
+- The commitment is machine-checked: `.github/workflows/release-guard.yml` runs `scripts/check_release_invariant.py` daily; the invariant is "**the newest minor tag must be present in the Releases list**" (membership check — not `/releases/latest`, whose semantics are "most recently created" rather than "newest version" and would false-positive on backfilled historical Releases). Violations turn the check red. **Out-of-repo actions are watched by in-repo machinery for the first time.**
+
+Lesson source: v2.52.11 promised per-version Releases but stopped after one; v2.52.13–v2.61.0 shipped 30 tags with no Release (flagged by an external review's measurements). The 46 consistency checks cover in-repo consistency, not out-of-repo actions — this clause turns the commitment from discipline into verification, the same principle as "any verifiable number is either generated or checked, never a third option", extended to the release action itself.
+
 ## Refusal grounds and credential-anchor boundary
 
 This guide is a procedural document and sets up no refusal clause of its own: if a contributor believes a requirement is unenforceable in this repository's context, cite the "citable refusal grounds" principle of `spec/01` (the meta-level criterion source, registered in the spec/13 open-problem register) to state the reason and request an exemption. Paragraphs citing external facts must carry credential anchors per principle two of `spec/01` — a near-anchor must be traceable to one of a REFERENCES key / an arXiv ID / a DOI / a spec/13 problem number (a literal DOI is not a hard requirement; the ruling rationale is in `spec/13` #37); claims about in-repo implementations use an in-repo path or an AOE-* experiment registration number as the anchor. (Added in v2.51.1, closing the #37 residual item)
