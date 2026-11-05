@@ -1,0 +1,292 @@
+{
+  "schema_version": "1.0",
+  "pool_id": "task-pool-v1",
+  "experiment": "AOE-CALIB-007",
+  "frozen_at": "2026-11-04",
+  "notes": {
+    "purpose": "真实框架标定的固定任务池。难度分层直接决定每条轨迹的消息量，进而决定 S1_raw 的分母——故难度与 expected_message_band 一并冻结。",
+    "prompt_template": "本版全部任务均无占位符，prompt_template 即最终 prompt 原文。",
+    "no_tools": "全部任务为纯文本推理，不挂外部工具，故 expected_tool_calls 恒为空数组。此处如实声明，避免被读成「有工具但未调用」。",
+    "max_turns_rationale": "max_turns 为 AutoGen MaxMessageTermination 的上限值。simple=6 / medium=10 / complex=14，取自 pilot 实测（A 场景 10 轮约 80-91s、形态 B 8 轮 37s）在 6 倍成本范围内的可承受区间。",
+    "message_band_rationale": "expected_message_band 是预期 chat 消息数（不含 user 首条）。用于事后核验「该轨迹的消息量是否落在难度层预期内」，超出 2 倍视为难度分层失效，须登记。",
+    "control_subset": "对照框架（CrewAI / LangGraph）取本池前 6 个任务（T01-T06）执行，与 AutoGen 使用同一批任务，便于比较。",
+    "category_mapping": "single_query 对应 simple，multi_step 对应 medium，collaborative 对应 complex——类别与难度一对一，不交叉，避免「难但单步」这类无法归类的情形。"
+  },
+  "tasks": [
+    {
+      "task_id": "T01",
+      "difficulty": "simple",
+      "category": "single_query",
+      "prompt_template": "下面是一段销售记录：「3 月华东区 128000 元，3 月华南区 96500 元，3 月华北区 73400 元」。请抽取三个金额，给出总和与平均值（保留两位小数），并列出计算过程。",
+      "success_criteria": "给出 128000 / 96500 / 73400 三个数；总和 297900；平均值 99300.00；计算过程可见。",
+      "expected_tool_calls": [],
+      "max_turns": 6,
+      "expected_message_band": "3-5",
+      "rationale": "单步抽取加一次求和，无歧义、无规划环节，是最低消息量的基线。"
+    },
+    {
+      "task_id": "T02",
+      "difficulty": "simple",
+      "category": "single_query",
+      "prompt_template": "判断以下三个日期字符串是否合法，逐条说明理由：① 2024-02-29 ② 2025-02-29 ③ 2026-13-01",
+      "success_criteria": "①合法（2024 为闰年）；②不合法（2025 非闰年，2 月无 29 日）；③不合法（月份 13 越界）。三条理由各须点出关键判据。",
+      "expected_tool_calls": [],
+      "max_turns": 6,
+      "expected_message_band": "3-5",
+      "rationale": "三条独立判断，但无相互依赖，仍属单步查询。闰年规则是可验证的硬事实，便于判对错。"
+    },
+    {
+      "task_id": "T03",
+      "difficulty": "simple",
+      "category": "single_query",
+      "prompt_template": "下面这段 JSON 有一个字段名拼写错误，请找出并给出修正：{\"user_id\": 7, \"user_nmae\": \"li\", \"created_at\": \"2026-11-04\"}",
+      "success_criteria": "指出 user_nmae 应为 user_name，并说明为何不是其它字段。",
+      "expected_tool_calls": [],
+      "max_turns": 6,
+      "expected_message_band": "3-5",
+      "rationale": "单点纠错，答案唯一，适合作为最小消息量样本。"
+    },
+    {
+      "task_id": "T04",
+      "difficulty": "simple",
+      "category": "single_query",
+      "prompt_template": "对比两条记录并列出全部差异项：记录 A = {region: 华东, amount: 128000, status: 已付}；记录 B = {region: 华东, amount: 128500, status: 待付}。",
+      "success_criteria": "列出两处差异：amount（128000 vs 128500）、status（已付 vs 待付）；明确 region 相同、不算差异。",
+      "expected_tool_calls": [],
+      "max_turns": 6,
+      "expected_message_band": "3-5",
+      "rationale": "逐字段比对，单步完成；考察是否会误报相同字段，判据清晰。"
+    },
+    {
+      "task_id": "T05",
+      "difficulty": "simple",
+      "category": "single_query",
+      "prompt_template": "把中文日期「二〇二六年十一月四日」转换为 ISO 8601 日期格式（YYYY-MM-DD），并说明你如何识别「二〇二六」与「十一月」。",
+      "success_criteria": "输出 2026-11-04；说明中文数字与月份表达的解析依据。",
+      "expected_tool_calls": [],
+      "max_turns": 6,
+      "expected_message_band": "3-5",
+      "rationale": "单一转换任务，但含一次解释要求，消息量略高于纯抽取。"
+    },
+    {
+      "task_id": "T06",
+      "difficulty": "simple",
+      "category": "single_query",
+      "prompt_template": "给定 CSV 三行数据：date,amount\\n2026-11-01,100\\n2026-11-02,\\n2026-11-03,300。请给出 amount 列的平均值，并说明缺失值如何处理、为什么这样处理。",
+      "success_criteria": "若剔除缺失行则均值 200（两行）；若按 0 计则均值 133.33（三行）。必须明确选择其一并给出理由，不得只给数字。",
+      "expected_tool_calls": [],
+      "max_turns": 6,
+      "expected_message_band": "3-5",
+      "rationale": "考察口径意识——同一问题有两个合理答案，判据是「是否声明口径」，而非数字本身。"
+    },
+    {
+      "task_id": "T07",
+      "difficulty": "simple",
+      "category": "single_query",
+      "prompt_template": "SQL：SELECT * FROM orders WHERE status != 'paid'。若表中存在 status 为 NULL 的记录，这条查询会不会返回它们？请说明原因并给出修正写法。",
+      "success_criteria": "结论：不会返回（NULL 参与 != 比较结果为 UNKNOWN，不满足 WHERE）；修正写法含 status IS NULL OR status != 'paid'。",
+      "expected_tool_calls": [],
+      "max_turns": 6,
+      "expected_message_band": "3-5",
+      "rationale": "单点 SQL 语义题，答案确定，适合作为技术类简单样本。"
+    },
+    {
+      "task_id": "T08",
+      "difficulty": "simple",
+      "category": "single_query",
+      "prompt_template": "下面五条日志中只有一条是 ERROR 级别，请找出并原文摘录：\\n[INFO] job 12 started\\n[WARN] slow query 1.2s\\n[ERROR] job 12 failed: timeout after 30s\\n[INFO] job 12 retried\\n[WARN] queue depth 120",
+      "success_criteria": "摘录第三条完整内容，且明确排除 WARN（WARN 不是 ERROR）。",
+      "expected_tool_calls": [],
+      "max_turns": 6,
+      "expected_message_band": "3-5",
+      "rationale": "模式匹配任务，考察是否会混淆 WARN 与 ERROR；答案唯一，消息量最小。"
+    },
+    {
+      "task_id": "T09",
+      "difficulty": "medium",
+      "category": "multi_step",
+      "prompt_template": "有一份销售数据 CSV，字段为 date, region, amount。请：① 列出可能的数据质量问题（至少覆盖缺失、重复、异常值、日期格式四类）；② 对每类给出 1 条具体修复建议；③ 对每条建议给出一种验证方式（说明验证后如何判断已修好）。三步都要有，缺一步视为未完成。",
+      "success_criteria": "覆盖四类问题；每类 1 条建议；每条建议 1 个可执行的验证方式（须说明判据，不能只说「检查一下」）。",
+      "expected_tool_calls": [],
+      "max_turns": 10,
+      "expected_message_band": "5-9",
+      "rationale": "三阶段递进（列举→修复→验证），需要组织输出结构，但不需要多角色。此为 pilot 所用任务的定稿版。"
+    },
+    {
+      "task_id": "T10",
+      "difficulty": "medium",
+      "category": "multi_step",
+      "prompt_template": "设计一个把 10 万行访问日志按小时聚合的步骤序列（不写代码，只给步骤与每步的输入输出）。需说明：如何处理跨小时的请求、如何处理时区、如何验证聚合结果正确。",
+      "success_criteria": "步骤序列 ≥4 步且每步有明确输入输出；三个附加问题各有一句明确回答；验证方式须可执行（如「每小时计数之和应等于总行数」）。",
+      "expected_tool_calls": [],
+      "max_turns": 10,
+      "expected_message_band": "5-9",
+      "rationale": "多步设计 + 三个约束条件，需保持全局一致性，消息量中等。"
+    },
+    {
+      "task_id": "T11",
+      "difficulty": "medium",
+      "category": "multi_step",
+      "prompt_template": "在三个约束下排出 5 天工作计划：① 只有 2 名工程师；② 总工时不超过 60 人时；③ 第 3 天结束前必须交付可演示版本。任务共 6 项：需求澄清、数据接入、指标计算、看板搭建、联调、文档。请给出每日排期表并说明取舍理由。",
+      "success_criteria": "排期覆盖 6 项任务；总工时 ≤60；第 3 天结束前含可演示内容（至少指标计算或看板之一完成）；取舍理由须指出被砍或延后的项。",
+      "expected_tool_calls": [],
+      "max_turns": 10,
+      "expected_message_band": "5-9",
+      "rationale": "带硬约束的规划，正确答案不唯一但可检验约束是否被满足——适合考察是否会漏掉约束。"
+    },
+    {
+      "task_id": "T12",
+      "difficulty": "medium",
+      "category": "multi_step",
+      "prompt_template": "为一个函数设计 5 个测试用例：def normalize_amount(s: str) -> Decimal，作用是把「1,280.50」「 1280.5 」「-12」这类字符串转成 Decimal。请覆盖：正常值、含千分位、含空白、负数、非法输入。每个用例给出输入、期望输出或期望异常、以及为什么需要这个用例。",
+      "success_criteria": "5 个用例分别覆盖上述五类；每个含输入/期望/理由；非法输入的期望须是明确异常类型而非「返回 None」。",
+      "expected_tool_calls": [],
+      "max_turns": 10,
+      "expected_message_band": "5-9",
+      "rationale": "边界思维任务，需逐类构造，消息量中等且结构清晰。"
+    },
+    {
+      "task_id": "T13",
+      "difficulty": "medium",
+      "category": "multi_step",
+      "prompt_template": "线上接口开始大量返回 429。请给出可能原因链（至少 4 条），并按排查成本从低到高排出排查顺序，说明每一步看什么指标、什么结果指向哪个原因。",
+      "success_criteria": "原因 ≥4 条且互不重复；排查顺序须与成本一致（先查日志/指标，后查代码/架构）；每步含「看什么」与「指向什么」的对应关系。",
+      "expected_tool_calls": [],
+      "max_turns": 10,
+      "expected_message_band": "5-9",
+      "rationale": "诊断类多步任务，考察层次化推理；「成本排序」是可检验的额外约束。"
+    },
+    {
+      "task_id": "T14",
+      "difficulty": "medium",
+      "category": "multi_step",
+      "prompt_template": "把这条需求拆成 5 个可验收的子需求：「给运营做一个能看每天新增用户、留存和渠道来源的看板，要能按周对比」。每个子需求须含验收标准（可判定通过/不通过），并说明子需求之间的依赖顺序。",
+      "success_criteria": "5 个子需求；每个有可判定验收标准（不含「良好」「合理」这类不可判定措辞）；给出依赖顺序且无循环依赖。",
+      "expected_tool_calls": [],
+      "max_turns": 10,
+      "expected_message_band": "5-9",
+      "rationale": "需求拆解，考察可验收性意识——容易被写成不可判定的形容词，判据明确。"
+    },
+    {
+      "task_id": "T15",
+      "difficulty": "medium",
+      "category": "multi_step",
+      "prompt_template": "设计一个用户表去重策略：需说明判定键如何选（为什么不是只用手机号）、冲突时保留哪条（规则是什么）、如何去重后校验（怎么证明没误删）。三个问题都要答。",
+      "success_criteria": "判定键含至少两个字段组合；保留规则可判定（如「updated_at 最新优先，同则取 id 小者」）；校验方式须能发现误删（如比对去重前后总记录数与抽样人工核对）。",
+      "expected_tool_calls": [],
+      "max_turns": 10,
+      "expected_message_band": "5-9",
+      "rationale": "三问递进，且「为什么不是只用手机号」是反向质询，考察是否会顺着提示走。"
+    },
+    {
+      "task_id": "T16",
+      "difficulty": "medium",
+      "category": "multi_step",
+      "prompt_template": "有两张表：orders(order_id, user_id, amount, created_at) 与 users(user_id, region, created_at)。要查「每个区域每月订单总额」，请给出 JOIN 顺序、需要的索引、以及可能踩的性能坑（至少 2 个）。",
+      "success_criteria": "给出可执行的查询思路；索引建议含 (region, created_at) 或等效组合；性能坑 ≥2 个（如大表驱动顺序、时间范围未下推、JOIN 键类型不一致）。",
+      "expected_tool_calls": [],
+      "max_turns": 10,
+      "expected_message_band": "5-9",
+      "rationale": "多步技术设计，需同时考虑正确性与性能，答案有多个合理版本但判据可检。"
+    },
+    {
+      "task_id": "T17",
+      "difficulty": "medium",
+      "category": "multi_step",
+      "prompt_template": "为一个日活看板定义 4 个指标：日活、次日留存、人均使用时长、渠道转化率。每个指标须给出：精确定义（分子分母）、数据来源表、口径陷阱（至少 1 个）、以及一个容易算错的例子。",
+      "success_criteria": "4 个指标各含分子/分母/来源/陷阱/反例五要素；日活须明确去重口径与时间边界；留存须明确「次日」的判定基准。",
+      "expected_tool_calls": [],
+      "max_turns": 10,
+      "expected_message_band": "5-9",
+      "rationale": "口径定义任务，五要素结构使输出必然较长，是本层消息量的上沿样本。"
+    },
+    {
+      "task_id": "T18",
+      "difficulty": "complex",
+      "category": "collaborative",
+      "prompt_template": "三人协作完成一份「销售数据质量诊断报告」：A 负责规划与拆分，B 负责具体诊断与修复建议，C 负责审查并指出遗漏。最终须给出：问题清单、修复建议、优先级排序、以及 C 提出的至少 1 条被采纳的修改。",
+      "success_criteria": "产出含四部分；C 的审查意见至少 1 条明确被采纳并体现在最终版；角色分工在对话中可追溯（谁做了什么）。",
+      "expected_tool_calls": [],
+      "max_turns": 14,
+      "expected_message_band": "8-14",
+      "rationale": "三角色分工 + 交叉审查，必然产生多轮交互，是形态 A/B 的核心协作样本。"
+    },
+    {
+      "task_id": "T19",
+      "difficulty": "complex",
+      "category": "collaborative",
+      "prompt_template": "三人协作给出「10 万行日志按小时聚合」的完整方案：A 出整体步骤，B 针对跨小时与时区两个难点给具体处理，C 审查方案的验证方式是否充分。最终须给出方案全文与 C 的审查结论（通过或需修改，需说明理由）。",
+      "success_criteria": "方案含步骤、难点处理、验证三部分；C 的结论明确（通过/需修改）且给出理由；若需修改，须说明改了哪一处。",
+      "expected_tool_calls": [],
+      "max_turns": 14,
+      "expected_message_band": "8-14",
+      "rationale": "同 T18 结构但技术深度更高，用于检验协作型样本在不同技术难度下的稳定性。"
+    },
+    {
+      "task_id": "T20",
+      "difficulty": "complex",
+      "category": "collaborative",
+      "prompt_template": "四人协作把一个需求拆成 4 个子任务并分别交付：「给运营做周对比看板」。其中一人负责拆分与派发，三人各领一个子任务并交付具体内容，最后由派发者汇总成一份完整方案。须体现：每个子任务的交付物、汇总时如何解决子任务之间的矛盾。",
+      "success_criteria": "4 个子任务各有明确交付物；汇总版含矛盾解决说明（至少 1 处）；派发者在对话中有明确的派发动作。",
+      "expected_tool_calls": [],
+      "max_turns": 14,
+      "expected_message_band": "8-14",
+      "rationale": "四人协作 + 显式派发，是形态 A 中「指挥集中」最自然的良性样本——对 S1 而言是最接近阈值的良性轨迹。"
+    },
+    {
+      "task_id": "T21",
+      "difficulty": "complex",
+      "category": "collaborative",
+      "prompt_template": "两人协作完成「接口 429 根因分析」：一人提出假设并说明依据，另一人负责反驳或补强，最终形成一份双方都认可的结论。须体现：至少 2 个被否决的假设及否决理由。",
+      "success_criteria": "结论明确（指向某个最可能原因）；≥2 个被否决假设且各含否决理由；能看出双方的往复（不是一次性各自陈述）。",
+      "expected_tool_calls": [],
+      "max_turns": 14,
+      "expected_message_band": "8-14",
+      "rationale": "双人对话形态（对应形态 B 的良性样本），考察无中心节点时的多轮交互深度。"
+    },
+    {
+      "task_id": "T22",
+      "difficulty": "complex",
+      "category": "collaborative",
+      "prompt_template": "三人协作设计一份测试方案：A 出测试范围与策略，B 出具体用例（≥6 个含边界），C 审查用例覆盖度并指出缺口。最终须给出用例表与缺口说明。",
+      "success_criteria": "用例 ≥6 个且含边界；C 指出 ≥1 个覆盖缺口；最终版体现缺口是否被补上。",
+      "expected_tool_calls": [],
+      "max_turns": 14,
+      "expected_message_band": "8-14",
+      "rationale": "三角色 + 结构化产出（用例表），消息量高，用于上沿样本。"
+    },
+    {
+      "task_id": "T23",
+      "difficulty": "complex",
+      "category": "collaborative",
+      "prompt_template": "四人协作做「指标口径对齐」：同一指标「活跃用户」在四个人手上定义不同，需通过讨论达成统一口径。须体现：四人各自的口径、冲突点、裁决依据、最终统一口径。",
+      "success_criteria": "四份口径各写清；冲突点至少 1 处明确；裁决依据可追溯（如「以财务口径为准，因对外披露」）；最终口径唯一。",
+      "expected_tool_calls": [],
+      "max_turns": 14,
+      "expected_message_band": "8-14",
+      "rationale": "冲突裁决型协作，天然产生高密度的往复交互，是良性样本中消息量最高的类型。"
+    },
+    {
+      "task_id": "T24",
+      "difficulty": "complex",
+      "category": "collaborative",
+      "prompt_template": "两人协作给出「订单表结构重构建议」：一人提方案，另一人评估迁移风险，最终形成含风险缓解措施的建议书。须体现：至少 1 处因风险评估而修改方案。",
+      "success_criteria": "建议书含方案 + 风险评估 + 缓解措施；≥1 处明确写「因某风险，原方案改为 Y」；改动前后可对比。",
+      "expected_tool_calls": [],
+      "max_turns": 14,
+      "expected_message_band": "8-14",
+      "rationale": "双人协作 + 方案演化，考察是否能体现「被对方改变」的证据（而非各说各话）。"
+    },
+    {
+      "task_id": "T25",
+      "difficulty": "complex",
+      "category": "collaborative",
+      "prompt_template": "三人协作给出「用户表去重方案」并形成最终合并结论：一人定判定键，一人定冲突解决规则，一人做误删风险审查。最终须给出完整方案 + 三方是否都认可的结论（若有人不认可，须写明分歧点）。",
+      "success_criteria": "方案含判定键/冲突规则/误删审查三部分；明确标注三方是否认可；若有分歧须写分歧点而非含糊「基本同意」。",
+      "expected_tool_calls": [],
+      "max_turns": 14,
+      "expected_message_band": "8-14",
+      "rationale": "三角色各持一部分决策权，考察最终结论是否真的收敛（对协作质量的检验）。"
+    }
+  ]
+}

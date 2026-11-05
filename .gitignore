@@ -27,3 +27,8 @@ tools/audit-panel/realagent/workspace/
 
 # ── V2 real-agent：运行历史归档（本地研究素材，不入库）────────
 tools/audit-panel/data/history/
+
+# ── CALIB-007：适配器采集产物（wall-clock 不可复现，不入库）────────
+# out/ 下是真实 LLM 调用产物；验证结论以 adapters/autogen/README.md 的记录为准，
+# 原始 JSONL 仅供本地复核，不随仓库分发（避免把不可复现数据当 golden）。
+reference/runtimes/l2-runtime-oversight/adapters/**/out/

@@ -1,0 +1,157 @@
+{
+  "schema": "aoe-calib-007/whitelist-registry@1",
+  "registry_id": "aoe-calib-007-whitelist-v1",
+  "frozen_at": "2026-11-04",
+  "status": "complete",
+  "status_note": "三框架六形态全部 verified（2026-11-04）。AutoGen 两种形态与 CrewAI 两种形态的 effective 为空（调度器不以消息形式出现），LangGraph 形态 A 的 effective = [\"supervisor\"]（唯一需要真豁免的形态）。",
+  "purpose": "白名单豁免的登记表：逐框架逐形态记录调度器实体名、该实体是否发出 chat 消息，以及据此得出的有效白名单。检测器只接受 whitelist_effective。",
+  "semantics": {
+    "whitelist_nominal": "登记用：承担调度决策的实体名。可以包含不进消息流的实体——用来表达『这里本应豁免谁』的意图。",
+    "whitelist_effective": "实际传入 SwarmMonitor({ schedulerWhitelist }) 的集合。只应包含会在消息流中被观测到的实体。",
+    "why_split": "把不进消息流的实体放进 effective 是无操作，但会让『白名单已治理』变成一句空话。nominal 与 effective 分列，使『是否真需要豁免』成为可审查事实，而不是声明。",
+    "s1_arithmetic": "白名单只从 S1 分子（topC）中剔除这些 from 的 assign 计数，不改变分母（msgs.length）。因此豁免不解决分母效应。",
+    "pending_policy": "status=pending 的条目禁止用于正式执行；该形态的轨迹不得计入 H1/H3/H4 的任何判定，也不得用于 H2 的分位数登记（设计稿 §4.1、§4.3）。"
+  },
+  "frameworks": {
+    "autogen": {
+      "version_pin": "0.7.5",
+      "package": "autogen-agentchat==0.7.5 / autogen-core==0.7.5",
+      "status": "verified",
+      "verified_at": "2026-11-04",
+      "verified_by": "pilot（3 场景）+ 适配器端到端验证（5 条轨迹）",
+      "patterns": {
+        "A": {
+          "label": "SelectorGroupChat（LLM 选择器）",
+          "scheduler_entity": "SelectorGroupChatManager",
+          "emits_chat_messages": false,
+          "whitelist_nominal": ["SelectorGroupChatManager"],
+          "whitelist_effective": [],
+          "status": "verified",
+          "evidence": {
+            "select_events_total": "benign-A 9 条、attack-cross 11 条（emit_team_events=True）",
+            "messages_from_scheduler": 0,
+            "channel": "SelectSpeakerEvent.content = List[str]（选中者名单），不是 TextMessage",
+            "source_of_truth": "autogen-agentchat 0.7.5 _base_group_chat_manager.py 的事件发布路径",
+            "repro": "python adapters/autogen/collect.py --scenario benign-A --task T01 → out/benign-A__T01__r1/swarm-msgs.jsonl 中 from 无该实体"
+          },
+          "consequence": "该形态上『调度器污染 S1』机制无承载对象：豁免为无操作，S1 分子里本来就没有它的 assign。H2 因此改度量 share_select（§4.5 污染源存在性检查）。"
+        },
+        "B": {
+          "label": "RoundRobinGroupChat（顺序轮转）",
+          "scheduler_entity": null,
+          "emits_chat_messages": false,
+          "whitelist_nominal": [],
+          "whitelist_effective": [],
+          "status": "verified",
+          "evidence": {
+            "select_events_total": 0,
+            "note": "无选择决策，故无 SelectSpeakerEvent；顺序由 manager 的轮转规则决定。select_events=0 在形态 B 是正确行为，只有形态 A 才据此判 invalid_adapter。"
+          },
+          "consequence": "形态 B 结构上无中心节点（0 selector、0 assign），可作阴性对照。"
+        }
+      }
+    },
+    "crewai": {
+      "version_pin": "1.15.35",
+      "package": "crewai==1.15.35 / crewai-core==1.15.35（Python 3.13）",
+      "status": "verified",
+      "verified_at": "2026-11-04",
+      "verified_by": "适配器端到端验证（benign-A T01 / benign-B T01 各 1 条）+ 事件面探针",
+      "patterns": {
+        "A": {
+          "label": "Process.hierarchical（manager 委派）",
+          "scheduler_entity": "Crew Manager",
+          "emits_chat_messages": false,
+          "whitelist_nominal": ["Crew Manager"],
+          "whitelist_effective": [],
+          "status": "verified",
+          "evidence": {
+            "delegation_channel": "tool_call：ToolUsageStartedEvent(tool_name=\"delegate_work_to_coworker\")，载体是 tool_args{coworker, task, context}",
+            "delegations_observed": "2 条（2 task 的 crew，每个 task 一次委派；coworker 均已填）",
+            "conversation_messages_total": 0,
+            "manager_as_message_author": 0,
+            "agent_exec_completed": 4,
+            "duplicate_suppressed": 2,
+            "why_duplicate": "manager 在每次 task 结束后发一条 AgentExecutionCompletedEvent，output 与 worker 逐字相同（复述），不是新发言，故按「紧邻逐字相同」剔除",
+            "task_completed_attribution": "hierarchical 下 TaskCompletedEvent.output.agent 恒为 Crew Manager（作者信息丢失），故消息作者改取 AgentExecutionCompletedEvent.agent.role",
+            "repro": "python adapters/crewai/collect.py --scenario benign-A --task T01 --out ./out → out/benign-A__T01__r1/trace-meta.json 的 delegations_total / conversation_messages_total"
+          },
+          "consequence": "调度器在消息层不出现：派发走工具通道。因此 AutoGen 与 CrewAI 的 P-a 结论同为「否」，但机制不同——AutoGen 的调度器根本不发声，CrewAI 的调度器只发工具调用。**「派发」是否被 S1 看见取决于采集点是否下沉到工具层**，须在 §4.5 结论中写明。"
+        },
+        "B": {
+          "label": "Process.sequential（顺序执行）",
+          "scheduler_entity": null,
+          "emits_chat_messages": false,
+          "whitelist_nominal": [],
+          "whitelist_effective": [],
+          "status": "verified",
+          "evidence": {
+            "delegations_observed": 0,
+            "conversation_messages_total": 0,
+            "agent_exec_completed": 2,
+            "duplicate_suppressed": 0,
+            "note": "无 manager、无委派；2 个 task 各产出 1 条消息，作者分别为 AnalystA / WriterB"
+          },
+          "consequence": "阴性对照形态成立：无中心节点、无委派事件，可作 CrewAI 内部的形态对照。"
+        }
+      }
+    },
+    "langgraph": {
+      "version_pin": "langgraph==1.2.19 / langgraph-supervisor==0.0.31",
+      "package": "langgraph==1.2.19 / langgraph-supervisor==0.0.31 / langchain-core==1.7.4 / langchain-openai==1.7.3",
+      "status": "verified",
+      "verified_at": "2026-11-04",
+      "verified_by": "适配器端到端验证（benign-A T01 / benign-B T01 各 1 条）+ 消息面探针",
+      "patterns": {
+        "A": {
+          "label": "supervisor 图（官方 langgraph-supervisor 构造）",
+          "scheduler_entity": "supervisor",
+          "emits_chat_messages": true,
+          "whitelist_nominal": ["supervisor"],
+          "whitelist_effective": ["supervisor"],
+          "status": "verified",
+          "evidence": {
+            "delegation_channel": "正文 + 工具调用双写：AIMessage(name=\"supervisor\", content=\"我先派 AnalystA 核对与计数。\", tool_calls=[transfer_to_analysta])",
+            "supervisor_messages": "3 条（2 条派发 + 1 条最终汇总）",
+            "supervisor_dispatch_with_text": 2,
+            "transfers_total": 2,
+            "swarm_msgs_total": 7,
+            "scaffolding": "每个 worker 结束再发一条 AIMessage(content=\"Transferring back to supervisor\", tool_calls=[transfer_back_to_supervisor])，共 2 条，按规则保留（agent 真实说出的话）",
+            "excluded": "HumanMessage 1 条、ToolMessage 4 条不计入 SwarmMsg（口径：仅 agent 产出的 AI 文本入流）",
+            "repro": "python adapters/langgraph/collect.py --scenario benign-A --task T01 --out ./out → trace-meta.json 的 supervisor_messages / transfers_total"
+          },
+          "consequence": "**三框架里唯一「调度器进消息流」的形态**。但派发正文不带 [ASSIGN] 标记 → 标记口径下 type=chat，S1 分子为 0；语义口径下 2 条派发落在 7 条消息里 = 0.286，远超 θ=0.10。即：**污染客观存在，但检测器的类型维看不见它**。这是 §6.2 标记-语义不一致率与 #3 的核心证据（§4.5 结论须写明）。"
+        },
+        "B": {
+          "label": "线性链（无 supervisor）",
+          "scheduler_entity": null,
+          "emits_chat_messages": false,
+          "whitelist_nominal": [],
+          "whitelist_effective": [],
+          "status": "verified",
+          "evidence": {
+            "transfers_total": 0,
+            "supervisor_messages": 0,
+            "swarm_msgs_total": 2,
+            "note": "固定边顺序执行，2 个节点各产出 1 条 [REPORT] 消息，无调度实体"
+          },
+          "consequence": "阴性对照成立。"
+        }
+      }
+    }
+  },
+  "accounting": {
+    "frameworks_total": 3,
+    "frameworks_verified": 3,
+    "frameworks_pending": 0,
+    "patterns_total": 6,
+    "patterns_verified": 6,
+    "patterns_pending": 0,
+    "note": "计数应与 frameworks / patterns 遍历结果一致，check-whitelist-registry.py 逐项核对；后续框架实测后改动此处即视为登记表修订，须同步设计稿 §4.2。"
+  },
+  "known_limits": [
+    "本表只治理『谁被豁免』，不治理『豁免是否正确』——后者由 §4.5 污染源存在性检查回答。",
+    "AutoGen 的 verified 只覆盖 0.7.5 一条版本线；0.8+ 若改变调度器实现须重测（设计稿 §十三 第 6 条）。",
+    "两个对照框架的 hypothesis 字段是预期，不是证据；实测后必须改写为 evidence，不得保留 hypothesis 字段充当证据。"
+  ]
+}
