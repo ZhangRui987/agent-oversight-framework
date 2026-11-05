@@ -113,3 +113,13 @@
 | `task-pool-v1.json` | `f3aa41ae1abee39a` | 25 条任务池 |
 
 > sha256 以 `EXECUTION-PARAMS-AOE-CALIB-007.json` 的 `artifacts_sha256` 字段为准（本表只给前 16 位便于肉眼比对；params 文件自身的哈希在报告生成时记录在 `params_file.sha256`）。
+
+**核验方式（重要，否则会误判为篡改）**：上述 sha256 是对**提交对象（LF 归一）**算的。本仓库无 `.gitattributes`，Windows 端 `core.autocrlf=true`，因此**新克隆的工作区可能把这些文件转成 CRLF**，此时直接 `sha256sum <file>` 会得到不同值——内容没变，是行尾变了。正确做法：
+
+```bash
+git show HEAD:reference/runtimes/l2-runtime-oversight/attack-manifest.json | sha256sum
+# 或
+git cat-file -p HEAD:reference/runtimes/l2-runtime-oversight/whitelist-registry.json | sha256sum
+```
+
+冻结时已实测：三个核心件的工作区哈希与 blob 哈希**逐位相同**（`43bf2ac1ca0bbd71` / `07511523e1d8a8eb` / `d6f756817f218b5d`），故按 blob 核验即等价于冻结值。
