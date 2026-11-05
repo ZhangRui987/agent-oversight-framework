@@ -1,6 +1,18 @@
 # 变更日志
 
 
+## v2.63.0（2026-11-06）：CALIB-007 正式执行结果入库（H1 不成立 / H4 成立 / H3 须修订区间）
+
+- **正式执行完成（2026-11-05 18:02 — 11-06 02:45）**：293/293 可用、排除 0、采集失败 0。样本构成：AutoGen 良性 200（25 任务 × A/B × repeat 4）+ 恶性 45（3 型 × 3 任务 × repeat 5，`attack-manifest.json` 冻结分配）+ CrewAI 24 + LangGraph 24（最小对照，T01–T06 × A/B × repeat 2）。token 合计 7,466,431（预算比 0.2227）。
+- **预注册判定**（`aggregate-calib007.py --label formal`，冻结参数 11 项 fail-closed 通过；bootstrap 1000 / seed 20261105 / 簇=scenario+task / 分层 A·B 与攻击型）：**H1 不成立**（P95=0.2222，CI95=[0.1429, 0.2857]，注册读法与取严读法一致不成立）/ **H4 成立**（P5=0.5000，CI=[0.3857, 0.5000]，三型 45/45 全部 S1_raw=0.5）/ **H3 须修订区间**（θ∈[0.04,0.12] 无可行 θ）/ **AUC=0.9997**。
+- **偏差记录（四条，见 `reference/runtimes/l2-runtime-oversight/results/RESULTS-AOE-CALIB-007-FORMAL-20261106.md`）**：① H1 失败归因=分母效应（msgs 6–14，单消息即过线）+ 正常协作集中度，污染源 200/200 干净（`sched_assign=0`），检测器分离力极强（良性 max 0.4444 vs 攻击恒 0.5）而绝对阈值失准；② D-4 取严裁定留痕（执行前变更、strict⊂registered 单调收紧，本批两读法一致、裁定未改变结论）；③ 判类 v1.2「漏派发⇒分子偏小」方向与本批一致——H1/H4 幅度均非临界，结论对两向偏差稳健；④ 闸门批「S1 全 0」不可外推（全量 B 侧 45% 非零）。
+- **入库物**：`results/` 新增 RAW JSON（133KB，逐轨迹五口径 + bootstrap + 判定元数据）、REPORT md（汇总报告）、RESULTS md（执行摘要 + 偏差记录 + 后续工作），三件均带 sha256。执行产物（`out/` 轨迹、wall-clock）按既定边界不入库。
+- **跨框架三分法复核**：autogen 全部 `sched_in_msgflow=False`；crewai benign-A True（tool_args 进流、assign 计 0）；langgraph benign-A True 且 `whitelist_effective=['supervisor']`（唯一非空白名单形态）——与设计稿 §4.5 一致。
+- **后续工作**：H3 区间修订须新一轮预注册（版本递增）；修订稿须把「消息数门槛」与「θ→θ(msgs) 归一化」作为方案正式权衡；攻击注入强度饱和（三型恒 0.5）提示修订版需注入梯度。
+- 诚实边界：本版只入库结果与判定；判据零改动（H3 修订未做）；良性侧 assign 判类可靠性仍不可测（本批未消费该格）。
+- 计数变化：门禁 47 项（无新增）；未解仍 44 条；版本 2.62.4→2.63.0。
+
+
 ## v2.62.4（2026-11-05）：正式执行启动 + D-6 产物隔离缺口修复
 
 - **首次正式执行已开始**（v2.62.3 推送后立即启动）。首条命令 = 检查单 §7 第 1 步「闸门批」：`adapters/autogen/collect.py --scenario benign-B --task T01 --out out/run-20261105-1802/gate --repeat 2`，两条轨迹 `verdict=ok`（token 9,674 / 7,401；`swarm_msgs` 各 7；`select` 0）。
