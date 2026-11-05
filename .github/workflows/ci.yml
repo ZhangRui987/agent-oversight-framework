@@ -31,6 +31,33 @@ jobs:
       - name: Run verify_consistency.py
         run: python scripts/verify_consistency.py
 
+  calib007-preflight:
+    name: CALIB-007 预注册件自检（登记表 37 / manifest 26 / 汇总器 19，均含反向测试）
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.12"
+      # 为什么单独一个 job：这些脚本此前只在本地跑，外部读者无法确认「白名单登记表 / 攻击 manifest
+      # / 统计口径」到底有没有被校验过。放进 CI 后，预注册件的完整性成为任何人可核验的事实。
+      - name: 任务池 25 条
+        run: python reference/runtimes/l2-runtime-oversight/adapters/autogen/check-task-pool.py
+      - name: 白名单登记表（37 项 + 反向测试 13 项）
+        run: |
+          cd reference/runtimes/l2-runtime-oversight
+          python adapters/autogen/check-whitelist-registry.py
+          python adapters/autogen/check-whitelist-registry.py --selftest
+      - name: 攻击 manifest（26 项 + 反向测试 12 项）
+        run: |
+          cd reference/runtimes/l2-runtime-oversight
+          python adapters/autogen/check-attack-manifest.py
+          python adapters/autogen/check-attack-manifest.py --selftest
+      - name: 汇总器自检（19 项，含 D-4 歧义行为）
+        run: python reference/runtimes/l2-runtime-oversight/aggregate-calib007.py --selftest
+
   runtime-tests:
     name: L2 参照实现断言（demo 153 项 + otel 14 项）
     runs-on: ubuntu-latest

@@ -181,17 +181,33 @@ def selftest(reg: dict) -> int:
             lambda r: r["frameworks"]["autogen"]["patterns"]["B"].update(emits_chat_messages=True),
         ),
         (
-            "C9 crewai.A pending 不得预置豁免",
-            "pending 预置豁免",
-            lambda r: r["frameworks"]["crewai"]["patterns"]["A"].update(whitelist_effective=["manager"], whitelist_nominal=["manager"]),
+            "C9 autogen.B pending 不得预置豁免",
+            "把已 verified 形态转 pending 并预置豁免",
+            lambda r: r["frameworks"]["autogen"]["patterns"]["B"].update(
+                status="pending", status_reason="反向测试构造", whitelist_effective=["SelectorGroupChatManager"]
+            ),
         ),
         ("C11 autogen.B verified 须有 evidence", "清空 evidence", lambda r: r["frameworks"]["autogen"]["patterns"]["B"].update(evidence={})),
+        (
+            "C7 autogen.M 无消息实体不入 effective",
+            "给攻击形态塞调度器豁免（M 的 selector 是确定性函数，仍不发消息）",
+            lambda r: r["frameworks"]["autogen"]["patterns"]["M"].update(whitelist_effective=["SelectorGroupChatManager"]),
+        ),
+        (
+            "C6 autogen.M effective⊆nominal",
+            "攻击形态塞入未登记实体",
+            lambda r: r["frameworks"]["autogen"]["patterns"]["M"].update(whitelist_effective=["GhostManager"]),
+        ),
         (
             "C11b autogen.B 不得以 hypothesis 充当证据",
             "verified 保留 hypothesis",
             lambda r: r["frameworks"]["autogen"]["patterns"]["B"].update(hypothesis="待验"),
         ),
-        ("C10 计数与遍历一致", "篡改计数", lambda r: r["accounting"].update(patterns_pending=0)),
+        (
+            "C10 计数与遍历一致",
+            "篡改计数（写成与遍历结果不同的值，注意不得用「本来就是该值」的空操作）",
+            lambda r: r["accounting"].update(patterns_total=99),
+        ),
         (
             "C12 至少一条 verified",
             "全部转 pending",

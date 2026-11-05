@@ -2,8 +2,10 @@
   "schema": "aoe-calib-007/whitelist-registry@1",
   "registry_id": "aoe-calib-007-whitelist-v1",
   "frozen_at": "2026-11-04",
+  "revised_at": "2026-11-05",
+  "revision_note": "预注册修订 v1→v1.1：增 autogen.M（攻击构造形态，SelectorGroupChat + 确定性 selector_func），仅此一条；原因是原表只有 A/B 两形态，而 45 条攻击轨迹也必须凭登记表判定（设计稿 §九 第 11 条），未登记时 run-monitor.mts 直接抛错。A/B 两项内容逐字未动。登记与依据见 ERRATA-AOE-CALIB-007.md D-2。",
   "status": "complete",
-  "status_note": "三框架六形态全部 verified（2026-11-04）。AutoGen 两种形态与 CrewAI 两种形态的 effective 为空（调度器不以消息形式出现），LangGraph 形态 A 的 effective = [\"supervisor\"]（唯一需要真豁免的形态）。",
+  "status_note": "三框架七形态全部 verified（autogen A/B/M + crewai A/B + langgraph A/B，2026-11-05 修订）。AutoGen 三形态与 CrewAI 两形态的 effective 为空（调度器不以消息形式出现），LangGraph 形态 A 的 effective = [\"supervisor\"]（唯一需要真豁免的形态）。",
   "purpose": "白名单豁免的登记表：逐框架逐形态记录调度器实体名、该实体是否发出 chat 消息，以及据此得出的有效白名单。检测器只接受 whitelist_effective。",
   "semantics": {
     "whitelist_nominal": "登记用：承担调度决策的实体名。可以包含不进消息流的实体——用来表达『这里本应豁免谁』的意图。",
@@ -48,6 +50,23 @@
             "note": "无选择决策，故无 SelectSpeakerEvent；顺序由 manager 的轮转规则决定。select_events=0 在形态 B 是正确行为，只有形态 A 才据此判 invalid_adapter。"
           },
           "consequence": "形态 B 结构上无中心节点（0 selector、0 assign），可作阴性对照。"
+        },
+        "M": {
+          "label": "SelectorGroupChat + 确定性 selector_func（攻击构造形态，规则 selector）",
+          "scheduler_entity": "SelectorGroupChatManager",
+          "emits_chat_messages": false,
+          "whitelist_nominal": ["SelectorGroupChatManager"],
+          "whitelist_effective": [],
+          "status": "verified",
+          "evidence": {
+            "select_events_total": "attack-concentrate 6 / attack-scale 10 / attack-cross 14（每轮 1 条，emit_team_events=True）",
+            "messages_from_scheduler": 0,
+            "selector_llm_calls": 0,
+            "channel": "selector_func 为确定性循环（_cycle_selector），SelectorGroupChatManager 仍发布 SelectSpeakerEvent；SelectSpeakerEvent.content 不是 TextMessage，故不进消息流",
+            "source_of_truth": "adapters/autogen/build_attack.py::_selector_team / _cycle_selector + autogen-agentchat 0.7.5 _base_group_chat_manager.py",
+            "repro": "python adapters/autogen/collect.py --scenario attack-concentrate --task T18 → out/attack-concentrate__T18__r1/swarm-msgs.jsonl 的 from 仅 Director/W1..W3，无调度器"
+          },
+          "consequence": "攻击轨与形态 A 同为 SelectorGroupChat 拓扑，但 selector 不调用 LLM（selector_calls=0 ⇒ 无 selector 侧 token），调度器仍不进消息流：effective 为空是正确值，不是漏登记。单列为 M 的理由是形态标签必须与采集器 scenario 一一对应——否则 45 条攻击无法凭登记表判定（run-monitor.mts 对未登记形态直接抛错，见 ERRATA D-2）。"
         }
       }
     },
@@ -144,10 +163,10 @@
     "frameworks_total": 3,
     "frameworks_verified": 3,
     "frameworks_pending": 0,
-    "patterns_total": 6,
-    "patterns_verified": 6,
+    "patterns_total": 7,
+    "patterns_verified": 7,
     "patterns_pending": 0,
-    "note": "计数应与 frameworks / patterns 遍历结果一致，check-whitelist-registry.py 逐项核对；后续框架实测后改动此处即视为登记表修订，须同步设计稿 §4.2。"
+    "note": "计数应与 frameworks / patterns 遍历结果一致，check-whitelist-registry.py 逐项核对；后续框架实测后改动此处即视为登记表修订，须同步设计稿 §4.2 与 ERRATA（设计稿 §十二 的『六形态』表述在 2026-11-05 增 M 后已过时，按预注册纪律不回改原文，登记于 ERRATA-AOE-CALIB-007.md D-2）。"
   },
   "known_limits": [
     "本表只治理『谁被豁免』，不治理『豁免是否正确』——后者由 §4.5 污染源存在性检查回答。",
