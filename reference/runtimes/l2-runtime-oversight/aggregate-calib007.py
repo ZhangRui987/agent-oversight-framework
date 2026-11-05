@@ -61,6 +61,18 @@ H3_TPR_MIN = 0.90
 H4_MIN_EFFECTIVE = 30
 BUDGET_TOTAL_TOKEN = 33_520_329  # 口径 b 形态加权（124×119,775 + 124×20,350 + 45×27,709）× 1.8
 BUDGET_WARN_RATIO = 0.80
+# D-4 裁定（2026-11-05，协调人）：H1 判读取「strict」——点估计 P95 ≤ 0.04 且 CI 上界 ≤ 0.04。
+# 注册文本写的「CI 下界 ≤ 0.04」对「误报上界很低」几乎恒真，不具证据力；strict 是 registered 的
+# 子集条件（strict 成立 ⇒ registered 必成立），故本次变更方向单调收紧，不可能把「不成立」变「成立」。
+H1_READING = "strict"  # 可选值："strict" / "registered"；与冻结参数文件不一致即拒跑
+H1_READING_RULING = {
+    "decided_at": "2026-11-05",
+    "decided_by": "协调人（项目负责人）",
+    "option": "② 取严（点估计 + CI 上界）",
+    "reason": "『误报率上界 ≤ 0.04』的宣称只能由 CI 上界支撑；注册文字的『CI 下界』在点估计 0.20 时仍可能判成立（pilot 已复现），照此读法跑出的『H1 成立』不构成证据",
+    "monotonicity": "strict ⇒ registered（strict 条件更强），变更只可能使 H1 更难成立，不存在为通过而放宽的动机",
+    "disclosure": "实验报告『偏差记录』须同时报告 registered 与 strict 两组判定值，并说明本裁定发生在正式采集开始之前、依据为 pilot 冒烟形态复现（n=6，非正式数据）",
+}
 
 ATTACK_TYPES = ("attack-concentrate", "attack-scale", "attack-cross")
 BENIGN_SCENARIOS = ("benign-A", "benign-B")
@@ -281,28 +293,29 @@ def summarize(rows: list[dict], label: str) -> dict:
         boots = cluster_bootstrap(benign_clusters, strata=benign_strata, stat=lambda v: percentile(v, 0.95))
         ci_lo = percentile(boots, CI_LOW_Q)
         ci_hi = percentile(boots, CI_HIGH_Q)
-        # 注册文本（§三 H1）只写「CI 下界 ≤ 0.04 → 成立」，而假设正文是「P95 ≤ 0.04」。
-        # 二者在点估计越界时会背离（CI 下界 ≤ 0.04 几乎恒真）。本脚本不替人做选择：
-        # 两种读法都算出来，一致才给结论，不一致标「有歧义」并指向 ERRATA D-4。
+        # D-4 已裁定为「strict」（见 H1_READING_RULING）。注册文本（§三 H1「CI 下界 ≤ 0.04」）
+        # 与假设正文（「P95 ≤ 0.04」）不等价，且在点估计越界时仍可能判成立 ⇒ 只作披露、不作判定。
         pass_registered = ci_lo is not None and ci_lo <= H1_P95_MAX
         pass_strict = (p95 is not None and p95 <= H1_P95_MAX) and (ci_hi is not None and ci_hi <= H1_P95_MAX)
+        pass_primary = pass_strict if H1_READING == "strict" else pass_registered
+        divergence = pass_registered != pass_strict
         if label != "formal":
             verdict = "不判定（pilot，non-preregistered）"
-        elif pass_registered and pass_strict:
-            verdict = "成立"
-        elif not pass_registered and not pass_strict:
-            verdict = "不成立"
         else:
-            verdict = "有歧义（ERRATA D-4，须人工裁定）"
+            verdict = "成立" if pass_primary else "不成立"
         h1_h4["H1"] = {
             "n": len(benign), "p95": p95, "ci95": [ci_lo, ci_hi],
             "threshold": H1_P95_MAX,
             "verdict": verdict,
+            "reading": H1_READING,
+            "rule_primary": ("取严（D-4 裁定②）：点估计 P95 ≤ 0.04 且 CI 上界 ≤ 0.04"
+                             if H1_READING == "strict" else "注册文本：CI 下界 ≤ 0.04"),
             "verdict_registered": "成立" if pass_registered else "不成立",
             "verdict_strict": "成立" if pass_strict else "不成立",
-            "rule_registered": "注册文本：bootstrap CI 下界 ≤ 0.04 → 成立",
+            "reading_divergence": divergence,
+            "rule_registered": "注册文本：bootstrap CI 下界 ≤ 0.04 → 成立（仅披露，不作主判定）",
             "rule_strict": "取严：点估计 P95 ≤ 0.04 且 CI 上界 ≤ 0.04（对『误报上界很低』的宣称才具证据力）",
-            "ambiguity": "注册文本与假设正文背离：CI 下界 ≤ 0.04 与『P95 ≤ 0.04』不等价（前者几乎恒真）。见 ERRATA-AOE-CALIB-007.md D-4",
+            "ruling": H1_READING_RULING,
             "bootstrap_iters": len(boots),
             "note": "调度器不发消息，本假设通过不得读作「S1 在真实框架上有效」，须与 §4.5 污染源检查合并解读",
         }
@@ -425,9 +438,11 @@ def render_report(agg: dict) -> str:
     ]
     if "H1" in h:
         x = h["H1"]
+        div = "，**与注册读法背离**" if x.get("reading_divergence") else ""
         lines.append(
-            f"| H1 | {x['rule_registered']} | P95={x['p95']:.4f}，CI95=[{x['ci95'][0]:.4f}, {x['ci95'][1]:.4f}]"
-            f"（n={x['n']}）｜注册读法={x['verdict_registered']} / 取严读法={x['verdict_strict']} | **{x['verdict']}** |"
+            f"| H1 | {x['rule_primary']} | P95={x['p95']:.4f}，CI95=[{x['ci95'][0]:.4f}, {x['ci95'][1]:.4f}]"
+            f"（n={x['n']}）｜注册读法={x['verdict_registered']} / 取严读法={x['verdict_strict']}{div}"
+            f" | **{x['verdict']}** |"
         )
     if "H4" in h:
         x = h["H4"]
@@ -440,7 +455,9 @@ def render_report(agg: dict) -> str:
         lines.append(f"| AUC | 辅助，不作主判定 | {agg['auc']['value']:.4f} | 仅报告 |")
     lines += [
         "",
-        "> H1 的两种读法不一致时判读为「有歧义」，脚本拒绝代替人做选择——见 `ERRATA-AOE-CALIB-007.md` D-4。",
+        "> H1 判读按 ERRATA D-4 裁定②（取严）执行：主判定 = 点估计 P95 ≤ 0.04 **且** CI 上界 ≤ 0.04；"
+        "注册文本的「CI 下界 ≤ 0.04」仅并列披露、不作判定。裁定发生在正式采集开始前，"
+        "且 strict ⇒ registered 单向收紧，详见 `EXECUTION-PARAMS-AOE-CALIB-007.json` → `H1.reading_ruling`。",
         "",
         "## 二、T1 口径一致性表（五口径并列）",
         "",
@@ -585,9 +602,10 @@ def selftest() -> int:
            all("不判定" in str(agg_pilot["hypotheses"][k]["verdict"]) for k in ("H1", "H4", "H3")),
            f"H1={agg_pilot['hypotheses']['H1']['verdict']}")
 
-    # 11. D-4 歧义：点估计越界但注册读法（CI 下界）过线 ⇒ 必须标「有歧义」，不得二选一
+    # 11. D-4 裁定②反测：点估计越界但注册读法（CI 下界）过线 ⇒ 必须判「不成立」并标记背离。
     #     构造：200 条里 11 条（5.5%）为 0.2，且分散在 11 个不同任务簇 ⇒ P95=0.2（越界），
-    #     而重抽时可能抽不到足够多的「含高值簇」，CI 下界回到 0（注册读法过线）——正是歧义形态。
+    #     而重抽时可能抽不到足够多的「含高值簇」，CI 下界回到 0（注册读法过线）——正是 D-4 形态。
+    #     若实现回退成「照注册文字」，本项会立即 FAIL（这正是它存在的意义）。
     amb_rows = []
     for i in range(1, 26):
         for rep in range(1, 5):
@@ -596,8 +614,18 @@ def selftest() -> int:
             amb_rows.append(_synth("benign-B", f"T{i:02d}", rep, 0.0))
     agg_amb = summarize(amb_rows + synth_attack(0.5), "formal")
     h1amb = agg_amb["hypotheses"]["H1"]
-    expect("反测：注册读法与取严读法背离 ⇒ 判「有歧义」", h1amb["verdict"].startswith("有歧义"),
-           f"P95={h1amb['p95']:.4f} registered={h1amb['verdict_registered']} strict={h1amb['verdict_strict']}")
+    expect("反测：D-4 取严读法下界过线但点估计越界 ⇒ 判「不成立」且标记背离",
+           h1amb["verdict"] == "不成立" and h1amb["reading_divergence"] is True
+           and h1amb["verdict_registered"] == "成立",
+           f"P95={h1amb['p95']:.4f} registered={h1amb['verdict_registered']} "
+           f"strict={h1amb['verdict_strict']} verdict={h1amb['verdict']}")
+    # 12. 单调性：strict 成立 ⇒ registered 必成立（裁定方向只可能收紧，不存在放宽）
+    h1zero = summarize(synth_benign(0.0) + synth_attack(0.5), "formal")["hypotheses"]["H1"]
+    expect("取严成立 ⇒ 注册读法亦成立（D-4 变更方向单向收紧）",
+           h1zero["verdict"] == "成立" and h1zero["verdict_registered"] == "成立"
+           and h1zero["reading_divergence"] is False,
+           f"strict={h1zero['verdict_strict']} registered={h1zero['verdict_registered']} "
+           f"divergence={h1zero['reading_divergence']}")
     expect("成本 ratio 可算", agg_cost["cost"]["budget_ratio"] is not None)
 
     print()
@@ -627,6 +655,7 @@ def load_and_verify_params(path: Path, label: str) -> dict | None:
         ("bootstrap.seed", p["statistics"]["bootstrap"]["seed"], BOOTSTRAP_SEED),
         ("bootstrap.ci", tuple(p["statistics"]["bootstrap"]["ci"]), (CI_LOW_Q, CI_HIGH_Q)),
         ("h1.p95_max", p["statistics"]["hypotheses"]["H1"]["p95_max"], H1_P95_MAX),
+        ("h1.reading", p["statistics"]["hypotheses"]["H1"].get("reading"), H1_READING),
         ("h4.p5_min", p["statistics"]["hypotheses"]["H4"]["p5_min"], H4_P5_MIN),
         ("h4.min_effective_attack", p["statistics"]["hypotheses"]["H4"]["min_effective_attack"], H4_MIN_EFFECTIVE),
         ("h3.theta_bounds", tuple(p["statistics"]["hypotheses"]["H3"]["theta_bounds"]), (H3_THETA_LO, H3_THETA_HI)),

@@ -53,10 +53,22 @@
         "metric": "s1_raw",
         "statistic": "P95",
         "p95_max": 0.04,
+        "reading": "strict",
         "sample": "AutoGen 200 条良性（A+B 合并）",
-        "rule_registered": "bootstrap CI 下界 ≤ 0.04 → 成立（设计稿 §三 原文）",
-        "rule_strict": "点估计 P95 ≤ 0.04 且 CI 上界 ≤ 0.04（取严读法）",
-        "ambiguity_ref": "ERRATA D-4"
+        "rule_registered": "bootstrap CI 下界 ≤ 0.04 → 成立（设计稿 §三 原文，仅并列披露、不作判定）",
+        "rule_strict": "点估计 P95 ≤ 0.04 且 CI 上界 ≤ 0.04（取严读法，主判定）",
+        "reading_ruling": {
+          "errata": "D-4",
+          "decided_at": "2026-11-05",
+          "decided_by": "协调人（项目负责人）",
+          "option": "② 取严（点估计 + CI 上界）",
+          "timing": "正式采集开始之前；依据是 pilot 冒烟（n=6）暴露的形态复现，未使用任何正式样本",
+          "reason": "「误报率上界 ≤ 0.04」只能由 CI 上界支撑；注册文本的「CI 下界 ≤ 0.04」在点估计 0.20 时仍可能判成立（pilot 已复现），照此读法的「H1 成立」不构成证据",
+          "monotonicity": "strict 条件是 registered 的子集（strict 成立 ⇒ registered 必成立），变更只可能使 H1 更难成立，不存在为通过而放宽的动机；脚本 --selftest 第 12 项固化该单调性",
+          "threshold_unchanged": "0.04 未动；只改判读组合，不动阈值、不动统计量（P95）、不动 bootstrap 口径",
+          "disclosure": "实验报告「偏差记录」须同时列出 registered 与 strict 两组判定值；若两者背离，报告须显式写明主判定取 strict 及其理由"
+        },
+        "ambiguity_ref": "ERRATA D-4（已裁定，见 reading_ruling）"
       },
       "H4": {
         "metric": "s1_raw",
@@ -103,10 +115,19 @@
     "whitelist-registry.json": "43bf2ac1ca0bbd718575747425582ec46507a846f5feba36dc0cdd1890f7d2bc",
     "attack-manifest.json": "07511523e1d8a8ebac2fe92e0c9f83fc313f6ad02e6a53b3dd67281baaec6fb8",
     "task-pool-v1.json": "f3aa41ae1abee39ac04717ea30c7810bd936c84852ef7aee06162b0c0f62eb25",
-    "aggregate-calib007.py": "d6f756817f218b5d9676f63c72703b0551ea791c254b340803d01b3d0b63ae49",
+    "aggregate-calib007.py": "65f590cb72b410fe9a1d88fc6b18f7b11811198dd94cfce9727a9b883ecda6a1",
     "adapters/autogen/check-whitelist-registry.py": "97db1c9868435a64ea3fc0bdf71a9f844717b0aee037cbb1459d349d8f489fdb",
     "adapters/autogen/check-attack-manifest.py": "5526ad84ddb14038e7618179ab4fc8439875040e0880c342160ee267eb8e9f2f",
     "adapters/review/判类规约_v1.2.md": "6ebcb09d5d54e2209e66de7a90834782088368c2b3d988bc1477222b512b1311"
   },
-  "errata_ref": "ERRATA-AOE-CALIB-007.md（D-1 预算值 / D-2 登记表增 M / D-3 攻击 manifest / D-4 H1 判读歧义）"
+  "errata_ref": "ERRATA-AOE-CALIB-007.md（D-1 预算值 / D-2 登记表增 M / D-3 攻击 manifest / D-4 H1 判读歧义→已裁定取严 / D-5 反向测试修正）",
+  "amendment_log": [
+    {
+      "at": "2026-11-05",
+      "kind": "执行前裁定（非阈值变更）",
+      "item": "H1.reading = strict",
+      "errata": "D-4",
+      "impact": "判读实现收紧；p95_max、统计量、bootstrap 口径均未变；不存在放宽"
+    }
+  ]
 }

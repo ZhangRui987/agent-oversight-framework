@@ -1,6 +1,18 @@
 # 变更日志
 
 
+## v2.62.3（2026-11-05）：CALIB-007 · D-4 裁定（H1 判读取严）+ 判读实现收紧
+
+- **性质**：v2.62.2 遗留的**唯一人工闸口 D-4 已裁定**。裁定发生在**第一条正式采集命令之前**，依据是 pilot 冒烟（n=6）暴露的形态复现，**未使用任何正式样本**。
+- **裁定内容**：H1 主判定由「bootstrap CI **下界** ≤ 0.04」改为「点估计 `P95 ≤ 0.04` **且** CI **上界** ≤ 0.04」（选项②取严）。注册文字规定的下界读法**并列披露、不作判定**。
+- **为什么不违反预注册纪律**：① 发现时点早于正式数据；② 变更方向**单调收紧**——strict 条件是 registered 的**子集**（strict 成立 ⇒ registered 必成立），只可能让 H1 更难成立，不存在「为通过而放宽」的路径；③ **阈值 0.04、统计量 P95、bootstrap 1000/seed 20261105/分层/簇单位、H4 0.12、H3 区间、成本余量 1.8 一律未动**；④ 已写入冻结件与 ERRATA，且脚本以 `h1.reading` 做 fail-closed 校验。
+- **实现变更**（`aggregate-calib007.py`）：新增 `H1_READING = "strict"` 常量与 `H1_READING_RULING` 元数据（随结果落进 RAW JSON）；H1 结果字段改为 `verdict`（主判定）/ `reading` / `rule_primary` / `verdict_registered`（仅披露）/ `reading_divergence` / `ruling`；`load_and_verify_params()` 核对项 **10 → 11 项**（新增 `h1.reading`）；报告脚注改为「取严为主判定 + 注册读法并列披露」。
+- **验证强度**：`--selftest` **19 → 20 项**。第 11 项由「背离 ⇒ 判有歧义」改为「背离 ⇒ 判**不成立**且 `reading_divergence=True`」，第 12 项为单调性（strict 成立 ⇒ registered 成立）。**已做突变验证**：把常量改回 `"registered"` ⇒ PASS 19 / FAIL 1 / exit 1，证明反测真实可失败（区别于 D-5 那类空转用例）；参数文件写 `reading="registered"` ⇒ exit 1 并打印 `h1.reading` 不一致。
+- **冻结件更新**：`EXECUTION-PARAMS-AOE-CALIB-007.json` 增 `H1.reading` / `H1.reading_ruling`（裁定人、时点、理由、单调性、披露义务、`threshold_unchanged`）与 `amendment_log`；`artifacts_sha256.aggregate-calib007.py` 同步为新哈希（`65f590cb…`）。`ERRATA-AOE-CALIB-007.md` D-4 由「须裁定」改为「已裁定②」，保留裁定前处置的历史留痕。
+- **设计稿零回改**：`EXPERIMENT-DESIGN-AOE-CALIB-007.md` 未改一个字（§0 仍 47 条）。按纪律，执行前变更登记在 ERRATA 与冻结参数文件 `amendment_log`，执行偏差写入实验报告「偏差记录」。
+- 诚实边界：本版**仍无任何运行时结果**；H1 取严后**更可能不成立**（分母效应下 6–14 条轨迹单条 assign 即 0.07–0.17），若失败须按 §3.1 区分「分母效应」与「真实误报」，不得改判据。
+- 计数变化：门禁 47 项（无新增）；未解仍 44 条（#3 不闭合）；版本 2.62.2→2.62.3。
+
 ## v2.62.2（2026-11-05）：CALIB-007 开跑前置补齐（预注册件勘误 + 汇总器 + CI 自检）
 
 - **性质**：v2.62.1 入库后、**首次正式执行之前**发现预注册件有交付缺口与一处措辞歧义。本版只补缺口、登记歧义，**判据一字未动**（H1 `P95 ≤ 0.04`、H4 `P5 ≥ 0.12`、H3 区间、成本余量 1.8）。设计稿按预注册纪律**零回改**，缺陷另立 `ERRATA-AOE-CALIB-007.md`（D-1…D-5）。
