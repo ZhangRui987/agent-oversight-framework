@@ -32,3 +32,8 @@ tools/audit-panel/data/history/
 # out/ 下是真实 LLM 调用产物；验证结论以 adapters/autogen/README.md 的记录为准，
 # 原始 JSONL 仅供本地复核，不随仓库分发（避免把不可复现数据当 golden）。
 reference/runtimes/l2-runtime-oversight/adapters/**/out/
+
+# D-6（2026-11-05 首条正式命令后补）：检查单 §7 模板把产物落在 runtime 根下的 out/
+# （--out out/run-<stamp>/...），原规则只覆盖 adapters/**/out/ ⇒ 闸门批目录处于「未跟踪待提交」，
+# git add -A 会把含完整对话/token/wall-clock 的不可复现产物带进版本库。此处补齐。
+reference/runtimes/l2-runtime-oversight/out/

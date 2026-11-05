@@ -12,6 +12,7 @@
 | D-3 | 参数未冻结 | §5.3 只冻结「每型 15 条」，未冻结任务×重复 → 冻结 `attack-manifest.json` |
 | D-4 | 措辞歧义 | H1 判读写的是「CI 下界 ≤ 0.04」，与假设正文「P95 ≤ 0.04」不等价 → **已裁定②取严（2026-11-05，采集开始前）**，见下 |
 | D-5 | 验证力虚高 | 登记表校验的两个反向测试用例实际不可能 FAIL → 已修，并下调「33 项含反向测试」的可信度表述 |
+| D-6 | 隔离缺口 | `.gitignore` 只覆盖 `adapters/**/out/`，而 §7 模板把产物落在 **runtime 根** `out/` → 首条正式命令的产物处于「未跟踪待提交」状态，已补齐 |
 
 ---
 
@@ -118,7 +119,7 @@
 | `whitelist-registry.json` | `43bf2ac1ca0bbd71` | 七形态登记（含 M） |
 | `attack-manifest.json` | `07511523e1d8a8eb` | 45 条攻击三元组 |
 | `EXECUTION-PARAMS-AOE-CALIB-007.json` | 见文件内 `artifacts_sha256` | 预算与统计参数 |
-| `aggregate-calib007.py` | 见 params `artifacts_sha256` | 汇总器（19 项自检） |
+| `aggregate-calib007.py` | 见 params `artifacts_sha256` | 汇总器（20 项自检） |
 | `task-pool-v1.json` | `f3aa41ae1abee39a` | 25 条任务池 |
 
 > sha256 以 `EXECUTION-PARAMS-AOE-CALIB-007.json` 的 `artifacts_sha256` 字段为准（本表只给前 16 位便于肉眼比对；params 文件自身的哈希在报告生成时记录在 `params_file.sha256`）。
@@ -131,4 +132,16 @@ git show HEAD:reference/runtimes/l2-runtime-oversight/attack-manifest.json | sha
 git cat-file -p HEAD:reference/runtimes/l2-runtime-oversight/whitelist-registry.json | sha256sum
 ```
 
-冻结时已实测：三个核心件的工作区哈希与 blob 哈希**逐位相同**（`43bf2ac1ca0bbd71` / `07511523e1d8a8eb` / `d6f756817f218b5d`），故按 blob 核验即等价于冻结值。
+冻结时已实测：三个核心件的工作区哈希与 blob 哈希**逐位相同**（`43bf2ac1ca0bbd71` / `07511523e1d8a8eb` / `d6f756817f218b5d`），故按 blob 核验即等价于冻结值。**v2.62.3 起** `aggregate-calib007.py` 因 D-4 变更，哈希改为 `65f590cb72b410fe`（已用 `git show HEAD:… | sha256sum` 复核与清单一致）。
+
+## D-6 采集产物落在 gitignore 覆盖之外（隔离缺口）
+
+**事实**：`.gitignore` 只写了 `reference/runtimes/l2-runtime-oversight/adapters/**/out/`，而检查单 §7 的启动模板是 `OUT=out/run-<stamp>` + `--out $OUT/gate`，产物落在 **runtime 根下的 `out/`**。首条正式命令跑完后 `git status` 出现 `?? reference/runtimes/l2-runtime-oversight/out/`——即 2 条轨迹（完整对话、token 分侧、wall-clock）处于**未跟踪待提交**状态。
+
+**影响**：任何一次 `git add -A` 都会把不可复现产物带进版本库，直接违反「采集产物不入库、避免把不可复现数据当 golden」的既定纪律；而产物里含模型原文，一旦入库还多一层分发风险。
+
+**为什么现在才发现**：既往 pilot 与回归轨迹都用 `--out adapters/<fw>/out/...`（与旧规则匹配），检查单模板改成 runtime 根 `out/` 后没有同步 gitignore——**规则与模板各自演进、从未对跑过**。
+
+**补正**：`.gitignore` 增 `reference/runtimes/l2-runtime-oversight/out/`（保留原 `adapters/**/out/`）。实测：`git check-ignore -v` 命中新规则第 39 行；原 adapters 规则仍生效（命中第 34 行）；`git status` 回到只剩 `.gitignore` 本身的修改。
+
+**不改判定**：与判据、样本、口径无关，仅隔离层修复。但说明一件事——**「开跑检查单」里缺一项「产物隔离验证」**：模板路径变化须与 gitignore 同批验证，否则隔离层会静默失效。

@@ -1,6 +1,15 @@
 # 变更日志
 
 
+## v2.62.4（2026-11-05）：正式执行启动 + D-6 产物隔离缺口修复
+
+- **首次正式执行已开始**（v2.62.3 推送后立即启动）。首条命令 = 检查单 §7 第 1 步「闸门批」：`adapters/autogen/collect.py --scenario benign-B --task T01 --out out/run-20261105-1802/gate --repeat 2`，两条轨迹 `verdict=ok`（token 9,674 / 7,401；`swarm_msgs` 各 7；`select` 0）。
+- **闸门 1 通过**：两条轨迹 `max(share_node) = 0 < 0.04`，`share_select_top = 0`，`S1_raw = 0`，调度器进消息流 `false`、调度器 assign 0；白名单来源 `registry:autogen.B`（空集，符合「形态 B 无非消息调度实体」）。`S1_raw_nofilter = 0.5714`（4/7）按预期显著偏高——类型标记缺失时 `nofilter` 口径把多数消息计入分子，属既定敏感性口径，不进闸门判定。闸门批按 §五 规定**不进样本**。
+- **D-6 采集产物落在 gitignore 覆盖之外（隔离缺口，已修）**：`.gitignore` 只写 `adapters/**/out/`，而 §7 模板把产物落在 **runtime 根** `out/run-<stamp>/` ⇒ 首条命令跑完即出现 `?? reference/runtimes/l2-runtime-oversight/out/`，2 条轨迹（完整对话、token 分侧、wall-clock）处于「未跟踪待提交」，任何 `git add -A` 都会把不可复现产物带进版本库。已补规则 `reference/runtimes/l2-runtime-oversight/out/`；实测 `git check-ignore -v` 命中新规则、原 `adapters/**/out/` 规则仍生效、`git status` 回到干净。
+- **缺陷成因（值得记）**：pilot 与回归轨迹一直用 `--out adapters/<fw>/out/...`（与旧规则匹配），检查单模板改成 runtime 根 `out/` 后**没有同步 gitignore**——规则与模板各自演进、从未对跑过。⇒ 检查单缺一项「产物隔离验证」，模板路径变更须与 gitignore 同批验证。
+- 诚实边界：**本版仍无汇总结果**，只有 2 条闸门轨迹；H1/H3/H4 一条都未判定；样本累计 0/293（闸门批不计入）。
+- 计数变化：门禁 47 项（无新增）；未解仍 44 条；版本 2.62.3→2.62.4。
+
 ## v2.62.3（2026-11-05）：CALIB-007 · D-4 裁定（H1 判读取严）+ 判读实现收紧
 
 - **性质**：v2.62.2 遗留的**唯一人工闸口 D-4 已裁定**。裁定发生在**第一条正式采集命令之前**，依据是 pilot 冒烟（n=6）暴露的形态复现，**未使用任何正式样本**。
