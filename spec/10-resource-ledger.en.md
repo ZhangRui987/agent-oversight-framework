@@ -208,7 +208,7 @@ This targets the disposition-layer version of "win-win corruption": if the dispo
 
 | Clause | Normative layer | Implementation layer |
 |---|---|---|
-| 10-D1 event type and fields | settled | **implemented** (standalone ledger + dual-verifier chain); **not** merged into the framework's single audit chain (stage 2) |
+| 10-D1 event type and fields | settled | **implemented** (since v2.69.0 dispositions are written into the same `AppendOnlyAuditLog` as a fourth event type; the ledger JSONL is a **projection view** of that chain, not a second source of truth) |
 | 10-D2 action enumeration | settled | **implemented** (four-value validation; out-of-range rejected at write time) |
 | 10-D3 three-state derivation | settled | **implemented** (single `stateOf` function shared by panel and replay) |
 | 10-D4 obligations and deadlines | settled | **implemented** (`obligations.json` registry + `assertDeclared` fail-closed at the write path; deadlines remain engineering placeholders) |
@@ -216,7 +216,13 @@ This targets the disposition-layer version of "win-win corruption": if the dispo
 | 10-D6 two-person separation | settled | **implemented** (`reviewed_by` != `actor` validation) |
 | 10-D7 no substitution for detection work | settled | manual discipline; no machine check |
 
-**Hence this section is "normative layer closed, implementation layer done, integration layer not done"**: 10-D1–10-D6 all have machine implementations, but disposition records still live in a standalone ledger and are **not** merged into the framework's single `AppendOnlyAuditLog` (stage 2b-2: the two chain payload formats differ, so `target_chain_hash` needs a three-tuple remap). `spec/13` #44 therefore remains "partially solved", not closed.
+**Hence this section is "normative layer closed, implementation layer done, integration layer done, still not closed"**: 10-D1–10-D6 all have machine implementations, and since v2.69.0 disposition records live in the **same `AppendOnlyAuditLog`** as the signals they dispose of (`tools/disposition/framework-bridge.mts`; the ledger file is projected from that chain and re-projection is byte-identical). `spec/13` #44 nonetheless remains "partially solved" rather than closed, and the reason has moved from "not on the same chain" to three **structural** boundaries:
+
+1. **Identity is not verified**: `actor` / `reviewed_by` are still self-reported; the chain proves only that the file was not modified afterwards.
+2. **Tail truncation is not self-evident**: deleting the last N entries leaves the remainder self-consistent; only an external anchor of `{count, lastHash}` can detect it, and that anchor is not implemented.
+3. **Register only, do not act**: the action enumeration deliberately excludes blocking and penalty actions, so the disposition channel does not change runtime behaviour.
+
+A cost that comes with the same chain must be stated alongside: the chain hash covers the event-level `ts`, and the framework's `append` used to read an implicit `Date.now()`, so two runs of the same sequence produced different hashes. v2.69.0 adds an **optional** `ts` parameter, supplied by the caller with the disposition's self-reported time, to restore reproducibility. This does not make the chain time more trustworthy (a self-reported value is still unverifiable); it trades "not reproducible" for "reproducible but equally untrustworthy".
 
 ### 10-D9 Relation to existing open problems
 

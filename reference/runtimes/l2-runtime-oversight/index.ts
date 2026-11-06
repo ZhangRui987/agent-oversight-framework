@@ -406,11 +406,20 @@ export class AppendOnlyAuditLog {
   private prevHash = '';
   private readonly events: Array<AuditEvent & { seq: number; hash: string }> = [];
 
-  /** 追加一条事件；返回其 seq 与哈希。写入失败返回 null（视为失租信号）。 */
-  append(type: string, data: unknown): { seq: number; hash: string } | null {
+  /**
+   * 追加一条事件；返回其 seq 与哈希。写入失败返回 null（视为失租信号）。
+   *
+   * `tsOverride`（v2.69.0 新增，可选）：链上时间。缺省仍取 `Date.now()`，既有调用行为不变。
+   * 之所以允许注入：哈希覆盖 `ts`，硬编码墙钟会让**同一事件序列两次运行得到不同链哈希**，
+   * 于是任何「同链可复现」的主张都不成立（处置台账的投影与第三方核验都需要逐字节一致）。
+   * 注入方（`tools/disposition/framework-bridge.mts`）传入的是处置**自报** ts——
+   * 这不会提高链时间的可信度，只是把「不可复现」换成「可复现但时间同样不可信」，
+   * 后者至少可被复查。生产实现应改为由可信时钟服务签名。
+   */
+  append(type: string, data: unknown, tsOverride?: number): { seq: number; hash: string } | null {
     try {
       this.seq += 1;
-      const ts = Date.now();
+      const ts = tsOverride ?? Date.now();
       const payload = JSON.stringify({ seq: this.seq, type, data, ts, prev: this.prevHash });
       // SHA-256 哈希链：每条事件绑定前一条的哈希，等长篡改/删改必被 verifyChain 检出。
       const hash = sha256(payload);

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """发布一致性校验（推送前 / pre-commit 用）。
 
-校验项（共 49 项 = 49 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
+校验项（共 50 项 = 50 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
   1. 全仓库无 [TABLE START/END] 伪标记
   2. 所有 Markdown 表格表头后都有 |---| 分隔行
   3. 表格每行列数与分隔行一致
@@ -121,6 +121,16 @@
          10-D5 聚合行为的 9 条边界断言（空集 null / 超时 1 / 闭合不计 / 倒挂标脏 /
          未声明不入分母 / now 必传）。内含 8 条反向测试，每条**断言指定检查项命中**
          ——避免被别的检查顺带拦住而误判判别力（D-5 同类陷阱）。
+  50. 处置通道集成层：处置与信号同链（v2.69.0 新增）
+      —— 教训来源：阶段 1/2a/2b-1 的台账是**独立链**，信号在框架链、处置在台账链，
+         「删掉处置记录」不破坏信号链，反之亦然。第 47 项验的是台账自己那条链，
+         验不出「处置与被处置对象是否同链」——链各自的完整性不等于它们的关系成立。
+         本项：① Node 侧 19 项自检 + 6 条反测（同链写入 / 篡改检出 / 删除中间检出 /
+         键序漂移 / disp_seq 跳号 / 未登记类别拒写且不污染链 / 自审自批拒写 /
+         链拒写不静默 / 迁移四种原因 / 注入 ts 才可复现 / 尾部截断不可自证须外锚）；
+         ② 同链**投影**出的台账交给 **Python** verify_chain.py 复核——跨语言这一层是本项
+         存在的理由：JS 内部自洽不等于第三方可复算；③ 投影只落临时目录，用完即删
+         （派生数据入库即产生第二真相源）。
 
 用法：
   python scripts/verify_consistency.py [仓库根目录，默认脚本所在目录的上级]
@@ -1365,6 +1375,100 @@ check(
     "义务注册表 ↔ spec/10 条款 ↔ LedgerSignalKind 三方一致（类别集合 / 逐级时限 / 10-D8 状态 / 聚合行为，含 8 条反向测试）",
     not _p49_bad,
     "; ".join(_p49_bad) if _p49_bad else _p49_note,
+)
+
+# ── 第 50 项：处置通道集成层（同链）─────────────────────────────
+# 校验对象：tools/disposition/framework-bridge.mts 关于「处置与被处置信号同处一条
+# AppendOnlyAuditLog」的全部主张。三件事：
+#   1. Node 侧 19 项自检 + 6 条反向测试全过（每条反测断言指定检查项命中）；
+#   2. 同链投影出的台账能被 **Python** 参照实现 verify_chain.py 验过
+#      —— 跨语言复核是本项存在的理由：JavaScript 内部自洽不等于第三方可复算；
+#   3. 投影不落仓（临时目录，用完即删）——投影是派生数据，入库即产生第二真相源。
+# 与第 49 项分工：49 管取值域（类别/时限），50 管链结构（同链/篡改/投影/迁移/复现）。
+
+_p50_bad = []
+_p50_note = ""
+_p50_script = os.path.join(ROOT, "tools", "disposition", "check-bridge.mts")
+_p50_tmpdir = None
+if not os.path.exists(_p50_script):
+    _p50_bad.append("缺少 tools/disposition/check-bridge.mts")
+else:
+    try:
+        _p50_node = ["node", "--experimental-transform-types", _p50_script]
+        _p50_st = subprocess.run(
+            _p50_node + ["--selftest"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=180,
+            cwd=ROOT,
+        )
+        _p50_out = (_p50_st.stdout or "") + (_p50_st.stderr or "")
+        if _p50_st.returncode != 0:
+            _p50_lines = [
+                ln.strip()
+                for ln in _p50_out.splitlines()
+                if ln.strip().startswith("FAIL") or ln.strip().startswith("[FAIL]")
+            ]
+            _p50_bad.append(
+                "集成层自检未通过："
+                + (" | ".join(_p50_lines[:6]) if _p50_lines else _p50_out[-400:].strip())
+            )
+        else:
+            _p50_sum = [
+                ln.strip() for ln in _p50_out.splitlines() if ln.startswith("selftest PASS=")
+            ]
+            _p50_note = _p50_sum[-1] if _p50_sum else "自检通过"
+
+            # 跨语言：投影台账 → Python 参照实现验链
+            _p50_tmpdir = tempfile.mkdtemp(prefix="aof-bridge-")
+            _p50_ledger = os.path.join(_p50_tmpdir, "projected.jsonl")
+            _p50_emit = subprocess.run(
+                _p50_node + [f"--emit-ledger={_p50_ledger}"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=120,
+                cwd=ROOT,
+            )
+            if _p50_emit.returncode != 0 or not os.path.exists(_p50_ledger):
+                _p50_bad.append(
+                    "投影台账生成失败：" + ((_p50_emit.stdout or "") + (_p50_emit.stderr or ""))[-300:].strip()
+                )
+            else:
+                _p50_py = subprocess.run(
+                    [sys.executable, os.path.join(ROOT, "tools", "disposition", "verify_chain.py"), _p50_ledger],
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace",
+                    timeout=120,
+                    cwd=ROOT,
+                )
+                if _p50_py.returncode != 0:
+                    _p50_py_out = (_p50_py.stdout or "") + (_p50_py.stderr or "")
+                    _p50_bad.append(
+                        "同链投影未通过 Python 参照实现："
+                        + " | ".join(ln.strip() for ln in _p50_py_out.splitlines() if ln.strip())[:400]
+                    )
+                else:
+                    _p50_note += "；投影经 Python verify_chain.py 复核 PASS"
+    except FileNotFoundError:
+        _p50_bad.append(
+            "未找到 node——本项需 node ≥ 22 运行 check-bridge.mts（CI consistency job 已配置 Setup Node）"
+        )
+    except subprocess.TimeoutExpired:
+        _p50_bad.append("集成层自检超时（180s）")
+    finally:
+        if _p50_tmpdir is not None:
+            shutil.rmtree(_p50_tmpdir, ignore_errors=True)
+
+check(
+    "处置通道集成层：处置与信号同链（19 项自检 + 6 条反测）+ 投影经 Python 参照实现复核",
+    not _p50_bad,
+    "; ".join(_p50_bad) if _p50_bad else _p50_note,
 )
 
 # ── 汇总 ─────────────────────────────────────
