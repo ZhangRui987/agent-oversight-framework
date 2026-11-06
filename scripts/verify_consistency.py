@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """发布一致性校验（推送前 / pre-commit 用）。
 
-校验项（共 52 项 = 52 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
+校验项（共 53 项 = 53 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
   1. 全仓库无 [TABLE START/END] 伪标记
   2. 所有 Markdown 表格表头后都有 |---| 分隔行
   3. 表格每行列数与分隔行一致
@@ -154,12 +154,22 @@
          本项跑 `scripts/check_anchor_publish.py --selftest`（离线，不联网）：
          ① 基线 P1 覆盖（当前锚必须有发布记录且串逐字相等）/ P2 可溯（记录必须指回
          真实锚行——防「先写一条已发布记录再声称已发布」）/ P3 仓内声明（CHANGELOG
-         当前版本小节逐字含当前串，且**不得残留旧串**）；② 7 条反向测试，每条断言
-         **指定项**命中（S4/S5 只命中 P3，S6 只 P4，S7 只 P5——构造若写错会显示 PASS，
-         等于没检查）；③ 锚格式不重实现：本项消费 `check-anchor.mts --emit-digests` 的
-         JSON，Python 侧只做字符串比对。
+         当前版本小节逐字含当前串，且**不得残留旧串**）；② 8 条反向测试，每条断言
+         **指定项**命中（S4/S5 只命中 P3，S6 只 P4，S7 只 P5，S8 只 P4——构造若写错
+         会显示 PASS，等于没检查）；③ 锚格式不重实现：本项消费 `check-anchor.mts
+         --emit-digests` 的 JSON，Python 侧只做字符串比对。
          ⚠️ P4/P5（Release 正文必须含该串 / 正文里的串必须已登记）需联网，不进门禁——
          放在 `release-guard` 每日跑，避免 CI 因网络抖动变红而被人习惯性忽略。
+  53. 发版脚本把预检当**必经代码路径**（v2.72.0 新增）
+      —— 教训来源：第 52 项把「发布」变成可校验，但校验仍是**发版前要记得跑的一步**。
+         在那之前，发版靠工作区里 `create_release_v*.py` 这类一次性脚本：每版复制一份、
+         改三处，预检写在文档里。两个失效模式都真实发生过：复制旧模板漏改字段（tag 对、
+         正文是上一版），以及预检跑了但看的不是将要发的那份正文。
+         本项：① `scripts/create_release.py --selftest`（离线 7 条）证明预检**挡在创建
+         之前**——预检失败时 creator 一次都没被调用，dry-run 预检通过也不创建；
+         ② 结构断言：脚本必须消费 `check_anchor_publish.py` 与 `git ls-remote`，且
+         **不得出现 `--force`**（能跳过检查就等于没有检查）；
+         ③ 发版脚本唯一化：仓库内只有这一份实现，不再每版复制。
 
 用法：
   python scripts/verify_consistency.py [仓库根目录，默认脚本所在目录的上级]
@@ -1615,9 +1625,71 @@ else:
         _p52_bad.append("发布校验超时（180s）")
 
 check(
-    "外锚摘要串的发布：覆盖 / 可溯 / 仓内声明 + 7 条反测（漏贴与贴旧串必须被检出）",
+    "外锚摘要串的发布：覆盖 / 可溯 / 仓内声明 + 8 条反测（漏贴与贴旧串必须被检出）",
     not _p52_bad,
     "; ".join(_p52_bad) if _p52_bad else _p52_note,
+)
+
+# ── 第 53 项：发版脚本把预检当必经代码路径（不是「发版前记得跑」）──
+# 第 52 项证明「发布可校验」，但校验仍是发版流程里靠人记得的一步。
+# 预检与 POST 若不在同一个函数里，就永远存在「跑的是 A、发的是 B」的缝。
+
+_p53_bad = []
+_p53_note = ""
+_p53_script = os.path.join(ROOT, "scripts", "create_release.py")
+if not os.path.exists(_p53_script):
+    _p53_bad.append("缺少 scripts/create_release.py——发版预检回到「靠人先跑」")
+else:
+    try:
+        _p53_src = open(_p53_script, encoding="utf-8").read()
+    except OSError as e:
+        _p53_src = ""
+        _p53_bad.append(f"读不了 scripts/create_release.py：{e}")
+
+    # 结构断言：预检的两项能力必须在（消费已有实现，不重写规则），且不得留跳过开关
+    if _p53_src:
+        if "check_anchor_publish.py" not in _p53_src:
+            _p53_bad.append("脚本未消费 check_anchor_publish.py——预检可能已被摘掉")
+        if "ls-remote" not in _p53_src:
+            _p53_bad.append(
+                "脚本未校验 tag 是否已推 origin——GitHub 会把缺失的 tag 建在默认分支 HEAD 上"
+            )
+        # 只查「是否被读取」，不查「是否被提到」——脚本注释里本来就写着「没有 --force」，
+        # 按字面 grep 会把说明文字当成开关（此处第一版就踩了，断言比注释更早撞车）。
+        if '"--force"' in _p53_src or "'--force'" in _p53_src or 'arg("force")' in _p53_src:
+            _p53_bad.append("脚本读取了 force 开关：能跳过预检就等于没有预检")
+
+    try:
+        _p53_st = subprocess.run(
+            [sys.executable, _p53_script, "--selftest"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=300,
+            cwd=ROOT,
+        )
+        _p53_out = (_p53_st.stdout or "") + (_p53_st.stderr or "")
+        if _p53_st.returncode != 0:
+            _p53_lines = [
+                ln.strip()
+                for ln in _p53_out.splitlines()
+                if ln.strip().startswith("[FAIL]") or ln.strip().startswith("FAIL")
+            ]
+            _p53_bad.append(
+                "发版脚本自检未通过："
+                + (" | ".join(_p53_lines[:6]) if _p53_lines else _p53_out[-400:].strip())
+            )
+        else:
+            _p53_hits = [ln.strip() for ln in _p53_out.splitlines() if ln.startswith("selftest PASS=")]
+            _p53_note = "；".join(_p53_hits) or "通过"
+    except subprocess.TimeoutExpired:
+        _p53_bad.append("发版脚本自检超时（300s）")
+
+check(
+    "发版脚本：预检挡在创建之前（7 条自检）+ 可跳过开关不得存在",
+    not _p53_bad,
+    "; ".join(_p53_bad) if _p53_bad else _p53_note,
 )
 
 # ── 汇总 ─────────────────────────────────────

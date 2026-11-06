@@ -18,6 +18,9 @@ check_anchor_publish.py —— 外锚摘要串「发布」的机器校验（v2.7
   P3 仓内声明  CHANGELOG 的当前 VERSION 小节必须逐字含当前串；该小节内出现的合法串
                必须属于当前集合（贴了旧串即 FAIL，不会被「至少有一条对」蒙过）。
   P4 域外     每条记录所在版本 v<version> 的 Release 正文必须含该串。
+               `--release-body= --version=` 指定单个版本时，若**没有任何登记属于该版本**，
+               报 FAIL 而不是空集通过——否则「忘了 --publish-lines」时这一项没检查对象，
+               预检会给出绿灯（10-D5「空集返回 null 不返回 0」同一条纪律）。
   P5 双向闭包 任何 Release 正文里的合法串都必须有对应记录——否则删掉记录即可绕过 P4。
 
 ── 四条设计约束 ─────────────────────────────────────────────────────────────
@@ -36,7 +39,7 @@ check_anchor_publish.py —— 外锚摘要串「发布」的机器校验（v2.7
   python scripts/check_anchor_publish.py --release           # 联网：额外 P4–P5（GitHub API）
   python scripts/check_anchor_publish.py --release-body=FILE --version=2.71.0
                                                              # 发版前用本地说明文件预检
-  python scripts/check_anchor_publish.py --selftest          # 基线 + 7 条反向测试
+  python scripts/check_anchor_publish.py --selftest          # 基线 + 8 条反向测试
 
 退出码：0 = 全通过；1 = 有失败；2 = 环境问题（node / 文件缺失）。
 """
@@ -240,6 +243,14 @@ def run_checks(anchors, published, changelog_text, version, bodies=None, p4_scop
         bad = []
         scope = [p for p in published
                  if p4_scope is None or p["published_version"] in p4_scope]
+        # 空集必须报 FAIL，不能 vacuous PASS（10-D5 同一条纪律：空集返回 null，不返回 0）。
+        # 构造：发了新版但忘了 `--publish-lines` 追加登记，于是 P4 的 scope 为空——
+        # 此时「正文里没有该版本的串」这件事根本没人检查，预检会给出绿灯。
+        if p4_scope is not None and not scope:
+            bad.append(
+                "v%s：没有任何发布登记属于该版本——先跑 `--publish-lines` 追加再预检"
+                % "/".join(sorted(p4_scope))
+            )
         for p in scope:
             body = bodies.get(p["published_version"])
             if body is None:
@@ -311,7 +322,7 @@ def fetch_release_bodies():
 
 
 def selftest():
-    """基线 + 7 条变异。每条变异断言**指定项**命中（不是「任意 FAIL」）。"""
+    """基线 + 8 条变异。每条变异断言**指定项**命中（不是「任意 FAIL」）。"""
     anchors = load_anchors()
     published = load_published()
     version = VERSION_FILE.read_text(encoding="utf-8").strip()
@@ -380,7 +391,20 @@ def selftest():
             row = next((c for c in rows if c.id == expect), None)
             print(f"       期望项 {expect} 未命中：{row.detail if row else '不存在'}")
 
-    total = len(cases)
+    # S8（形态与上面七条不同：P4 的 scope 为空）——发版预检的必经路径。
+    # 记这条的原因：P4 只对「已登记为该版本」的记录做检查，忘了追加登记时 scope 为空，
+    # 于是「正文里有没有这串」根本没人查，预检给出绿灯。空集不能算通过（10-D5 同一纪律）。
+    s8_label = "S8 为新版本预检但没有任何该版本的发布登记（忘了 --publish-lines）"
+    s8_ver = "9.9.9"
+    s8_rows = run_checks(anchors, clone(published), text, s8_ver, {s8_ver: ""}, {s8_ver})
+    s8_hit = [c.id for c in s8_rows if not c.ok]
+    s8_ok = "P4" in s8_hit
+    print(f"[{'PASS' if s8_ok else 'FAIL'}] 反测 8：{s8_label} → 命中[{','.join(s8_hit) or '无'}]（应含 P4）")
+    if not s8_ok:
+        bad += 1
+        print("       空集被当成通过——P4 对此版本根本没有检查对象")
+
+    total = len(cases) + 1
     print(f"\nselftest PASS={total - bad} FAIL={bad}（基线 {len(base)} 项 + 反测 {total} 项）")
     return 0 if bad == 0 else 1
 

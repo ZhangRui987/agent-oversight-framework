@@ -223,7 +223,8 @@ prev_hash  = 上一行 chain_hash（首行为空串 ""）
 | `check-anchor.mts` | **外锚自检**（门禁第 51 项）：14 项校验 + 6 条反向测试；`--verify-repo` 核验仓库实锚（先由产物各自的验证器验链，再比锚）；`--reanchor` 追加新锚；`--emit-digests` 输出机器可读的锚与摘要串（供发布校验消费，锚格式只此一份实现）；`--publish-lines` 吐出待追加的发布记录行 |
 | `data/anchor.jsonl` | **锚日志**（append-only，2 条起）：对面板 V1 事件流与处置台账逐次锚定；历史锚永不删除/改写 |
 | `data/published-anchors.jsonl` | **发布记录**（append-only）：一行 = 「某版本发布了某链某锚的串」；键序冻结；非防篡改对象，真伪由 Release 正文对照 |
-| `scripts/check_anchor_publish.py` | **发布校验**（门禁第 52 项跑其 `--selftest`）：P1 覆盖 / P2 可溯 / P3 仓内声明（离线）+ P4 域外 / P5 双向闭包（`--release`）；7 条反向测试 |
+| `scripts/check_anchor_publish.py` | **发布校验**（门禁第 52 项跑其 `--selftest`）：P1 覆盖 / P2 可溯 / P3 仓内声明（离线）+ P4 域外 / P5 双向闭包（`--release`）；8 条反向测试 |
+| `scripts/create_release.py` | **发版唯一入口**（门禁第 53 项跑其 `--selftest`）：预检通过才发起请求，无跳过开关；`--dry-run` 只跑到预检为止 |
 
 ---
 
@@ -349,8 +350,10 @@ node --experimental-transform-types tools/disposition/check-anchor.mts --publish
 
 # 离线校验（P1–P3）/ 发版前用本地说明文件预检 / 联网校验（P4–P5）
 python scripts/check_anchor_publish.py
-python scripts/check_anchor_publish.py --release-body=<发版说明.md> --version=2.71.0
+python scripts/check_anchor_publish.py --release-body=<发版说明.md> --version=2.72.0
 python scripts/check_anchor_publish.py --release
 ```
 
-**发版 checklist 的实际顺序**（重锚时）：`--reanchor` → `--publish-lines` 追加记录 → CHANGELOG 小节写入同样的串 → 写 Release 说明（含同样的串）→ `--release-body=` 预检 → 建 Release → `--release` 复核。
+**发版顺序**（重锚时）：`--reanchor` → `--publish-lines` 追加记录 → CHANGELOG 小节写入同样的串 → 写 Release 说明（含同样的串）→ **`python scripts/create_release.py --notes=<说明文件> --dry-run`**（预检）→ 去掉 `--dry-run` 正式发 → 脚本自带 `--release` 事后复核。
+
+`create_release.py` 的存在理由不是省几条命令，而是**取消一个位置**：预检若还是「发版前记得跑的一步」，那么「跑的是 A、发的是 B」这条缝永远在。现在预检与 POST 在同一个函数里（`run_pipeline`），预检不过就不会调用创建；`--dry-run` 只跳过创建、照跑预检；没有 `--force`。第二项预检是 `git ls-remote`：tag 没推时 GitHub 会把它建在默认分支 HEAD 上，Release 于是指向一个你并不打算发布的提交——静默错误，事后只能删 tag 重来。
