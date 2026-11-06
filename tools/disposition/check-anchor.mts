@@ -19,6 +19,8 @@
  *   node --experimental-transform-types tools/disposition/check-anchor.mts --verify-repo # 核验仓库实锚
  *   node --experimental-transform-types tools/disposition/check-anchor.mts --reanchor    # 重新锚定
  *   node --experimental-transform-types tools/disposition/check-anchor.mts --demo        # 人类可读演示
+ *   node --experimental-transform-types tools/disposition/check-anchor.mts --emit-digests  # 机器可读的锚与摘要串（喂给发布校验）
+ *   node --experimental-transform-types tools/disposition/check-anchor.mts --publish-lines # 待追加的发布记录行（版本取自 VERSION）
  *
  * 退出码：0 = 全通过；1 = 有失败。
  */
@@ -659,6 +661,82 @@ function reanchor(): number {
   return 0;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// 4.1 机器可读输出：喂给发布校验（scripts/check_anchor_publish.py）
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// 为什么由 Node 输出、而不是让 Python 自己读 anchor.jsonl：
+//   摘要串的形状（字段顺序、last_hash 长度、前缀 16 位）是**锚格式的一部分**，
+//   而锚日志的解析规则（键序冻结 / 锚链 / 同链单调）已经在 parseAnchorLog 里。
+//   若 Python 再实现一遍，就有了两套规格——本仓库的老教训是「两套规格并行必然漂移」。
+//   这里只把**已由严格解析器验过**的锚行翻成一行 JSON，Python 侧只做字符串比对。
+
+interface DigestRow {
+  chain_id: string;
+  anchor_seq: number;
+  count: number;
+  last_hash: string;
+  anchor_hash: string;
+  digest: string;
+  latest: boolean;
+}
+
+function loadVerifiedAnchors(): { ok: true; rows: AnchorRow[]; latest: Map<string, AnchorRow> } | { ok: false; why: string } {
+  if (!existsSync(ANCHOR_LOG_FILE)) {
+    return { ok: false, why: `缺少锚日志 ${ANCHOR_LOG_FILE}（首次使用请跑 --reanchor）` };
+  }
+  const v = verifyAnchorLog(readFileSync(ANCHOR_LOG_FILE, 'utf-8'));
+  return v.ok ? { ok: true, rows: v.rows, latest: v.latest } : { ok: false, why: `锚日志不合规（第 ${v.badSeq ?? '?'} 条）：${v.reason}` };
+}
+
+/** 每行一条 JSON（stdout 只放数据，诊断走 stderr——否则调用方的 json.loads 会被警告行噎住）。 */
+function emitDigests(): number {
+  const got = loadVerifiedAnchors();
+  if (!got.ok) {
+    console.error(`FAIL ${got.why}`);
+    return 1;
+  }
+  for (const row of got.rows) {
+    const latest = got.latest.get(row.chain_id);
+    const out: DigestRow = {
+      chain_id: row.chain_id,
+      anchor_seq: row.anchor_seq,
+      count: row.count,
+      last_hash: row.last_hash,
+      anchor_hash: row.anchor_hash,
+      digest: externalDigest(row),
+      latest: latest !== undefined && latest.anchor_seq === row.anchor_seq,
+    };
+    console.log(JSON.stringify(out));
+  }
+  return 0;
+}
+
+/** 待追加到 published-anchors.jsonl 的行（键序 = 冻结顺序，手抄必出错的那一步机器代做）。 */
+function publishLines(): number {
+  const got = loadVerifiedAnchors();
+  if (!got.ok) {
+    console.error(`FAIL ${got.why}`);
+    return 1;
+  }
+  const version = readFileSync(resolve(ROOT, 'VERSION'), 'utf-8').trim();
+  for (const chain of ANCHORED_CHAINS) {
+    const row = got.latest.get(chain.chainId);
+    if (row === undefined) {
+      console.error(`FAIL ${chain.chainId} 无锚（先跑 --reanchor）`);
+      return 1;
+    }
+    // 键序必须与 check_anchor_publish.py 的 FIELDS 一致：JSON.stringify 按插入序输出。
+    console.log(JSON.stringify({
+      published_version: version,
+      chain_id: row.chain_id,
+      anchor_seq: row.anchor_seq,
+      digest: externalDigest(row),
+    }));
+  }
+  return 0;
+}
+
 function demo(): number {
   const f = buildAnchorFixture();
   const view = viewOfEvents(f.events);
@@ -706,6 +784,10 @@ function main(): void {
     process.exitCode = verifyRepo();
   } else if (argv.includes('--reanchor')) {
     process.exitCode = reanchor();
+  } else if (argv.includes('--emit-digests')) {
+    process.exitCode = emitDigests();
+  } else if (argv.includes('--publish-lines')) {
+    process.exitCode = publishLines();
   } else if (argv.includes('--demo')) {
     process.exitCode = demo();
   } else {

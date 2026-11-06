@@ -1,7 +1,7 @@
 # 处置台账（tools/disposition）
 
 > **定位**：spec/13 **#44**（账本信号处置通道缺失）的**工具侧**最小补口——给「记了之后谁管」一个可核查的载体。
-> **不构成 #44 闭合**：规范层由 `spec/10` §处置通道（10-D1–10-D11，v2.67.0 起、10-D11 于 v2.70.0 增补）钉死，实现层 10-D1–10-D6 均已有机器实现（10-D4 义务注册表 / 10-D5 完整性聚合自 v2.68.0 起），集成层自 **v2.69.0** 起处置与所处置信号**同处一条 `AppendOnlyAuditLog`**（见 §9），见证层自 **v2.70.0** 起有外锚（见 §10）——但 #44 仍定级「部分解」，理由已换成三条结构性边界：身份不验真、尾部截断的锚与链同域时不构成防篡改且锚尾须域外发布、动作枚举只登记不处置。本 README 的 §3–§7 是 spec/10 条款的**实现对应物**；两者若不一致，由门禁第 48/49/50/51 项拦截。
+> **不构成 #44 闭合**：规范层由 `spec/10` §处置通道（10-D1–10-D11，v2.67.0 起、10-D11 于 v2.70.0 增补）钉死，实现层 10-D1–10-D6 均已有机器实现（10-D4 义务注册表 / 10-D5 完整性聚合自 v2.68.0 起），集成层自 **v2.69.0** 起处置与所处置信号**同处一条 `AppendOnlyAuditLog`**（见 §9），见证层自 **v2.70.0** 起有外锚（见 §10）——但 #44 仍定级「部分解」，理由已换成三条结构性边界：身份不验真、尾部截断的锚与链同域时不构成防篡改且锚尾须域外发布、动作枚举只登记不处置。本 README 的 §3–§7 是 spec/10 条款的**实现对应物**；两者若不一致，由门禁第 48/49/50/51/52 项拦截。
 
 ---
 
@@ -16,7 +16,8 @@
 | **阶段 2a（规范层）** | `spec/10` §处置通道 10-D1–10-D10：事件类型、四动作、三态、时限义务、二阶完整性信号 | ✅ **已落地**（v2.67.0） |
 | **阶段 2b-1（实现层）** | 10-D4 义务注册表 + fail-closed；10-D5 `undisposed_rate` / `overdue_rate` 聚合；面板信号级视图 | ✅ **已落地**（v2.68.0） |
 | **阶段 2b-2（集成层）** | `disposition` 成为框架第四种事件类型，进同一 `AppendOnlyAuditLog`（处置与被处置信号**同链**） | ✅ **已落地**（v2.69.0，见 §9；台账转为该链的投影视图） |
-| **阶段 3（见证层）** | 外锚 `{chain_id, count, last_hash}` 逐次锚定 → 尾部截断与「同条数换史」可检出 | ✅ **已落地**（v2.70.0，见 §10；域外发布摘要串仍属运维动作） |
+| **阶段 3（见证层）** | 外锚 `{chain_id, count, last_hash}` 逐次锚定 → 尾部截断与「同条数换史」可检出 | ✅ **已落地**（v2.70.0，见 §10） |
+| **阶段 3.1（发布校验）** | 摘要串「是否真的发布了」：发布记录 + CHANGELOG 声明 + Release 正文对照（P1–P5） | ✅ **已落地**（v2.71.0，见 §10.6；域外发布这一步本身仍是运维动作） |
 
 ---
 
@@ -219,8 +220,10 @@ prev_hash  = 上一行 chain_hash（首行为空串 ""）
 | `framework-bridge.mts` | **集成层（2b-2）**：把处置写进框架同一 `AppendOnlyAuditLog`（`appendDispositionToChain`）；从链投影出台账（`projectLedger`）；独立复算链（`verifyEventChain`）；链摘外锚（`chainDigest`）；历史台账迁移（`migrateLedger`） |
 | `check-bridge.mts` | **集成层自检**（门禁第 50 项）：19 项校验 + 6 条反向测试；`--demo` 打印链上内容、投影结果与真实台账迁移结论；`--emit-ledger=` 供 Python 参照实现复核 |
 | `anchor.mts` | **外锚（见证层）**：只对 `{count, last_hash}` 做比较，**不重实现任何链**；五种判定（`match` / `grew` / `truncated` / `forked` / `undecidable`）；锚日志自身成链 + 同链 `count` 单调不减；`externalDigest()` 生成可外发摘要串 |
-| `check-anchor.mts` | **外锚自检**（门禁第 51 项）：14 项校验 + 6 条反向测试；`--verify-repo` 核验仓库实锚（先由产物各自的验证器验链，再比锚）；`--reanchor` 追加新锚 |
+| `check-anchor.mts` | **外锚自检**（门禁第 51 项）：14 项校验 + 6 条反向测试；`--verify-repo` 核验仓库实锚（先由产物各自的验证器验链，再比锚）；`--reanchor` 追加新锚；`--emit-digests` 输出机器可读的锚与摘要串（供发布校验消费，锚格式只此一份实现）；`--publish-lines` 吐出待追加的发布记录行 |
 | `data/anchor.jsonl` | **锚日志**（append-only，2 条起）：对面板 V1 事件流与处置台账逐次锚定；历史锚永不删除/改写 |
+| `data/published-anchors.jsonl` | **发布记录**（append-only）：一行 = 「某版本发布了某链某锚的串」；键序冻结；非防篡改对象，真伪由 Release 正文对照 |
+| `scripts/check_anchor_publish.py` | **发布校验**（门禁第 52 项跑其 `--selftest`）：P1 覆盖 / P2 可溯 / P3 仓内声明（离线）+ P4 域外 / P5 双向闭包（`--release`）；7 条反向测试 |
 
 ---
 
@@ -296,7 +299,7 @@ prev_hash  = 上一行 chain_hash（首行为空串 ""）
 aof-anchor/v1:audit-panel/events-v1:1:9:27c2fe8f…:7d8a896bed4ce976
 ```
 
-把这一串写进 Release 说明 / 交给第三方，日后任何持串者都能核验「链是否被截到这一条之前」。**这一步是运维动作，代码无法自证其已完成**——所以 `--reanchor` 每次都会把这句警告打出来。
+把这一串写进 Release 说明 / 交给第三方，日后任何持串者都能核验「链是否被截到这一条之前」。**这一步本身是运维动作，代码无法自证其「已发生」**——所以 `--reanchor` 每次都会把这句警告打出来。v2.71.0 起可以机器校验「发布声明是否与锚一致、是否真的出现在 Release 正文里」，见 §10.6；但校验的也只是「GitHub 上那份正文里有这串」，不是「这串没被有权限的人改过」。
 
 ### 10.4 用法
 
@@ -320,3 +323,34 @@ node --experimental-transform-types tools/disposition/check-anchor.mts --demo
 1. **同域不防篡改**：能改链者通常也能改锚。外锚提供「不一致可检出」与「回滚可检出」，不是「不可篡改」；
 2. **锚尾不可自证**：见 §10.3，只能靠域外摘要串；
 3. **不证明作者**：锚只回答「链当时长这样」，身份验真（E1/E5）不在主张范围。
+
+### 10.6 发布的机器校验（v2.71.0）
+
+§10.3 那句「运维动作、代码无法自证」在 v2.70.0 是终点，现在是**起点**：漏贴、贴旧串、重锚后忘记重新发布，这三种情况在仓库内部都看不出来（锚日志是对的、链也是对的），但它们都可以被机器发现——只要「发布了什么」有落点。
+
+- **发布记录** `data/published-anchors.jsonl`：一行 = 「某版本发布了某链某锚的摘要串」，键序冻结（`published_version` / `chain_id` / `anchor_seq` / `digest`）。它**不是**防篡改对象（与链同域）；它的作用是让「声称发布了什么」可被逐字比对。
+- **校验** `scripts/check_anchor_publish.py`（门禁第 52 项跑其 `--selftest`）：
+
+| 项 | 断言 | 抓的是什么 |
+|---|---|---|
+| P1 覆盖 | 每条链的**当前**锚必须有记录，且串与派生值逐字相等；同一锚被多次登记时各条不得矛盾 | 重锚后忘了登记 / 登记了但抄错 / 其中一条被改坏 |
+| P2 可溯 | 每条记录必须指回真实锚行（`chain_id` + `anchor_seq`）且串相符 | 先写一条「已发布」记录，再声称已发布 |
+| P3 仓内声明 | `CHANGELOG` 当前版本小节逐字含当前串，且**不得残留旧串** | 发版说明从 CHANGELOG 抄，抄到旧串即错 |
+| P4 域外 | 该记录所在版本的 Release 正文必须含该串 | 记录了但从没发出去 |
+| P5 双向闭包 | Release 正文里的合法串都必须有记录 | 删掉记录即可绕过 P4 |
+
+- P1–P3 离线、进门禁；P4/P5 联网，挂在 `release-guard` 每日定时（push 上查会因网络抖动变红，而红灯被忽略比没有红灯更差）。
+- **不重实现锚格式**：脚本不读 `anchor.jsonl`，只消费 `check-anchor.mts --emit-digests` 的 JSON。
+- **一个实测到的误报陷阱**：Release 正文里有格式模板 `aof-anchor/v1:<chain_id>:…`，naive grep 会把它算成「未登记的串」而让 P5 永远 FAIL。故只认严格匹配（64 位 hex + 16 位前缀 + 尾边界断言），实测 68 个 Release 正文零误报。
+
+```bash
+# 生成待追加的发布记录行（版本取自 VERSION）→ 粘进 published-anchors.jsonl
+node --experimental-transform-types tools/disposition/check-anchor.mts --publish-lines
+
+# 离线校验（P1–P3）/ 发版前用本地说明文件预检 / 联网校验（P4–P5）
+python scripts/check_anchor_publish.py
+python scripts/check_anchor_publish.py --release-body=<发版说明.md> --version=2.71.0
+python scripts/check_anchor_publish.py --release
+```
+
+**发版 checklist 的实际顺序**（重锚时）：`--reanchor` → `--publish-lines` 追加记录 → CHANGELOG 小节写入同样的串 → 写 Release 说明（含同样的串）→ `--release-body=` 预检 → 建 Release → `--release` 复核。

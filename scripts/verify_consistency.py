@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """发布一致性校验（推送前 / pre-commit 用）。
 
-校验项（共 51 项 = 51 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
+校验项（共 52 项 = 52 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
   1. 全仓库无 [TABLE START/END] 伪标记
   2. 所有 Markdown 表格表头后都有 |---| 分隔行
   3. 表格每行列数与分隔行一致
@@ -146,6 +146,20 @@
          ⚠️ 本项不主张「防篡改」：锚与链在同一可写域时，能改链者通常也能改锚。
          真正的信任根是把 `aof-anchor/v1:…` 摘要串发布到域外（Release 说明 /
          第三方保管），那一步是运行程序，代码无法自证。
+  52. 外锚摘要串的**发布**：漏贴 / 贴旧串 / 重锚后没重新发布（v2.71.0 新增）
+      —— 教训来源：第 51 项把「发布摘要串」写成文档里的一句话，于是它仍然只靠人。
+         而漏贴这一串的后果是**静默的**：锚日志是对的、链也是对的，只是域外见证不存在，
+         于是「锚尾被整体删掉」重新变成不可检出。与「30 个 tag 无 Release」同病：
+         承诺靠纪律维护必然漂移。
+         本项跑 `scripts/check_anchor_publish.py --selftest`（离线，不联网）：
+         ① 基线 P1 覆盖（当前锚必须有发布记录且串逐字相等）/ P2 可溯（记录必须指回
+         真实锚行——防「先写一条已发布记录再声称已发布」）/ P3 仓内声明（CHANGELOG
+         当前版本小节逐字含当前串，且**不得残留旧串**）；② 7 条反向测试，每条断言
+         **指定项**命中（S4/S5 只命中 P3，S6 只 P4，S7 只 P5——构造若写错会显示 PASS，
+         等于没检查）；③ 锚格式不重实现：本项消费 `check-anchor.mts --emit-digests` 的
+         JSON，Python 侧只做字符串比对。
+         ⚠️ P4/P5（Release 正文必须含该串 / 正文里的串必须已登记）需联网，不进门禁——
+         放在 `release-guard` 每日跑，避免 CI 因网络抖动变红而被人习惯性忽略。
 
 用法：
   python scripts/verify_consistency.py [仓库根目录，默认脚本所在目录的上级]
@@ -1553,6 +1567,57 @@ check(
     "处置链外锚：尾部截断 / 同条数换史可检出（14 项自检 + 6 条反测）+ 仓库实锚与产物一致",
     not _p51_bad,
     "; ".join(_p51_bad) if _p51_bad else (_p51_note or "通过"),
+)
+
+# ── 第 52 项：外锚摘要串的**发布**（漏贴 / 贴旧串 / 重锚后未重新发布）──
+# 第 51 项证明「有锚且链与锚一致」，但它管不到「这串有没有真的发出去」。
+# 发布是唯一能把「锚尾被整体删掉」变成可检出的动作，而漏做它**不留痕迹**：
+# 锚日志是对的、链也是对的，只是域外见证不存在。所以必须单独可校验。
+
+_p52_bad = []
+_p52_note = ""
+_p52_script = os.path.join(ROOT, "scripts", "check_anchor_publish.py")
+_p52_rec = os.path.join(ROOT, "tools", "disposition", "data", "published-anchors.jsonl")
+if not os.path.exists(_p52_script):
+    _p52_bad.append("缺少 scripts/check_anchor_publish.py")
+elif not os.path.exists(_p52_rec):
+    _p52_bad.append(
+        "缺少 tools/disposition/data/published-anchors.jsonl——用 "
+        "`node --experimental-transform-types tools/disposition/check-anchor.mts --publish-lines` "
+        "生成待追加行"
+    )
+else:
+    try:
+        _p52_st = subprocess.run(
+            [sys.executable, _p52_script, "--selftest"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=180,
+            cwd=ROOT,
+        )
+        _p52_out = (_p52_st.stdout or "") + (_p52_st.stderr or "")
+        if _p52_st.returncode != 0:
+            _p52_lines = [
+                ln.strip()
+                for ln in _p52_out.splitlines()
+                if ln.strip().startswith("FAIL") or ln.strip().startswith("[FAIL]")
+            ]
+            _p52_bad.append(
+                "发布校验未通过："
+                + (" | ".join(_p52_lines[:6]) if _p52_lines else _p52_out[-400:].strip())
+            )
+        else:
+            _p52_hits = [ln.strip() for ln in _p52_out.splitlines() if ln.startswith("selftest PASS=")]
+            _p52_note = "；".join(_p52_hits) or "通过"
+    except subprocess.TimeoutExpired:
+        _p52_bad.append("发布校验超时（180s）")
+
+check(
+    "外锚摘要串的发布：覆盖 / 可溯 / 仓内声明 + 7 条反测（漏贴与贴旧串必须被检出）",
+    not _p52_bad,
+    "; ".join(_p52_bad) if _p52_bad else _p52_note,
 )
 
 # ── 汇总 ─────────────────────────────────────

@@ -31,3 +31,21 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0（与 ci.yml 同 pin）
       - name: Check release invariant
         run: python3 scripts/check_release_invariant.py
+
+  # 外锚摘要串的**域外**校验（v2.71.0 新增）
+  # 门禁第 52 项只能在仓内验「记录与锚一致、CHANGELOG 已声明」；「Release 正文里到底
+  # 有没有这串」必须联网才知道，而联网检查不适合挂在 push 上（网络抖动会把人训练成
+  # 忽略红灯）。放在每日定时里：一旦不一致，一天内必定有人看到。
+  # 需要 node 22：脚本消费 check-anchor.mts --emit-digests（锚格式只有那一份实现）。
+  anchor-publish:
+    name: 外锚摘要串已发布到 Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: "22"
+      - name: Check anchor publication
+        run: python3 scripts/check_anchor_publish.py --release
