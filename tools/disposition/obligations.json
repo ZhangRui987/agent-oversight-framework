@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "introduced_in": "v2.68.0",
+  "clause": "spec/10 §10-D4 / §10-D5",
+  "calibration_status": "placeholder",
+  "calibration_owner": "#33",
+  "calibration_note": "sla_hours 全部为工程占位值，不是标定结果。它们只为让 10-D4 可执行；标定由 spec/13 #33 承接。标定完成前，任何基于本表的时效统计只能报告分布，不得表述为「达标」或「超期率符合要求」。",
+  "fail_closed": "未在本表登记的 signal_category 一律拒写台账（10-D4「未声明义务的信号类别不得进入生产采集」）。新增类别必须同时改本表、spec/10 §10-D4 表格与框架侧 LedgerSignalKind，三者由门禁第 49 项校验。",
+  "categories": {
+    "memory-write-audited": {
+      "priority": "P0",
+      "sla_hours": 24,
+      "owner_role": "safety-reviewer",
+      "reversibility": "irreversible",
+      "rationale": "记忆 / 系统提示 / 持久化配置写入可污染后续全部会话，且事后难以区分是投毒还是正常维护——不可逆优先。"
+    },
+    "budget-exceeded": {
+      "priority": "P1",
+      "sla_hours": 72,
+      "owner_role": "cost-owner",
+      "reversibility": "recoverable-cost",
+      "rationale": "超预算消耗是已发生的成本，可归因可追偿，但不会损坏后续行为。"
+    },
+    "shadow-deviation": {
+      "priority": "P1",
+      "sla_hours": 72,
+      "owner_role": "cost-owner",
+      "reversibility": "recoverable-cost",
+      "rationale": "影子比偏离基线说明消耗结构变化，可能预示滥用，也可能只是任务类型迁移——需人工判读，非即刻损毁。"
+    },
+    "periodic-egress": {
+      "priority": "P2",
+      "sla_hours": 168,
+      "owner_role": "ops-owner",
+      "reversibility": "informational",
+      "rationale": "固定间隔外联多为中心跳或健康检查，信息性为主；仅在与其他信号叠加时升级。"
+    }
+  }
+}

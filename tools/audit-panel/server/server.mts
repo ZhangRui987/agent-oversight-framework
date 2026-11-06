@@ -31,8 +31,16 @@ import { buildReportHtml } from './report.mts';
 import { verifyChainFile } from '../rules/verify-chain.mts';
 import { replayFile } from '../rules/replay.mts';
 import { verifyRealagentFile } from '../rules/verify-realagent.mts';
-import { indexLedger, percentile, readLedger, stateOf } from '../../disposition/ledger.mts';
+import { indexLedger, readLedger, stateOf } from '../../disposition/ledger.mts';
 import { verifyLedgerFile } from '../../disposition/verify-chain.mts';
+import {
+  annotateSla,
+  computeCompleteness,
+  loadObligations,
+  measureSignalToDisposition,
+  type ObligationsDoc,
+  type SignalInput,
+} from '../../disposition/obligations.mts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PANEL_ROOT = resolve(HERE, '..');
@@ -170,6 +178,22 @@ export interface DispositionEntry {
   latency_ms: number | null;
 }
 
+/** 信号级视图（10-D4/D5 的合法载体）：每条信号一行，含 SLA 判定与 overdue 标记。 */
+export interface SignalRow {
+  seq: number;
+  category: string;
+  signal_ts: number;
+  state: 'unhandled' | 'observing' | 'closed';
+  priority: string;
+  /** 未登记类别的信号无 SLA，为 null（不得填 0 冒充「零时限」）。 */
+  sla_hours: number | null;
+  owner_role: string;
+  elapsed_hours: number;
+  overdue: boolean;
+  clock_skew: boolean;
+  disp_seq: number | null;
+}
+
 export interface DispositionView {
   file: string;
   present: boolean;
@@ -182,6 +206,33 @@ export interface DispositionView {
   latency: { p50: number | null; p90: number | null; n: number; negative: number; note: string };
   warning: string | null;
   entries: DispositionEntry[];
+  /** 信号级行（每类信号的 SLA 与超期判定）。 */
+  signals: SignalRow[];
+  /** 10-D5 两个二阶信号 + 基准时刻与分母口径。 */
+  completeness: {
+    n_signals_declared: number;
+    n_signals_undeclared: number;
+    n_undisposed: number;
+    n_overdue: number;
+    undisposed_rate: number | null;
+    overdue_rate: number | null;
+    provisional: boolean;
+    clock_skew: number;
+    basis: string;
+    note: string;
+    now: number;
+    now_iso: string;
+    now_source: string;
+  };
+  /** 义务注册表元信息（标定状态必须与数值同行展示）。 */
+  obligations: {
+    file: string;
+    calibration_status: string;
+    calibration_owner: string;
+    calibration_note: string;
+    categories: Record<string, { priority: string; sla_hours: number; owner_role: string }>;
+    error: string | null;
+  };
   boundary: string;
 }
 
@@ -193,6 +244,82 @@ function buildDispositionView(): DispositionView {
   const signals = new Map(
     data.events.filter((e) => e.event_type === 'ledger_signal').map((e) => [Number(e.seq), e]),
   );
+  // ── 10-D4 / 10-D5：义务注册表 + 基准时刻 + 信号全集
+  // now 的选取：默认取实时，但必须允许固定——否则同一份数据在不同时刻算出不同 overdue 数，
+  // 输出不可复现，也无法做确定性断言。
+  const nowEnv = process.env.AOF_PANEL_NOW;
+  const nowFixed = nowEnv !== undefined && Number.isFinite(Number(nowEnv)) && Number(nowEnv) > 0;
+  const now = nowFixed ? Number(nowEnv) : Date.now();
+  const nowSource = nowFixed
+    ? 'AOF_PANEL_NOW（固定基准，可复现）'
+    : 'Date.now()（实时视图：不同时刻访问，overdue 数可能变化）';
+
+  let obligationsDoc: ObligationsDoc | null = null;
+  let obligationsError: string | null = null;
+  try {
+    obligationsDoc = loadObligations();
+  } catch (err) {
+    obligationsError = (err as Error).message;
+  }
+
+  // 信号全集来源是面板事件流（ledger_signal），**不是**台账：
+  // 台账只含「被处置过的」seq，拿它当分母会把两个 rate 结构性压向 0。
+  const signalInputs: SignalInput[] = [];
+  for (const [seq, e] of signals) {
+    signalInputs.push({
+      seq,
+      category: String((e as unknown as { category?: unknown }).category ?? ''),
+      signal_ts: Number(e.ts),
+      state: stateOf(seq, index).state,
+    });
+  }
+
+  const annotated = obligationsDoc
+    ? annotateSla(signalInputs, obligationsDoc, now)
+    : { rows: [], undeclared: signalInputs };
+  const completeness = computeCompleteness(annotated.rows, annotated.undeclared.length);
+
+  const signalRows: SignalRow[] = [
+    ...annotated.rows.map((r) => ({
+      seq: r.seq,
+      category: r.category,
+      signal_ts: r.signal_ts,
+      state: r.state,
+      priority: r.priority as string,
+      sla_hours: r.sla_hours,
+      owner_role: r.owner_role,
+      elapsed_hours: r.elapsed_hours,
+      overdue: r.overdue,
+      clock_skew: r.clock_skew,
+      disp_seq: index.current.get(r.seq)?.disp_seq ?? null,
+    })),
+    // 未登记类别的信号不丢弃：SLA 标 null 单列，provisional 会置真。
+    ...annotated.undeclared.map((u) => ({
+      seq: u.seq,
+      category: u.category,
+      signal_ts: u.signal_ts,
+      state: u.state,
+      priority: '未登记',
+      sla_hours: null,
+      owner_role: '—',
+      elapsed_hours: (now - u.signal_ts) / 3_600_000,
+      overdue: false,
+      clock_skew: false,
+      disp_seq: index.current.get(u.seq)?.disp_seq ?? null,
+    })),
+  ].sort((a, b) => a.seq - b.seq);
+
+  // 每条信号「首条」生效处置的 ts（按 disp_seq 最小，非按 ts 最小——ts 是自报值可能倒挂）。
+  const firstDisp = new Map<number, { disp_seq: number; ts: number }>();
+  for (const r of rows) {
+    const cur = firstDisp.get(r.target_seq);
+    if (!cur || r.disp_seq < cur.disp_seq) firstDisp.set(r.target_seq, { disp_seq: r.disp_seq, ts: r.ts });
+  }
+  const latency = measureSignalToDisposition(
+    annotated.rows,
+    new Map([...firstDisp].map(([k, v]) => [k, v.ts])),
+  );
+
   const supersededBy = new Map<number, number>();
   for (const r of rows) {
     if (typeof r.supersedes === 'number') supersededBy.set(r.supersedes, r.disp_seq);
@@ -224,11 +351,6 @@ function buildDispositionView(): DispositionView {
     };
   });
 
-  const latencies = entries
-    .filter((e) => e.effective && typeof e.latency_ms === 'number' && e.latency_ms >= 0)
-    .map((e) => e.latency_ms as number);
-  const negative = entries.filter((e) => e.effective && typeof e.latency_ms === 'number' && e.latency_ms < 0).length;
-
   return {
     file: 'tools/disposition/data/disposition.jsonl',
     present: summary.present,
@@ -239,17 +361,40 @@ function buildDispositionView(): DispositionView {
     counts: summary.counts,
     actions: summary.actions,
     latency: {
-      p50: percentile(latencies, 50),
-      p90: percentile(latencies, 90),
-      n: latencies.length,
-      negative,
-      note: '自报值（处置 ts − 信号 ts），不可验证；跨机时钟差未校正',
+      p50: latency.p50,
+      p90: latency.p90,
+      n: latency.n,
+      negative: latency.negative,
+      note: latency.note,
     },
     warning: summary.warning,
     entries,
+    signals: signalRows,
+    completeness: {
+      ...completeness,
+      now,
+      now_iso: new Date(now).toISOString(),
+      now_source: nowSource,
+    },
+    obligations: {
+      file: 'tools/disposition/obligations.json',
+      calibration_status: obligationsDoc?.calibration_status ?? 'unknown',
+      calibration_owner: obligationsDoc?.calibration_owner ?? 'unknown',
+      calibration_note: obligationsDoc?.calibration_note ?? '',
+      categories: Object.fromEntries(
+        Object.entries(obligationsDoc?.categories ?? {}).map(([k, v]) => [
+          k,
+          { priority: v.priority, sla_hours: v.sla_hours, owner_role: v.owner_role },
+        ]),
+      ),
+      error: obligationsError,
+    },
     boundary:
       '处置记录存在 ≠ 处置有效。孤儿归零只说明「有人点过按钮」，不说明缺口已解；' +
-      '框架侧仍无处置事件类型（spec/13 #44 未解），本台账为工具侧补口，不构成 #44 闭合。',
+      'undisposed_rate 归零同理（10-D5 限制 1）。10-D4/10-D5 已有机器实现，但处置记录仍在独立台账、' +
+      '未并入框架同一 AppendOnlyAuditLog（阶段 2b-2），spec/13 #44 仍记「部分解」，不构成闭合。' +
+      '时限 24h / 72h / 168h 为工程占位、未标定（由 #33 承接）——本页任何时效数字只能读作分布，' +
+      '不得写作「达标」或「超期率符合要求」。',
   };
 }
 

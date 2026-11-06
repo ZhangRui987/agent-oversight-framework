@@ -169,11 +169,13 @@ Every signal category MUST declare a disposition obligation at registration: **w
 
 Three levels by reversibility of consequence:
 
-| Level | Signal category examples | Deadline | Calibration status |
+| Level | Signal category | Deadline | Calibration status |
 |---|---|---|---|
-| P0 | `memory-write-unauthorized`, signs of memory poisoning | 24h | **uncalibrated** (engineering placeholder) |
-| P1 | `budget-exceeded` (above 2x threshold), `shadow-ratio-deviation` | 72h | **uncalibrated** (engineering placeholder) |
-| P2 | `periodic-touch-hit`, advisory deviations | 7d | **uncalibrated** (engineering placeholder) |
+| P0 | `memory-write-audited` (writes to memory / system prompt / persisted config, including poisoning signs) | 24h | **uncalibrated** (engineering placeholder) |
+| P1 | `budget-exceeded` (above 2x threshold), `shadow-deviation` | 72h | **uncalibrated** (engineering placeholder) |
+| P2 | `periodic-egress` (fixed-interval egress) | 7d | **uncalibrated** (engineering placeholder) |
+
+**Category names must match the implementation**: the four categories above are exactly the four values of `LedgerSignalKind` in the framework, and the keys of the obligation registry `tools/disposition/obligations.json`. Any drift among the three is caught by gate item 49 — the v2.67.0 table used `memory-write-unauthorized` / `shadow-ratio-deviation` / `periodic-touch-hit`, none of which exist in the implementation (see `ERRATA-L2-SPEC.md` D-S1). A new category must be added to **all three** places at once; otherwise fail-closed rejects real signals while waving through the names written in the clause.
 
 ⚠️ The three numbers are **not calibration results**; they are placeholders that make the clause executable. Calibration is owned by `spec/13` #33 (the four runtime thresholds must check the sub-threshold behaviour distribution). Until that is done, any latency statistic based on 24h / 72h / 7d may report distributions only and must not be phrased as "meeting target" or "overdue rate within requirement".
 
@@ -209,12 +211,12 @@ This targets the disposition-layer version of "win-win corruption": if the dispo
 | 10-D1 event type and fields | settled | **implemented** (standalone ledger + dual-verifier chain); **not** merged into the framework's single audit chain (stage 2) |
 | 10-D2 action enumeration | settled | **implemented** (four-value validation; out-of-range rejected at write time) |
 | 10-D3 three-state derivation | settled | **implemented** (single `stateOf` function shared by panel and replay) |
-| 10-D4 obligations and deadlines | settled | **not implemented** (no deadline evaluation or overdue alert; values are placeholders) |
-| 10-D5 integrity signals | settled | **not implemented** (definitions settled; aggregator and panel column absent) |
+| 10-D4 obligations and deadlines | settled | **implemented** (`obligations.json` registry + `assertDeclared` fail-closed at the write path; deadlines remain engineering placeholders) |
+| 10-D5 integrity signals | settled | **implemented** (`computeCompleteness` aggregator + panel signal-level view; the denominator must be an explicitly supplied signal universe, never the ledger itself) |
 | 10-D6 two-person separation | settled | **implemented** (`reviewed_by` != `actor` validation) |
 | 10-D7 no substitution for detection work | settled | manual discipline; no machine check |
 
-**Hence this section is "normative layer closed, implementation layer partial"**: the clauses pin down the morphology #44 asked for, but the automation for 10-D4 / 10-D5 is not in place, so `spec/13` #44 is recorded as "partially solved", not closed.
+**Hence this section is "normative layer closed, implementation layer done, integration layer not done"**: 10-D1–10-D6 all have machine implementations, but disposition records still live in a standalone ledger and are **not** merged into the framework's single `AppendOnlyAuditLog` (stage 2b-2: the two chain payload formats differ, so `target_chain_hash` needs a three-tuple remap). `spec/13` #44 therefore remains "partially solved", not closed.
 
 ### 10-D9 Relation to existing open problems
 

@@ -1,7 +1,7 @@
 # 处置台账（tools/disposition）
 
 > **定位**：spec/13 **#44**（账本信号处置通道缺失）的**工具侧**最小补口——给「记了之后谁管」一个可核查的载体。
-> **不构成 #44 闭合**：规范层已由 `spec/10` §处置通道（10-D1–10-D10，v2.67.0）钉死，但本模块仍是独立台账、未进框架同一审计链，且 10-D4 时限判定 / 10-D5 完整性聚合尚未自动化——#44 定级「部分解」。本 README 的 §3–§6 是 spec/10 条款的**实现对应物**；两者若不一致，由门禁第 48 项拦截。
+> **不构成 #44 闭合**：规范层由 `spec/10` §处置通道（10-D1–10-D10，v2.67.0）钉死，实现层 10-D1–10-D6 均已有机器实现（10-D4 义务注册表 / 10-D5 完整性聚合自 v2.68.0 起），但本模块仍是**独立台账、未进框架同一审计链**——#44 定级「部分解」。本 README 的 §3–§7 是 spec/10 条款的**实现对应物**；两者若不一致，由门禁第 48 项（字段/动作/三态）与第 49 项（类别/时限/状态）拦截。
 
 ---
 
@@ -14,7 +14,8 @@
 |---|---|---|
 | **阶段 1（本模块）** | 独立台账：append-only JSONL + sha256 链 | ✅ 已实现 |
 | **阶段 2a（规范层）** | `spec/10` §处置通道 10-D1–10-D10：事件类型、四动作、三态、时限义务、二阶完整性信号 | ✅ **已落地**（v2.67.0） |
-| **阶段 2b（实现层）** | `disposition` 成为框架第四种事件类型，进同一 `AppendOnlyAuditLog`（处置与被处置信号**同链**） | ⬜ 另轮（索引扩展 + 迁移执行 + 10-D4/D5 自动化） |
+| **阶段 2b-1（实现层）** | 10-D4 义务注册表 + fail-closed；10-D5 `undisposed_rate` / `overdue_rate` 聚合；面板信号级视图 | ✅ **已落地**（v2.68.0） |
+| **阶段 2b-2（集成层）** | `disposition` 成为框架第四种事件类型，进同一 `AppendOnlyAuditLog`（处置与被处置信号**同链**） | ⬜ 未做（链载荷格式不同：框架五键 `{seq,type,data,ts,prev}` vs 台账 13 键扁平；迁移须按三元组重映射 `target_chain_hash`，见 §8） |
 
 ---
 
@@ -40,9 +41,14 @@ node --experimental-transform-types tools/disposition/ledger.mts list
 
 # 重放孤儿收敛演示（会重建 data/disposition.jsonl）
 node --experimental-transform-types tools/disposition/demo-converge.mts --force
+
+# 三方一致性校验（门禁第 49 项同款；--selftest 含 8 条反向测试）
+node --experimental-transform-types tools/disposition/check-obligations.mts
+node --experimental-transform-types tools/disposition/check-obligations.mts --selftest
 ```
 
-面板侧：`node --experimental-transform-types tools/audit-panel/server/server.mts` → 「处置台账」标签页。
+面板侧：`node --experimental-transform-types tools/audit-panel/server/server.mts` → 「处置台账」标签页（含「处置完整性」二阶信号与「信号级处置状态」表）。
+复现固定基准：`AOF_PANEL_NOW=1794000000000 node ... server.mts`——否则 `overdue` 数随访问时刻变化。
 
 ---
 
@@ -85,7 +91,7 @@ prev_hash  = 上一行 chain_hash（首行为空串 ""）
 数值与空值：整数不带小数点（`1` 不写成 `1.0`）；`null` 序列化为 `null`（不是空串）；字符串内 U+2028/U+2029 不转义。
 **为什么必须写死**：Python 默认参数会输出 `", "` 与 `\uXXXX`，与 JS 输出字节不同 → 第三方按文档复算必然失败，而 DoD 正是「第三方可独立重算」。
 
-### 3.3 门禁守护（第 47 项）
+### 3.3 门禁守护（第 47 / 48 / 49 项）
 
 `scripts/verify_consistency.py` 第 47 项每次提交执行四件事，任一失败即拦截：
 
@@ -93,6 +99,8 @@ prev_hash  = 上一行 chain_hash（首行为空串 ""）
 2. 改任意一行内容 → Python 与 Node **必须 FAIL**；
 3. 打乱一行键序 → 两端**必须 FAIL**；
 4. 入库台账 `data/disposition.jsonl` → Python 验链 PASS。
+
+第 48 项校验条款 ↔ 实现的结构面（13 字段键序 / 四动作 / 三态 / 中英时限），第 49 项校验取值域面（类别集合 / 逐级时限 / 10-D8 状态 / 10-D5 聚合行为）。两项互补：**只校验结构不校验取值域，漏的正是「名字」这一层**（v2.67.0 的 10-D4 曾写错三个类别名，见 `spec/ERRATA-L2-SPEC.md` D-S1）。
 
 ---
 
@@ -117,6 +125,38 @@ prev_hash  = 上一行 chain_hash（首行为空串 ""）
 | `closed` | 最新为 `confirm_false_positive` / `escalate` 且 `reviewed_by` 非空 | 已闭合 |
 
 **孤儿 = `unhandled`**。`route_to_human` 归入未处置是刻意的：否则「已转人工」会被读成「已闭合」。
+
+### 5.1 义务与时限（10-D4，v2.68.0）
+
+`obligations.json` 是义务注册表：每个 `signal_category` 必须登记 `priority` / `sla_hours` / `owner_role` / 可逆性依据。**未登记的类别拒写**（`assertDeclared` 在 `validateInput` 里 fail-closed）——「没有处置通道的信号只是噪声」这条原则，只能靠写入口强制。
+
+| 级别 | 类别 | 时限 | 责任角色 | 可逆性依据 |
+|---|---|---|---|---|
+| P0 | `memory-write-audited` | 24h | `safety-reviewer` | 记忆/系统提示可污染后续全部会话，事后难辨投毒与维护 |
+| P1 | `budget-exceeded` | 72h | `cost-owner` | 已发生成本，可归因可追偿，不损坏后续行为 |
+| P1 | `shadow-deviation` | 72h | `cost-owner` | 消耗结构变化，可能滥用也可能任务迁移，需人工判读 |
+| P2 | `periodic-egress` | 168h | `ops-owner` | 多为心跳/健康检查，信息性为主 |
+
+⚠️ **四个时限都是工程占位，未标定**（由 `spec/13` #33 承接）。标定完成前，任何时效统计只能报分布，不得写「达标」。
+
+**级别与时限的对应写死在代码里**（`PRIORITY_SLA_HOURS`）：手改 JSON 把 P0 写成 168h 会直接抛错，而不是悄悄放宽最高级别的时限。
+
+### 5.2 完整性信号（10-D5，v2.68.0）
+
+| 量 | 定义 | 分母 |
+|---|---|---|
+| `undisposed_rate` | 生效状态为 `unhandled` 的信号数 ÷ 信号总数 | **必须显式传入信号全集** |
+| `overdue_rate` | 超过 10-D4 时限仍为 `unhandled` 的信号数 ÷ 信号总数 | 同上 |
+
+三条实现纪律，都是为了防止造出「看起来对」的假指标：
+
+1. **`now` 必传、不取 `Date.now()` 默认值**——否则同一份数据在不同时刻算出不同 `overdue` 数，输出不可复现。面板用环境变量 `AOF_PANEL_NOW` 固定基准即可复算。
+2. **信号全集必传，台账不得自任分母**——台账只含「被处置过的」`seq`，拿它当分母会把两个 rate 结构性压向 0（甚至算出 >100%）。面板的分母来自事件流的 `ledger_signal`。
+3. **空集返回 `null`，不返回 0**——`0/0` 报 0 会制造「零未处置」的假象。
+
+未登记类别的信号**不被丢弃**：SLA 记 `null`、单列、`provisional=true`——提醒读者比例未覆盖全部信号。时钟倒挂（`signal_ts` 在基准之后）不计入 `overdue`，但单列 `clock_skew` 计数。
+
+**四段时效只可分离一段**：台账只有「信号 ts」与「处置 ts」两个时间点，因此只能算「信号 → 首条生效处置」；MTTD / 确认 → 动作 / 动作 → 关闭三段不可分离。代码里该函数名是 `measureSignalToDisposition` 而非 `mttr`——命名就是为了防止混报（10-D5 限制 2 明禁合成单一平均值）。
 
 ---
 
@@ -146,7 +186,10 @@ prev_hash  = 上一行 chain_hash（首行为空串 ""）
 
 | 文件 | 作用 |
 |---|---|
-| `ledger.mts` | 核心：键序冻结 / `disp_seq` 分配 / `supersedes` / 字段校验 / 三态派生 / CLI（`append` · `list`） |
+| `ledger.mts` | 核心：键序冻结 / `disp_seq` 分配 / `supersedes` / 字段校验（含 10-D4 fail-closed 调用）/ 三态派生 / CLI（`append` · `list`） |
+| `obligations.json` | **义务注册表**（10-D4）：四类别 × 级别 / 时限 / 责任角色 / 可逆性依据；时限为工程占位、未标定 |
+| `obligations.mts` | **义务加载与 SLA 判定**（10-D4/D5）：无 wall-clock 依赖的纯函数——`annotateSla` / `computeCompleteness` / `measureSignalToDisposition`；`now` 与信号全集必传 |
+| `check-obligations.mts` | **三方一致性校验**（门禁第 49 项）：注册表 ↔ `LedgerSignalKind` ↔ 中英条款；8 项校验 + 8 条反向测试 |
 | `verify-chain.mts` | Node 验链（八类检查，与 Python 逐条对齐） |
 | `verify_chain.py` | Python 参照实现（纯标准库）——第三方复算路径 |
 | `gen-sample.mts` | 20 行固定样本（覆盖四动作 / 中文 / 复核人为空与非空 / plan / 更正链） |

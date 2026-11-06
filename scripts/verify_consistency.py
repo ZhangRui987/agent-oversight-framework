@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """发布一致性校验（推送前 / pre-commit 用）。
 
-校验项（共 48 项 = 48 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
+校验项（共 49 项 = 49 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
   1. 全仓库无 [TABLE START/END] 伪标记
   2. 所有 Markdown 表格表头后都有 |---| 分隔行
   3. 表格每行列数与分隔行一致
@@ -111,6 +111,16 @@
          本项解析 spec/10 中英双语的三处条款表（10-D1 字段 / 10-D2 动作 / 10-D3 三态），
          与 ledger.mts 的 FIELD_ORDER / ACTIONS / stateOf 逐项比对，并校验中英时限一致；
          内置三条反向测试（改动作名 / 改字段名 / 改时限），任一未被检出即 FAIL。
+  49. 义务注册表 ↔ spec/10 条款 ↔ LedgerSignalKind 三方一致（v2.68.0 新增）
+      —— 教训来源：第 48 项校验了**动作枚举**，却漏了**类别枚举**。v2.67.0 的 10-D4
+         表格写了 memory-write-unauthorized / shadow-ratio-deviation / periodic-touch-hit
+         三个实现中不存在的名字，而实现是 memory-write-audited / shadow-deviation /
+         periodic-egress——四个类别错了三个，且没有任何机器读过它们（ERRATA-L2-SPEC D-S1）。
+         本项校验：注册表类别集合 == index.ts 的 LedgerSignalKind == 中英 10-D4 表格；
+         逐级时限等于 PRIORITY_SLA_HOURS（24/72/168）；10-D8 状态与实现相符；
+         10-D5 聚合行为的 9 条边界断言（空集 null / 超时 1 / 闭合不计 / 倒挂标脏 /
+         未声明不入分母 / now 必传）。内含 8 条反向测试，每条**断言指定检查项命中**
+         ——避免被别的检查顺带拦住而误判判别力（D-5 同类陷阱）。
 
 用法：
   python scripts/verify_consistency.py [仓库根目录，默认脚本所在目录的上级]
@@ -1301,6 +1311,60 @@ check(
     "spec/10 处置条款 == tools/disposition 实现（13 字段键序 / 四动作 / 三态 / 中英时限；含 3 条反向测试）",
     not _c48_bad,
     "; ".join(_c48_bad),
+)
+
+# ── 49. 义务注册表 ↔ spec/10 条款 ↔ LedgerSignalKind 三方一致（v2.68.0 新增）
+# 教训来源：v2.67.0 的 10-D4 表格写了三个实现中**不存在**的信号类别名
+# （memory-write-unauthorized / shadow-ratio-deviation / periodic-touch-hit），
+# 而实现用的是 memory-write-audited / shadow-deviation / periodic-egress。
+# 第 48 项校验了字段键序与动作枚举，却漏了**类别枚举**——同一类漂移在动作上被挡住、
+# 在类别上漏了。条款里的类别名在 v2.68.0 之前从未被任何机器读过（见 ERRATA-L2-SPEC D-S1）。
+# 本项直接运行 check-obligations.mts --selftest（内含 8 项校验 + 8 条反向测试），
+# 不在 Python 里重写一套解析——仓库既有纪律：两套规格并行必然漂移。
+
+_p49_bad = []
+_p49_note = ""
+_p49_script = os.path.join(ROOT, "tools", "disposition", "check-obligations.mts")
+if not os.path.exists(_p49_script):
+    _p49_bad.append("缺少 tools/disposition/check-obligations.mts")
+else:
+    try:
+        _p49_proc = subprocess.run(
+            ["node", "--experimental-transform-types", _p49_script, "--selftest"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=180,
+            cwd=ROOT,
+        )
+        _p49_out = (_p49_proc.stdout or "") + (_p49_proc.stderr or "")
+        if _p49_proc.returncode != 0:
+            _p49_lines = [
+                ln.strip()
+                for ln in _p49_out.splitlines()
+                if ln.strip().startswith("[FAIL]")
+                or ln.strip().startswith("FAIL ")
+                or ln.startswith("[基线]")
+            ]
+            _p49_bad.append(
+                "三方一致性未通过："
+                + (" | ".join(_p49_lines[:6]) if _p49_lines else _p49_out[-400:].strip())
+            )
+        else:
+            _p49_sum = [ln.strip() for ln in _p49_out.splitlines() if ln.startswith("selftest PASS=")]
+            _p49_note = _p49_sum[-1] if _p49_sum else "校验通过"
+    except FileNotFoundError:
+        _p49_bad.append(
+            "未找到 node——本项需 node ≥ 22 运行 check-obligations.mts（CI consistency job 已配置 Setup Node）"
+        )
+    except subprocess.TimeoutExpired:
+        _p49_bad.append("义务一致性校验超时（180s）")
+
+check(
+    "义务注册表 ↔ spec/10 条款 ↔ LedgerSignalKind 三方一致（类别集合 / 逐级时限 / 10-D8 状态 / 聚合行为，含 8 条反向测试）",
+    not _p49_bad,
+    "; ".join(_p49_bad) if _p49_bad else _p49_note,
 )
 
 # ── 汇总 ─────────────────────────────────────

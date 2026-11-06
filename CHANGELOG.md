@@ -1,6 +1,19 @@
 # 变更日志
 
 
+## v2.68.0（2026-11-06）：处置通道实现层落地（10-D4 义务注册表 + 10-D5 完整性聚合）+ 门禁第 49 项
+
+- **10-D4 义务注册表 `tools/disposition/obligations.json`**：四个真实信号类别（`budget-exceeded` / `shadow-deviation` / `memory-write-audited` / `periodic-egress`）逐个声明级别 / 时限 / 责任角色 / 可逆性依据。写入路径接 **fail-closed**——`validateInput` 调 `assertDeclared`，未登记类别拒写并列出已登记项。级别 ↔ 时限的对应写死在 `PRIORITY_SLA_HOURS`，手改 JSON 把 P0 写成 168h 会直接抛错，不会悄悄放宽最高级别的时限。
+- **10-D5 完整性聚合 `tools/disposition/obligations.mts`**：`undisposed_rate` / `overdue_rate` 两个二阶信号。三条实现纪律都是为了不造出「看起来对」的假指标——① `now` 必传、不取 `Date.now()` 默认值（否则同一份数据在不同时刻算出不同 overdue 数，不可复现）；② **信号全集必传，台账不得自任分母**（台账只含被处置过的 `seq`，用它当分母会把 rate 结构性压向 0）；③ 空集返回 `null` 不返回 0（`0/0` 报 0 会制造「零未处置」的假象）。未登记类别的信号不丢弃：SLA 记 `null`、单列、`provisional=true`；时钟倒挂不计 `overdue` 但单列计数。
+- **四段时效只可分离一段**：台账只有「信号 ts」与「处置 ts」两点，因此函数命名 `measureSignalToDisposition` 而非 `mttr`——命名本身防止混报（10-D5 限制 2 明禁合成单一平均值）。
+- **面板「处置台账」新增两块**：① 「处置完整性（二阶信号）」指标卡 + 基准时刻 + 分母口径 + 使用限制；② 「信号级处置状态」表（seq / 类别 / 级别时限 / 责任角色 / 已过时长 / 状态 / 超期）。`AOF_PANEL_NOW` 可固定基准复算；实测 seq 7/8 已闭合不计超期、seq 9（P0，141.3h 未处置）判 `overdue`。
+- **`spec/10` §10-D4 表格类别名修正**：v2.67.0 写的 `memory-write-unauthorized` / `shadow-ratio-deviation` / `periodic-touch-hit` **三个名字在实现中并不存在**，改为真实 `LedgerSignalKind` 取值，并加「三处任一漂移即由门禁第 49 项拦截」。10-D8 表中 10-D4 / 10-D5 由「未实现」改为「已实现」。中英双语同步。
+- **新增 `spec/ERRATA-L2-SPEC.md`（D-S1）**：登记上述命名漂移。根因值得单独记——**第 48 项校验了动作枚举却漏了类别枚举**，同一类漂移在动作上被挡住、在类别上漏了；条款里的类别名在 v2.68.0 之前**从未被任何机器读过**，只是给人看的文字。
+- **门禁第 48 → 49 项**：新增「义务注册表 ↔ spec/10 条款 ↔ `LedgerSignalKind` 三方一致」，校验类别集合相等、逐级时限等于 `PRIORITY_SLA_HOURS`、10-D8 状态与实现相符、10-D5 聚合行为的 9 条边界断言。脚本 `tools/disposition/check-obligations.mts`：**8 项校验 + 8 条反向测试**，每条反测**断言指定检查项命中**（避免被别的检查顺带拦住而误判判别力，D-5 同类陷阱）。门禁直接跑 Node 脚本的 `--selftest`，不在 Python 里重写解析——两套规格并行必然漂移。
+- **端到端突变验证**：向注册表注入实现不存在的 `auto-block` → 门禁 exit 1，第 49 项报「注册表[auto-block,…] vs 实现[…]」；还原后 49 项全 PASS。
+- **`spec/13` #44 状态说明更新**（仍为「部分解」）：原文写「实现层下一步：10-D4 时限判定与 10-D5 完整性聚合进面板」，现已落地，改为「剩余为集成层：并入框架同一 `AppendOnlyAuditLog`」，双层留痕不删。双语同步。
+- **`tools/disposition/README.md` 阶段 2 再拆分**：2b-1（义务注册表 + 聚合 + 面板，已落地）与 2b-2（进同一审计链，未做，附链格式差异说明：框架五键 `{seq,type,data,ts,prev}` vs 台账 13 键扁平）。新增 §5.1 义务与时限、§5.2 完整性信号。
+
 ## v2.67.0（2026-11-06）：L2 spec 处置通道条款化（#44 规范层闭合）+ CALIB-007 收尾
 
 - **`spec/10` 新增「处置通道」章（10-D1–10-D10，中英双语）**：把 `spec/13` #44 的三项要求（事件类型 / 义务条款 / 完整性信号）写成带编号的规范条款。核心内容：10-D1 事件类型与 13 字段键序（与信号事件同链同构）；10-D2 四动作枚举（`confirm_false_positive` / `escalate` / `route_to_human` / `park_for_observation`，禁止静默扩展，刻意不含阻断与扣分类）；10-D3 三态派生（`unhandled` / `observing` / `closed`，`route_to_human` 归未处置）；10-D4 处置义务与三级时限（P0 24h / P1 72h / P2 7d，**明标工程占位、未标定**，由 #33 承接）；10-D5 二阶完整性信号（`undisposed_rate` / `overdue_rate`，附三条使用限制）；10-D6 处置人与复核人分离；10-D7 不得以处置关闭替代检测改进；10-D8 实现状态表（逐条标「已实现 / 未实现」）；10-D9 与 #15/#33/#29/#42 的关系；10-D10 六条边界。

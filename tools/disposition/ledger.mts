@@ -33,6 +33,8 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { assertDeclared, loadObligations, type ObligationsDoc } from './obligations.mts';
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_LEDGER_FILE = resolve(HERE, 'data/disposition.jsonl');
 
@@ -161,6 +163,17 @@ function nonEmpty(v: unknown): v is string {
 }
 
 /**
+ * 义务注册表的惰性单例（10-D4）。
+ * 单例是因为 gen-sample 会连写 20 行，逐行重读文件既慢又给「中途换表」留了空子；
+ * 单例保证一次进程内的判定基准恒定。
+ */
+let _obligationsDoc: ObligationsDoc | null = null;
+function obligationsDoc(): ObligationsDoc {
+  if (_obligationsDoc === null) _obligationsDoc = loadObligations();
+  return _obligationsDoc;
+}
+
+/**
  * 校验一条待写入处置（不含 disp_seq / ts 的分配）。
  * 返回规范化后的 body（null 显式化，避免 undefined 进入 JSON）。
  */
@@ -180,6 +193,15 @@ export function validateInput(
     fail('target_chain_hash 必须是 16 位小写 hex（信号 chain_hash 的前 16 位）');
   }
   if (!nonEmpty(input.signal_category)) fail('signal_category 不能为空');
+
+  // 10-D4 fail-closed：未在义务注册表声明的类别不得写入。
+  // 「没有处置通道的信号只是噪声」——写入口是这条原则唯一能强制的地方。
+  try {
+    assertDeclared(obligationsDoc(), input.signal_category);
+  } catch (err) {
+    fail((err as Error).message);
+  }
+
   if (!nonEmpty(input.actor)) fail('actor 不能为空（阶段 1 为自报标识，不验真）');
   if (!nonEmpty(input.rationale)) fail('rationale 不能为空——无依据的处置等于没处置');
   if (!isPositiveInt(input.ts)) fail('ts 必须是正整数毫秒时间戳（wall-clock 自报值）');

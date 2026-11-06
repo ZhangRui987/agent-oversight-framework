@@ -414,6 +414,45 @@ function renderDisposition() {
     <div class="metric"><span class="n">${d.mismatched}</span><span class="l">错位引用</span></div>
   </div>`);
 
+  // 10-D5 二阶信号：处置通道自身的完整性（度量监察行为，不度量被监察行为）
+  const c = d.completeness || null;
+  if (c) {
+    const pct = (v) => (v === null || v === undefined ? '—' : `${(v * 100).toFixed(1)}%`);
+    const prov = c.provisional
+      ? `<div class="gap">存在 ${c.n_signals_undeclared} 条<b>类别未登记</b>的信号，未计入分母——下列两个比例只覆盖 ${c.n_signals_declared} 条可判定信号，<b>不代表全部</b>。先补义务注册表，再读比例。</div>`
+      : '';
+    html.push(`<h2 class="sec">处置完整性（二阶信号 · spec/10 10-D5）</h2>
+      <div class="metrics">
+        <div class="metric"><span class="n">${pct(c.undisposed_rate)}</span><span class="l">undisposed_rate（${c.n_undisposed}/${c.n_signals_declared}）</span></div>
+        <div class="metric ${c.n_overdue > 0 ? 'bad' : 'ok'}"><span class="n">${pct(c.overdue_rate)}</span><span class="l">overdue_rate（${c.n_overdue}/${c.n_signals_declared}）</span></div>
+        <div class="metric"><span class="n">${c.n_undisposed}</span><span class="l">未处置信号</span></div>
+        <div class="metric ${c.clock_skew > 0 ? 'warnm' : ''}"><span class="n">${c.clock_skew}</span><span class="l">时钟倒挂（已剔除）</span></div>
+      </div>
+      ${prov}
+      <table><tr><th>项</th><th>值</th></tr>
+      <tr><td>基准时刻</td><td class="mono">${esc(c.now_iso)}<br><span class="v-time">${esc(c.now_source)}</span></td></tr>
+      <tr><td>分母口径</td><td>${esc(c.basis)}</td></tr>
+      <tr><td>信号全集来源</td><td>面板事件流的 <code>ledger_signal</code> 事件（当前为演示数据）；生产接入后应为真实信号流。<b>不得用台账当分母</b>——台账只含被处置过的 seq。</td></tr>
+      <tr><td>使用限制</td><td>${esc(c.note)}</td></tr></table>`);
+  }
+
+  // 10-D4 信号级视图：每类信号的级别、时限与超期判定
+  if (d.signals && d.signals.length > 0) {
+    const o = d.obligations || {};
+    html.push(`<h2 class="sec">信号级处置状态<span class="v-time">（spec/10 10-D4；时限为工程占位，未标定）</span></h2>
+      <table><tr><th>seq</th><th>信号类别</th><th>级别 / 时限</th><th>责任角色</th><th>已过时长</th><th>状态</th><th>超期</th></tr>` +
+      d.signals.map((s) => `<tr>
+        <td class="mono">${s.seq}</td>
+        <td class="mono">${esc(s.category)}</td>
+        <td>${esc(s.priority)} / ${s.sla_hours === null ? '—' : `${s.sla_hours}h`}</td>
+        <td>${esc(s.owner_role)}</td>
+        <td class="mono">${s.clock_skew ? '倒挂' : `${s.elapsed_hours.toFixed(1)}h`}</td>
+        <td>${esc(s.state)}</td>
+        <td class="${s.overdue ? 'v-bad' : 'v-time'}">${s.overdue ? '已超期' : '—'}</td>
+      </tr>`).join('') + '</table>' +
+      `<p class="v-time">义务注册表 <code>${esc(o.file || '')}</code> · 标定状态 <b>${esc(o.calibration_status || '')}</b>（承接 ${esc(o.calibration_owner || '')}）${o.error ? ` · <b>加载错误：${esc(o.error)}</b>` : ''}</p>`);
+  }
+
   html.push(`<h2 class="sec">动作分布<span class="v-time">（生效处置记录，按动作计）</span></h2>`);
   const actions = Object.entries(d.actions || {});
   html.push(actions.length === 0
