@@ -215,11 +215,12 @@ This targets the disposition-layer version of "win-win corruption": if the dispo
 | 10-D5 integrity signals | settled | **implemented** (`computeCompleteness` aggregator + panel signal-level view; the denominator must be an explicitly supplied signal universe, never the ledger itself) |
 | 10-D6 two-person separation | settled | **implemented** (`reviewed_by` != `actor` validation) |
 | 10-D7 no substitution for detection work | settled | manual discipline; no machine check |
+| 10-D11 external anchoring and tail truncation | settled | **implemented** (`anchor.mts` pure comparison + `data/anchor.jsonl` anchoring two real artifacts + consistency check #51; publishing the out-of-band digest is an operational act) |
 
 **Hence this section is "normative layer closed, implementation layer done, integration layer done, still not closed"**: 10-D1–10-D6 all have machine implementations, and since v2.69.0 disposition records live in the **same `AppendOnlyAuditLog`** as the signals they dispose of (`tools/disposition/framework-bridge.mts`; the ledger file is projected from that chain and re-projection is byte-identical). `spec/13` #44 nonetheless remains "partially solved" rather than closed, and the reason has moved from "not on the same chain" to three **structural** boundaries:
 
 1. **Identity is not verified**: `actor` / `reviewed_by` are still self-reported; the chain proves only that the file was not modified afterwards.
-2. **Tail truncation is not self-evident**: deleting the last N entries leaves the remainder self-consistent; only an external anchor of `{count, lastHash}` can detect it, and that anchor is not implemented.
+2. **Tail truncation is not self-evident**: deleting the last N entries leaves the remainder self-consistent — an inherent boundary of the chain structure, not an implementation defect. Since v2.70.0 **10-D11 external anchoring** takes this over: the anchor log anchors two real artifacts (the panel V1 event stream and the disposition ledger) on every change, so `truncated` and `forked` (including "truncate then inject an equal number of forged entries") are detectable. The boundary narrows rather than disappears — an anchor in the same writable domain gives "detectable", not "immutable", and **deleting the anchor tail** is detectable only via the out-of-band digest, which is an operational act code cannot self-certify.
 3. **Register only, do not act**: the action enumeration deliberately excludes blocking and penalty actions, so the disposition channel does not change runtime behaviour.
 
 A cost that comes with the same chain must be stated alongside: the chain hash covers the event-level `ts`, and the framework's `append` used to read an implicit `Date.now()`, so two runs of the same sequence produced different hashes. v2.69.0 adds an **optional** `ts` parameter, supplied by the caller with the disposition's self-reported time, to restore reproducibility. This does not make the chain time more trustworthy (a self-reported value is still unverifiable); it trades "not reproducible" for "reproducible but equally untrustworthy".
@@ -239,3 +240,21 @@ A cost that comes with the same chain must be stated alongside: the chain hash c
 4. **Identity is not authenticated**: `actor` / `reviewed_by` can be forged; the only provable claim is that the file was not altered afterwards;
 5. **Limited trust domain**: the chain is computed inside the monitored process; if the process is compromised the whole chain can be recomputed (the G4 boundary reproduces as-is) — it must not be described as "tamper-proof";
 6. **Demo data is not real disposition**: `demo-` records in the in-repo ledger only demonstrate how the orphan list converges.
+
+### 10-D11 External anchoring and tail truncation (MUST, added in v2.70.0)
+
+**Structural premise (not a defect; it must be read together with the clauses)**: a hash chain detects "a middle entry was altered" and "a middle entry was deleted", but it **cannot detect tail truncation** — after deleting the last N entries, the remainder is self-consistent entry by entry, and both `verifyChain()` and `verify_chain.py` return PASS. Without an external anchor, any claim that "the chain is intact" therefore holds only under the **unverified** assumption that it was not truncated.
+
+- **10-D11.1 (MUST)** Whenever chain content changes, append an **anchor** of `{chain_id, count, last_hash}`. The anchor log is append-only: historical anchors are never deleted and never rewritten. For a given `chain_id`, `count` must be **monotonically non-decreasing** (otherwise "truncate, then append a smaller anchor" would make the record self-justifying).
+- **10-D11.2 (MUST)** The anchor log is itself a chain (`prev_anchor_hash` links entries) with a frozen key order. Key-order drift, altered rows and broken links are all **rejected**; there is no "skip the bad row and keep reading" mode — skipping hands an attacker a poisoning entry point.
+- **10-D11.3 (MUST)** Verification order is fixed: **verify the chain first, then compare with the anchor**. In reverse order, an altered chain may simply "not match the anchor", so that rewriting is mistaken for truncation — cause and symptom get conflated. The anchor **does not** prove intra-chain consistency; that belongs to each artifact's own verifier.
+- **10-D11.4 (MUST)** The verdict must have five values, not collapsed into "consistent / inconsistent": `match` / `grew` (normal appends since the anchor — **must not be reported as tampering**; false alarms make people switch alarms off, which is worse than no alarm) / `truncated` / `forked` (including "truncate, then inject an equal number of forged entries", where the count looks normal) / `undecidable` (when prefix evidence is unavailable, **say so** rather than guess).
+- **10-D11.5 (MUST)** The anchor digest string (`aof-anchor/v1:<chain>:<seq>:<count>:<last_hash>:<first 16 of anchor_hash>`) must be published **outside the chain** (release notes, third-party custody, paper archive). This is the only step that breaks the recursion below, and it is an **operational act**; code cannot prove it was performed.
+
+**Three boundaries (none may be omitted)**:
+
+1. **An anchor in the same writable domain as the chain is not tamper-proofing**: whoever can rewrite the chain can usually rewrite the anchor. What the anchor provides is "inconsistency is detectable" and "rollback is detectable", not "immutable";
+2. **The anchor tail is equally unprovable** (recursion): deleting the newest anchor is invisible inside the anchor log; only the out-of-band digest detects it;
+3. **The anchor only answers "the chain looked like this at that time"**, never "who wrote it" — identity authentication (E1/E5) is outside the claim.
+
+**Implementation and verification**: `tools/disposition/anchor.mts` (pure comparison; re-implements no chain) + `tools/disposition/data/anchor.jsonl` (anchors for two real artifacts: the panel V1 event stream and the disposition ledger) + consistency check #51 (14 self-checks + 6 reverse tests + in-repo anchor verification).

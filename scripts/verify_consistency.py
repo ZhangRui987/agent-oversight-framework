@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """发布一致性校验（推送前 / pre-commit 用）。
 
-校验项（共 50 项 = 50 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
+校验项（共 51 项 = 51 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
   1. 全仓库无 [TABLE START/END] 伪标记
   2. 所有 Markdown 表格表头后都有 |---| 分隔行
   3. 表格每行列数与分隔行一致
@@ -131,6 +131,21 @@
          ② 同链**投影**出的台账交给 **Python** verify_chain.py 复核——跨语言这一层是本项
          存在的理由：JS 内部自洽不等于第三方可复算；③ 投影只落临时目录，用完即删
          （派生数据入库即产生第二真相源）。
+  51. 处置链外锚：尾部截断与同条数换史（v2.70.0 新增）
+      —— 教训来源：第 50 项的 B19 是一条**诚实的边界声明**，不是解决方案——它只证明
+         「尾部截断链自证检不出」。边界写出来之后，若不补上唯一能检出的手段（外锚），
+         则所有「链完整」的结论都停在「未被截断」这个未验证的假设上。
+         本项：① Node 侧 14 项自检 + 6 条反测，覆盖五种判定（match / grew / truncated /
+         forked / undecidable）——其中 grew 必须单列：把「锚后正常新增」报成篡改会产生
+         大量误报，而误报会让人关掉告警，比没有告警更差；undecidable 用于「只给摘要、
+         拿不到前缀证据」时如实说不知道，而不是猜；② 拒收类断言：锚日志键序漂移、
+         中间行被改、同链 count 回退一律拒收（否则「截断后补一条更小的锚」即可自圆其说）；
+         ③ **仓库实锚**：`tools/disposition/data/anchor.jsonl` 对两条真实产物
+         （面板 V1 事件流 / 处置台账）的锚必须与产物一致，且产物先由各自的验证器验过
+         ——锚只说条数与末哈希，链内自洽不由锚回答。
+         ⚠️ 本项不主张「防篡改」：锚与链在同一可写域时，能改链者通常也能改锚。
+         真正的信任根是把 `aof-anchor/v1:…` 摘要串发布到域外（Release 说明 /
+         第三方保管），那一步是运行程序，代码无法自证。
 
 用法：
   python scripts/verify_consistency.py [仓库根目录，默认脚本所在目录的上级]
@@ -1469,6 +1484,75 @@ check(
     "处置通道集成层：处置与信号同链（19 项自检 + 6 条反测）+ 投影经 Python 参照实现复核",
     not _p50_bad,
     "; ".join(_p50_bad) if _p50_bad else _p50_note,
+)
+
+# ── 第 51 项：处置链外锚（尾部截断 / 同条数换史）────────────────
+# 校验对象：tools/disposition/anchor.mts 与 data/anchor.jsonl。三件事：
+#   1. Node 侧 14 项自检 + 6 条反向测试（五种判定 + 三类拒收）；
+#   2. 「仓库实锚」与两条真实产物一致，且产物先由**各自的**验证器验过
+#      —— 锚只说条数与末哈希，链内自洽不由锚回答（分工写死，避免锚越权背书）；
+#   3. 锚日志本身成链（prev_anchor_hash）且同链 count 单调不减。
+# 本项存在的理由：第 50 项的 B19 只**声明**了「尾部截断不可自证」这条边界，
+# 声明不等于解决。外锚是唯一能检出的手段，缺它则所有「链完整」结论都停在
+# 「未被截断」这个未验证的前提上。
+
+_p51_bad = []
+_p51_note = ""
+_p51_script = os.path.join(ROOT, "tools", "disposition", "check-anchor.mts")
+_p51_log = os.path.join(ROOT, "tools", "disposition", "data", "anchor.jsonl")
+if not os.path.exists(_p51_script):
+    _p51_bad.append("缺少 tools/disposition/check-anchor.mts")
+elif not os.path.exists(_p51_log):
+    _p51_bad.append(
+        "缺少 tools/disposition/data/anchor.jsonl——首次启用执行 "
+        "`node --experimental-transform-types tools/disposition/check-anchor.mts --reanchor`"
+    )
+else:
+    try:
+        _p51_node = ["node", "--experimental-transform-types", _p51_script]
+        for _p51_mode in ("--selftest", "--verify-repo"):
+            _p51_st = subprocess.run(
+                _p51_node + [_p51_mode],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=180,
+                cwd=ROOT,
+            )
+            _p51_out = (_p51_st.stdout or "") + (_p51_st.stderr or "")
+            if _p51_st.returncode != 0:
+                _p51_lines = [
+                    ln.strip()
+                    for ln in _p51_out.splitlines()
+                    if ln.strip().startswith("FAIL") or ln.strip().startswith("[FAIL]")
+                ]
+                _p51_bad.append(
+                    f"外锚{_p51_mode} 未通过："
+                    + (" | ".join(_p51_lines[:6]) if _p51_lines else _p51_out[-400:].strip())
+                )
+            else:
+                _p51_hits = [
+                    ln.strip() for ln in _p51_out.splitlines()
+                    if ln.startswith("selftest PASS=") or ln.startswith("[PASS] 锚日志")
+                ]
+                for _h in _p51_hits:
+                    _p51_note += (_p51_note and "；") + _h
+        _p51_digest = [
+            ln.strip() for ln in (_p51_out or "").splitlines()
+            if "aof-anchor/v1:" in ln
+        ]
+        if _p51_bad == [] and _p51_digest:
+            _p51_note += "；域外摘要 " + _p51_digest[-1].replace("锚：", "").strip()[:56] + "…"
+    except FileNotFoundError:
+        _p51_bad.append("未找到 node——本项需 node ≥ 22 运行 check-anchor.mts")
+    except subprocess.TimeoutExpired:
+        _p51_bad.append("外锚自检超时（180s）")
+
+check(
+    "处置链外锚：尾部截断 / 同条数换史可检出（14 项自检 + 6 条反测）+ 仓库实锚与产物一致",
+    not _p51_bad,
+    "; ".join(_p51_bad) if _p51_bad else (_p51_note or "通过"),
 )
 
 # ── 汇总 ─────────────────────────────────────

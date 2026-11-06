@@ -1,7 +1,7 @@
 # 处置台账（tools/disposition）
 
 > **定位**：spec/13 **#44**（账本信号处置通道缺失）的**工具侧**最小补口——给「记了之后谁管」一个可核查的载体。
-> **不构成 #44 闭合**：规范层由 `spec/10` §处置通道（10-D1–10-D10，v2.67.0）钉死，实现层 10-D1–10-D6 均已有机器实现（10-D4 义务注册表 / 10-D5 完整性聚合自 v2.68.0 起），集成层自 **v2.69.0** 起处置与所处置信号**同处一条 `AppendOnlyAuditLog`**（见 §9）——但 #44 仍定级「部分解」，理由已换成三条结构性边界：身份不验真、尾部截断须外锚、动作枚举只登记不处置。本 README 的 §3–§7 是 spec/10 条款的**实现对应物**；两者若不一致，由门禁第 48/49/50 项拦截。
+> **不构成 #44 闭合**：规范层由 `spec/10` §处置通道（10-D1–10-D11，v2.67.0 起、10-D11 于 v2.70.0 增补）钉死，实现层 10-D1–10-D6 均已有机器实现（10-D4 义务注册表 / 10-D5 完整性聚合自 v2.68.0 起），集成层自 **v2.69.0** 起处置与所处置信号**同处一条 `AppendOnlyAuditLog`**（见 §9），见证层自 **v2.70.0** 起有外锚（见 §10）——但 #44 仍定级「部分解」，理由已换成三条结构性边界：身份不验真、尾部截断的锚与链同域时不构成防篡改且锚尾须域外发布、动作枚举只登记不处置。本 README 的 §3–§7 是 spec/10 条款的**实现对应物**；两者若不一致，由门禁第 48/49/50/51 项拦截。
 
 ---
 
@@ -16,6 +16,7 @@
 | **阶段 2a（规范层）** | `spec/10` §处置通道 10-D1–10-D10：事件类型、四动作、三态、时限义务、二阶完整性信号 | ✅ **已落地**（v2.67.0） |
 | **阶段 2b-1（实现层）** | 10-D4 义务注册表 + fail-closed；10-D5 `undisposed_rate` / `overdue_rate` 聚合；面板信号级视图 | ✅ **已落地**（v2.68.0） |
 | **阶段 2b-2（集成层）** | `disposition` 成为框架第四种事件类型，进同一 `AppendOnlyAuditLog`（处置与被处置信号**同链**） | ✅ **已落地**（v2.69.0，见 §9；台账转为该链的投影视图） |
+| **阶段 3（见证层）** | 外锚 `{chain_id, count, last_hash}` 逐次锚定 → 尾部截断与「同条数换史」可检出 | ✅ **已落地**（v2.70.0，见 §10；域外发布摘要串仍属运维动作） |
 
 ---
 
@@ -45,6 +46,11 @@ node --experimental-transform-types tools/disposition/demo-converge.mts --force
 # 三方一致性校验（门禁第 49 项同款；--selftest 含 8 条反向测试）
 node --experimental-transform-types tools/disposition/check-obligations.mts
 node --experimental-transform-types tools/disposition/check-obligations.mts --selftest
+
+# 外锚：核验仓库实锚 / 重新锚定 / 自检与反测（门禁第 51 项）
+node --experimental-transform-types tools/disposition/check-anchor.mts --verify-repo
+node --experimental-transform-types tools/disposition/check-anchor.mts --reanchor
+node --experimental-transform-types tools/disposition/check-anchor.mts --selftest
 ```
 
 面板侧：`node --experimental-transform-types tools/audit-panel/server/server.mts` → 「处置台账」标签页（含「处置完整性」二阶信号与「信号级处置状态」表）。
@@ -168,7 +174,7 @@ prev_hash  = 上一行 chain_hash（首行为空串 ""）
 4. **身份不验真**：`actor` / `reviewed_by` 自报可伪造；本模块只能证明「文件未事后被改」，不能证明「处置者是谁」（E1/E5 级完整性不在主张范围）。
 5. **信任域有限**：链在被观测进程内计算，进程被攻陷时整链可重算（G4 边界原样复现）；不得表述为「防篡改」。
 6. **演示数据 ≠ 真实处置**：`data/disposition.jsonl` 中 actor 以 `demo-` 开头、rationale 以「演示数据」开头的记录，仅用于演示孤儿清单如何收敛。
-7. **尾部截断不可自证**（v2.69.0 实测确认）：删掉链尾若干条后，剩余部分依然自洽——`verifyChain()` 与 `verify_chain.py` 都会 PASS。这不是缺陷，是哈希链的结构边界。检出只能靠**外锚** `{count, lastHash}`（`chainDigest()`）与链外记录比对，而外锚尚未实现。因此任何「链完整」的结论都只在「未被截断」的假设下成立，报告必须连带这句。
+7. **尾部截断须外锚方能检出**（v2.69.0 确认结构事实，v2.70.0 补手段）：删掉链尾若干条后，剩余部分依然自洽——`verifyChain()` 与 `verify_chain.py` 都会 PASS。**实测过的边界**：连 `meta.event_count` 一起改，面板验链器会报「全部检查通过」，只有外锚报 `truncated`。检出手段是 `data/anchor.jsonl` 里的 `{count, last_hash}` 与链比对（`anchor.mts`）。**但边界随之收窄而非消失**：① 锚与链同处一个可写域时只提供「可检出」而非「不可篡改」——能改链者通常也能改锚；② **锚尾删除**在锚日志内部看不出来，只有域外摘要串（`aof-anchor/v1:…`）能检出，该步是运维动作、代码无法自证；③ 锚只回答「链当时长这样」，不回答「谁写的」。
 8. **两个时间戳不可混用**（v2.69.0 起）：框架事件外层 `ts` 是链上时间（由调用方传入以保证可复现），处置载荷 `data.ts` 是处置自报时间。报表一律用 `data.ts` 且标「自报值，不可验证」；排序用 `seq`，不用任何 `ts`。
 
 ---
@@ -212,6 +218,9 @@ prev_hash  = 上一行 chain_hash（首行为空串 ""）
 | `data/disposition.jsonl` | 演示台账（3 条，链可验证，**非真实运维处置**）——v2.69.0 起它是**链的投影视图**示例 |
 | `framework-bridge.mts` | **集成层（2b-2）**：把处置写进框架同一 `AppendOnlyAuditLog`（`appendDispositionToChain`）；从链投影出台账（`projectLedger`）；独立复算链（`verifyEventChain`）；链摘外锚（`chainDigest`）；历史台账迁移（`migrateLedger`） |
 | `check-bridge.mts` | **集成层自检**（门禁第 50 项）：19 项校验 + 6 条反向测试；`--demo` 打印链上内容、投影结果与真实台账迁移结论；`--emit-ledger=` 供 Python 参照实现复核 |
+| `anchor.mts` | **外锚（见证层）**：只对 `{count, last_hash}` 做比较，**不重实现任何链**；五种判定（`match` / `grew` / `truncated` / `forked` / `undecidable`）；锚日志自身成链 + 同链 `count` 单调不减；`externalDigest()` 生成可外发摘要串 |
+| `check-anchor.mts` | **外锚自检**（门禁第 51 项）：14 项校验 + 6 条反向测试；`--verify-repo` 核验仓库实锚（先由产物各自的验证器验链，再比锚）；`--reanchor` 追加新锚 |
+| `data/anchor.jsonl` | **锚日志**（append-only，2 条起）：对面板 V1 事件流与处置台账逐次锚定；历史锚永不删除/改写 |
 
 ---
 
@@ -246,7 +255,7 @@ prev_hash  = 上一行 chain_hash（首行为空串 ""）
 ### 9.3 同链没买到什么（三条，必须同行展示）
 
 1. **身份仍不验真**：`actor` / `reviewed_by` 自报可伪造。链证明「文件未事后被改」，不证明「谁处置的」。
-2. **尾部截断仍不可自证**：见 §6 第 7 条。`chainDigest()` 提供了外锚的**形状**，但外锚本身未落地。
+2. **尾部截断不可自证**：见 §6 第 7 条。v2.70.0 起由 **§10 外锚**承接检出（`data/anchor.jsonl`），但锚与链同域时不构成防篡改，锚尾须靠域外摘要串。
 3. **仍然只登记不处置**：动作枚举不含 `auto_block` / `auto_deduct`，被观测行为不因处置记录改变。
 
 ### 9.4 可复现性前提（v2.69.0 的框架侧改动）
@@ -256,3 +265,58 @@ prev_hash  = 上一行 chain_hash（首行为空串 ""）
 - 效果：同输入序列 → 同哈希（门禁 B17 断言「注入可复现、不注入不可复现」，两面都测）；
 - 代价：链时间的可信度**没有**提高，只是从「不可复现」变成「可复现但时间同样不可信」；
 - 生产建议：由可信时钟服务签名，而非沿用自报值。
+
+---
+
+## 10. 见证层：外锚（v2.70.0）
+
+### 10.1 它补的是哪一条
+
+§9.3 第 2 条——**尾部截断**。哈希链能检出「中间被改」（哈希断）与「中间被删」（跳号），但删掉链尾若干条后，剩余部分逐条自洽，`verifyChain()` 与 `verify_chain.py` 都会 PASS。这不是缺陷，是链结构的固有边界。
+
+**已实测过的那一步**（比任何论证都直接）：删掉 `events.jsonl` 末条事件、**并把 `meta.event_count` 一并改成 8**，面板验链器输出「全部检查通过」；同一时刻外锚报 `truncated · 链只有 8 条，锚记的是 9 条`。没改 meta 时验链器会失败——但那是因为 meta 对不上，不是链有防护力。
+
+### 10.2 五判定，不是二分
+
+| 判定 | 含义 | 为什么必须单列 |
+|---|---|---|
+| `match` | 条数与末哈希都等于锚 | 唯一可写进「链完整」结论的状态 |
+| `grew` | 条数更多，且锚位置哈希未变 | **正常增长**。把它报成篡改会产生大量误报，误报会让人关掉告警——比没有告警更差 |
+| `truncated` | 条数更少 | 本模块存在的理由 |
+| `forked` | 条数相同但末哈希不同；或条数更多但锚位置哈希已变 | 含「截断后补等量伪造事件」：条数看起来正常，只有锚能检出 |
+| `undecidable` | 拿不到前缀证据且条数增长 | **如实说不知道**，不猜 |
+
+### 10.3 锚日志与递归边界
+
+锚日志 `data/anchor.jsonl` 自身也是一条链（`prev_anchor_hash` 逐条链接），且同一 `chain_id` 的 `count` 必须**单调不减**——否则「先截断链、再补一条更小的锚」就能自圆其说。
+
+但递归到末端仍在：**删掉最新那条锚，日志内部看不出来**。切断它只能靠域外发布：
+
+```
+aof-anchor/v1:audit-panel/events-v1:1:9:27c2fe8f…:7d8a896bed4ce976
+```
+
+把这一串写进 Release 说明 / 交给第三方，日后任何持串者都能核验「链是否被截到这一条之前」。**这一步是运维动作，代码无法自证其已完成**——所以 `--reanchor` 每次都会把这句警告打出来。
+
+### 10.4 用法
+
+```bash
+# 自检（fixture）/ 反向测试 / 仓库实锚核验 / 重新锚定
+node --experimental-transform-types tools/disposition/check-anchor.mts
+node --experimental-transform-types tools/disposition/check-anchor.mts --selftest
+node --experimental-transform-types tools/disposition/check-anchor.mts --verify-repo
+node --experimental-transform-types tools/disposition/check-anchor.mts --reanchor
+
+# 判五种形态长什么样（人类可读）
+node --experimental-transform-types tools/disposition/check-anchor.mts --demo
+```
+
+**何时需要 `--reanchor`**：链内容真的变了（重生成事件流、真实新增处置）。版本号 / 门禁计数变化只改 `events.jsonl` 的 meta 行，事件行哈希不变，锚保持不变——这条设计让发版不必每次重锚。
+
+`--verify-repo` 的核验顺序固定：**先让产物自己的验证器验链，再比锚**。锚只说条数与末哈希，链内自洽不由锚回答——锚越权背书会让「链断了但条数对」这种形态被误判为通过。
+
+### 10.5 边界（三条，与 `spec/10` 10-D11 一致）
+
+1. **同域不防篡改**：能改链者通常也能改锚。外锚提供「不一致可检出」与「回滚可检出」，不是「不可篡改」；
+2. **锚尾不可自证**：见 §10.3，只能靠域外摘要串；
+3. **不证明作者**：锚只回答「链当时长这样」，身份验真（E1/E5）不在主张范围。

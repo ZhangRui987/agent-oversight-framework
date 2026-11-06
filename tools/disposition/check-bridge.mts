@@ -21,6 +21,7 @@ import { AppendOnlyAuditLog } from '../../reference/runtimes/l2-runtime-oversigh
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import {
   CHAIN_DATA_ORDER,
@@ -656,24 +657,31 @@ function demo(): number {
   return 0;
 }
 
-const argv = process.argv.slice(2);
-const emitArg = argv.find((a) => a.startsWith('--emit-ledger='));
+function main(): void {
+  const argv = process.argv.slice(2);
+  const emitArg = argv.find((a) => a.startsWith('--emit-ledger='));
 
-if (argv.includes('--selftest')) {
-  process.exitCode = selftest();
-} else if (argv.includes('--demo')) {
-  process.exitCode = demo();
-} else if (emitArg !== undefined) {
-  // 把投影台账落盘，交给 verify_chain.py（Python 参照实现）做**跨语言**复核。
-  // 这是门禁第 50 项的实质：同链产物必须能被第三方那条独立实现验过，
-  // 否则「可核验」只是本语言内部的自洽。
-  const path = emitArg.slice('--emit-ledger='.length);
-  const rows = buildFixture().rows;
-  mkdirSync(dirname(resolve(path)), { recursive: true });
-  writeFileSync(resolve(path), rows.map((r) => JSON.stringify(r)).join('\n') + '\n', 'utf-8');
-  console.log(`emitted rows=${rows.length} → ${path}`);
-} else {
-  const checks = runChecks(buildFixture());
-  report(checks);
-  process.exitCode = checks.every((c) => c.ok) ? 0 : 1;
+  if (argv.includes('--selftest')) {
+    process.exitCode = selftest();
+  } else if (argv.includes('--demo')) {
+    process.exitCode = demo();
+  } else if (emitArg !== undefined) {
+    // 把投影台账落盘，交给 verify_chain.py（Python 参照实现）做**跨语言**复核。
+    // 这是门禁第 50 项的实质：同链产物必须能被第三方那条独立实现验过，
+    // 否则「可核验」只是本语言内部的自洽。
+    const path = emitArg.slice('--emit-ledger='.length);
+    const rows = buildFixture().rows;
+    mkdirSync(dirname(resolve(path)), { recursive: true });
+    writeFileSync(resolve(path), rows.map((r) => JSON.stringify(r)).join('\n') + '\n', 'utf-8');
+    console.log(`emitted rows=${rows.length} → ${path}`);
+  } else {
+    const checks = runChecks(buildFixture());
+    report(checks);
+    process.exitCode = checks.every((c) => c.ok) ? 0 : 1;
+  }
 }
+
+// 仅在作为脚本执行时跑 CLI——被 check-anchor.mts 导入 buildFixture 时不得有副作用
+// （否则 `import` 本身就会按对方的 argv 做一遍自检并置 exitCode）。
+const invokedPath = process.argv[1] ? resolve(process.argv[1]) : '';
+if (invokedPath === fileURLToPath(import.meta.url)) main();
