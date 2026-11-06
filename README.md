@@ -1,6 +1,6 @@
 # AI 执行与监察体系（Agent Oversight Framework）
 
-[![Version](https://img.shields.io/badge/version-2.72.5-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.72.6-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (134/212)](https://img.shields.io/badge/evidence-B_135%2F213-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -42,6 +42,8 @@ AI 正在从「工具」变成「代理者」：能调用工具、改代码、�
 当 Agent 能伪造沙箱记录、自发长出指挥体系时，传统的「监察个体行为」失效了。本框架的蜂群治理（[`spec/07-swarm-governance.md`](spec/07-swarm-governance.md)）把监察对象从**行为日志**升级到**交互图谱**——但我们也诚实承认：**对去中心化蜂群（狼群），目前只有检测能力，尚无经实证可靠的反制手段。**
 
 这是 44 条未解问题中的 #15（见 [`spec/13-boundaries.md`](spec/13-boundaries.md)），也是社区共建的优先方向。敢于公开承认「狼群我们还没搞定」，比声称「我们能搞定一切」更能建立专家社区的信任。
+
+**蜂群检测 S1 的真实框架标定结果已出（v2.72.6，AOE-CALIB-007）**：在 293 条真实框架轨迹（AutoGen / CrewAI / LangGraph 实跑，采集失败 0）上，良性 `S1_raw` P95 = **0.2222**，而判据要求 ≤ 0.04 ⇒「0.04 阈值」这一原设想**被判不成立**；零误报约束下**最小可检出攻击强度约 45%**；换统计量后 `C3 ≥ 0.80` 在留出集与 136 条样本外轨迹上误报 0/100、检出 36/36。**这个结果证明的不是「检测器有效」**——任务池与攻击都是自造的（`task-pool-v1` + 纯指挥型）、单模型单版本，且阈值与良性上界 0.7500 之间**没有结构性裕度**。三条适用边界与「可这样写 / 不可这样写」对照见 [`APPLICABILITY-AOE-CALIB-007-R1.md`](reference/runtimes/l2-runtime-oversight/APPLICABILITY-AOE-CALIB-007-R1.md)；规范侧结论见 [`spec/07-swarm-governance.md`](spec/07-swarm-governance.md) §阈值标定前置条件。
 
 同样显式登记的还有：**A 级证据共 12 条，其中 11 条为本体系自复现实验，第三方独立复现数目前为零**——A 级表示「一手、可核查、可复现」，不表示「已被独立验证」。每条实验的脚本、预注册与原始输出全部入库，逐条复现条件与提交通道见 [`spec/13-boundaries.md`](spec/13-boundaries.md) §「A 级证据独立验证状态与第三方复现路径」（Issue 模板 [`independent-replication`](https://github.com/ZhangRui987/agent-oversight-framework/issues/new?template=independent-replication.yml)）。
 
@@ -121,10 +123,11 @@ graph TD
 
 ## 状态
 
-- 当前版本：v2.72.5（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
+- 当前版本：v2.72.6（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
 - 维护状态：**不声称建成，只声称维护状态**——开放作弊集合只能持续对抗
 - **诚实边界**：44 条未解问题显式登记（见 [`spec/13-boundaries.md`](spec/13-boundaries.md)）——这是本框架的诚实边界，也是研究者的选题清单；含全体系最大的工程缺口「去中心化蜂群反制」
 - 变更历史：见 [`CHANGELOG.md`](CHANGELOG.md)
+- 蜂群检测 S1 的标定状态：真实框架标定（AOE-CALIB-007）已出结果，但**不构成「检测器有效」**——适用边界见 [`APPLICABILITY-AOE-CALIB-007-R1.md`](reference/runtimes/l2-runtime-oversight/APPLICABILITY-AOE-CALIB-007-R1.md)
 
 ## 快速开始
 
@@ -255,7 +258,7 @@ node --experimental-transform-types tools/audit-panel/server/server.mts
 
 见 [`CITATION.cff`](CITATION.cff)。
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.72.5). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.72.6). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## 质量保障（自指验证）
 

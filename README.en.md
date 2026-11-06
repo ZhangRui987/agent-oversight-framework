@@ -1,6 +1,6 @@
 # AI Execution & Oversight Framework
 
-[![Version](https://img.shields.io/badge/version-2.72.5-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.72.6-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (134/212)](https://img.shields.io/badge/evidence-B_135%2F213-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -41,7 +41,9 @@ This framework has completed a systematic cross-check against Annex 2 of the AI 
 
 When agents can forge sandbox logs and spontaneously grow command hierarchies, the traditional "oversee individual behavior" approach fails. This framework's swarm governance ([`spec/07-swarm-governance.md`](spec/07-swarm-governance.md)) elevates the oversight target from **behavior logs** to **the interaction graph** — but we honestly admit: **for decentralized swarms (wolf-packs), we currently have detection capability only, and no empirically proven countermeasure.**
 
-This is open problem **#15** of 42 (see [`spec/13-boundaries.md`](spec/13-boundaries.md)), and a priority direction for community co-development. Publicly admitting "we haven't solved wolf-packs yet" builds more trust with the expert community than claiming "we can handle everything."
+This is open problem **#15** of 44 (see [`spec/13-boundaries.md`](spec/13-boundaries.md)), and a priority direction for community co-development. Publicly admitting "we haven't solved wolf-packs yet" builds more trust with the expert community than claiming "we can handle everything."
+
+**The real-framework calibration of swarm signal S1 has produced results (v2.72.6, AOE-CALIB-007)**: across 293 real-framework traces (AutoGen / CrewAI / LangGraph actually executed, zero collection failures), benign `S1_raw` P95 = **0.2222** against a criterion of ≤ 0.04 ⇒ the original "0.04 threshold" idea is **judged not to hold**; under a zero-false-positive constraint the **minimum detectable attack strength is about 45%**; with the replacement statistic, `C3 ≥ 0.80` gives 0/100 false positives and 36/36 detections on both the held-out set and 136 out-of-sample traces. **What this establishes is not "the detector works"** — the task pool and the attacks are self-constructed (`task-pool-v1` + purely commanding), with a single model version, and there is **no structural margin** between the threshold and the benign upper bound 0.7500. The three applicability boundaries and the "you may write / you must not write" table are in [`APPLICABILITY-AOE-CALIB-007-R1.md`](reference/runtimes/l2-runtime-oversight/APPLICABILITY-AOE-CALIB-007-R1.md); the normative conclusion is in [`spec/07-swarm-governance.en.md`](spec/07-swarm-governance.en.md) § Threshold calibration preconditions.
 
 Also explicitly registered: **11 of the 12 grade-A evidence items are self-reproduction experiments by this framework, and the count of independent third-party replications is currently zero** — grade A means "first-hand, verifiable, reproducible", not "independently verified". Every experiment's script, preregistration, and raw output are in the repository; the per-item replication conditions and submission channel are in [`spec/13-boundaries.md`](spec/13-boundaries.md) § "Independent-verification status of grade-A evidence and the third-party replication path" (issue template [`independent-replication`](https://github.com/ZhangRui987/agent-oversight-framework/issues/new?template=independent-replication.yml)).
 
@@ -120,10 +122,11 @@ Per [`CLASSIFICATION.md`](CLASSIFICATION.md), this repository has three levels:
 
 ## Status
 
-- Current version: v2.72.5 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
+- Current version: v2.72.6 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
 - Maintenance status: **does not claim "built"; claims only "maintained"** — an open cheating set can only be countered continuously
 - **Honest boundary**: 44 open problems explicitly registered (see [`spec/13-boundaries.md`](spec/13-boundaries.md)) — this framework's honest boundary and a problem list for researchers; includes the system's largest engineering gap, "decentralized-swarm countermeasures"
 - Change history: see [`CHANGELOG.md`](CHANGELOG.md)
+- Calibration status of swarm signal S1: the real-framework calibration (AOE-CALIB-007) has produced results but **does not amount to "the detector works"** — see [`APPLICABILITY-AOE-CALIB-007-R1.md`](reference/runtimes/l2-runtime-oversight/APPLICABILITY-AOE-CALIB-007-R1.md)
 
 ## Quick start
 
@@ -259,7 +262,7 @@ This repository governs itself by its own specification (meta-governance):
 
 See [`CITATION.cff`](CITATION.cff).
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.72.5). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.72.6). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## Quality assurance (self-referential verification)
 
