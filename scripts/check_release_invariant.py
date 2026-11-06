@@ -102,7 +102,8 @@ def main() -> None:
     print(
         "不变量           : FAIL — 最新 minor tag 无对应 Release\n"
         f"                   修复：按 CONTRIBUTING「Release 节奏」为 {expected} 建 Release\n"
-        "                   （工具链：.workbuddy/create_release_v*.py 或 GitHub 页面 Draft new release）"
+        "                   （工具链：python scripts/create_release.py --notes=<说明文件> --title=<标题>；\n"
+        "                    脚本自带预检且无跳过开关。或 GitHub 页面 Draft new release）"
     )
     sys.exit(1)
 

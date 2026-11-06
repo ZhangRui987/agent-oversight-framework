@@ -1,6 +1,21 @@
 # 变更日志
 
 
+## v2.72.1（2026-11-06）：修掉一处指向已废止工具链的提示
+
+- **改了什么**：`scripts/check_release_invariant.py` 的 FAIL 提示原本写「工具链：`.workbuddy/create_release_v*.py` 或 GitHub 页面 Draft new release」。v2.72.0 把发版入口收进 `scripts/create_release.py` 之后，工作区里那 31 个一次性脚本已全部归档到 `.workbuddy/_archived/create_release_OBSOLETE_do_not_use/`，于是这条指引**指向不存在的文件**——唯一的修复指引把人引向已经拆掉的路。现改为 `python scripts/create_release.py --notes=<说明文件> --title=<标题>`，并写明「脚本自带预检且无跳过开关」。
+- **为什么值得占一个 patch**：这段字符串只在**发布承诺被违反时**才打印（`release-guard` 每日跑，违反即红灯）。也就是说，它出现的时刻，读它的人正在着急修问题，也最容易被指引带走。文档指向死路平时只是瑕疵，在这里是「故障发生时的唯一指引失效」。
+- **验证**：`GUARD_TEST_MINOR=v0.0.0` 强制走 FAIL 路径，逐行核对输出——两行提示完整、无拼接错位。
+- **本版本发布值**（未重锚 ⇒ 重复同一串；重复公布只增强外部见证）：
+
+  ```
+  aof-anchor/v1:audit-panel/events-v1:1:9:27c2fe8fa384f7b9920cbd83da521fb567f795332501101e35b3d18ffdc82739:7d8a896bed4ce976
+  aof-anchor/v1:disposition/stage1-ledger:2:3:3f23031b0c77a0fce338a8e2feda30ee548cd2c262fdfb239aaa638f5a8b7ea4:b1aa3becb81e59cf
+  ```
+
+- **范围（不夸大）**：只改提示文本，不动判定逻辑、不动门禁项数（仍 53 项）。它不提高检出能力，只是让检出之后的那一步不再走错。
+
+
 ## v2.72.0（2026-11-06）：发版脚本进仓库，预检成为必经代码路径 + 门禁第 53 项
 
 - **上一轮留下的缺口**：v2.71.0 把「发布摘要串」变成可校验，但校验本身仍是**发版前要记得跑的一步**。在那之前发版靠工作区里的 `create_release_v*.py`：每版复制一份、改三处（tag / 标题 / 说明路径），预检写在文档里。两个失效模式都真实发生过：复制旧模板漏改字段（tag 建对了、正文是上一版），以及预检跑了但看的不是**将要发的那份正文**。预检与 POST 若不在同一个函数里，这条缝就永远存在。

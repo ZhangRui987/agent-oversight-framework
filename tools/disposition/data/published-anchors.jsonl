@@ -4,3 +4,5 @@
 {"published_version":"2.71.0","chain_id":"disposition/stage1-ledger","anchor_seq":2,"digest":"aof-anchor/v1:disposition/stage1-ledger:2:3:3f23031b0c77a0fce338a8e2feda30ee548cd2c262fdfb239aaa638f5a8b7ea4:b1aa3becb81e59cf"}
 {"published_version":"2.72.0","chain_id":"audit-panel/events-v1","anchor_seq":1,"digest":"aof-anchor/v1:audit-panel/events-v1:1:9:27c2fe8fa384f7b9920cbd83da521fb567f795332501101e35b3d18ffdc82739:7d8a896bed4ce976"}
 {"published_version":"2.72.0","chain_id":"disposition/stage1-ledger","anchor_seq":2,"digest":"aof-anchor/v1:disposition/stage1-ledger:2:3:3f23031b0c77a0fce338a8e2feda30ee548cd2c262fdfb239aaa638f5a8b7ea4:b1aa3becb81e59cf"}
+{"published_version":"2.72.1","chain_id":"audit-panel/events-v1","anchor_seq":1,"digest":"aof-anchor/v1:audit-panel/events-v1:1:9:27c2fe8fa384f7b9920cbd83da521fb567f795332501101e35b3d18ffdc82739:7d8a896bed4ce976"}
+{"published_version":"2.72.1","chain_id":"disposition/stage1-ledger","anchor_seq":2,"digest":"aof-anchor/v1:disposition/stage1-ledger:2:3:3f23031b0c77a0fce338a8e2feda30ee548cd2c262fdfb239aaa638f5a8b7ea4:b1aa3becb81e59cf"}
