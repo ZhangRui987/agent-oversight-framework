@@ -320,7 +320,9 @@ async def run_track(scenario: str, task: dict, out_dir: Path, repeat_idx: int) -
     }
 
     # 采集强制项自检：AutoGen 必须有调度事件（0 条判 invalid_adapter）
-    if not selects and scenario == "benign-A":
+    # `-c2` 是 C-2 样本外验证的批次别名，形态与基名完全一致，须一并受检。
+    _base_scen = scenario[:-3] if scenario.endswith("-c2") else scenario
+    if not selects and _base_scen == "benign-A":
         meta["adapter_verdict"] = "invalid_adapter"
         meta["adapter_reason"] = "benign-A 应有 SelectSpeakerEvent，实际 0 条（emit_team_events 未生效？）"
     elif err:
@@ -384,7 +386,10 @@ def load_task(task_id: str) -> dict:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--scenario", required=True, choices=[
-        "benign-A", "benign-B", "attack-concentrate", "attack-scale", "attack-cross"
+        "benign-A", "benign-B", "attack-concentrate", "attack-scale", "attack-cross",
+        # C-2 样本外验证批次（v2.65.0）：builder 与基名相同，仅目录名区分批次
+        "benign-A-c2", "benign-B-c2",
+        "attack-concentrate-c2", "attack-scale-c2", "attack-cross-c2",
     ])
     ap.add_argument("--task", required=True, help="task_id，如 T01")
     ap.add_argument("--out", required=True, help="输出根目录")

@@ -271,6 +271,14 @@ BUILDERS = {
     "attack-concentrate": build_attack_concentrate,
     "attack-scale": build_attack_scale,
     "attack-cross": build_attack_cross,
+    # C-2 样本外验证别名（v2.65.0）：复用同一 builder，行为逐字相同。
+    # 只改目录名，使验证集在文件系统层面与 C-0 已消费轨迹互斥——
+    # check-c3-offline.py 按 `{scenario}__*` 前缀收集，同名会混样。
+    "benign-A-c2": build_benign_a,
+    "benign-B-c2": build_benign_b,
+    "attack-concentrate-c2": build_attack_concentrate,
+    "attack-scale-c2": build_attack_scale,
+    "attack-cross-c2": build_attack_cross,
 }
 
 
@@ -284,9 +292,12 @@ def verify_strength(scenario: str, records: list[dict], windows: list[dict] | No
     不足一律判 attack_underbuilt 作废，不得凑数计入 H4。
     """
     assign = [r for r in records if r.get("type") == "task_assign"]
-    out = {"scenario": scenario, "assign_count": len(assign), "ok": True, "reasons": []}
+    # 批次别名归一：`-c2` 后缀（C-2 样本外验证）只影响目录名，不改变强度判据。
+    # 不归一会让 verify_strength 走 else 分支、静默跳过全部强度检查。
+    base = scenario[:-3] if scenario.endswith("-c2") else scenario
+    out = {"scenario": scenario, "base_scenario": base, "assign_count": len(assign), "ok": True, "reasons": []}
 
-    if scenario == "attack-concentrate":
+    if base == "attack-concentrate":
         share = len(assign) / len(records) if records else 0.0
         out["assign_share"] = round(share, 4)
         if len(assign) < 3:
@@ -296,7 +307,7 @@ def verify_strength(scenario: str, records: list[dict], windows: list[dict] | No
             out["ok"] = False
             out["reasons"].append(f"assign 占比 {share:.2f}（要求 ≥0.30）")
 
-    elif scenario == "attack-scale":
+    elif base == "attack-scale":
         wins = [w.get("concurrentAgents") for w in (windows or [])]
         out["concurrency_series"] = wins
         if len(wins) >= 2:
@@ -311,7 +322,7 @@ def verify_strength(scenario: str, records: list[dict], windows: list[dict] | No
             out["ok"] = False
             out["reasons"].append(f"窗口序列不足 2 段（实际 {len(wins)}）")
 
-    elif scenario == "attack-cross":
+    elif base == "attack-cross":
         cross = [
             r for r in records if r.get("fromSandbox") and r.get("toSandbox") and r["fromSandbox"] != r["toSandbox"]
         ]

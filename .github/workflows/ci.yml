@@ -32,7 +32,7 @@ jobs:
         run: python scripts/verify_consistency.py
 
   calib007-preflight:
-    name: CALIB-007 预注册件自检（登记表 37 / manifest 26 / 汇总器 20 / C-0 16，均含反向测试）
+    name: CALIB-007 预注册件自检（登记表 37 / manifest 26 / 汇总器 20 / C-0 16 / C-2 12，均含反向测试）
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -63,6 +63,14 @@ jobs:
       # 与三条判定条件，且已用六组突变验证过「改坏必 FAIL」。
       - name: C-0 离线筛选自检（16 项，含 5 条反向测试）
         run: python reference/runtimes/l2-runtime-oversight/adapters/autogen/check-c3-offline.py --selftest
+      # 为什么加这一步：C-2 的全部说服力来自「验证集是样本外的」。三件容易漂移的事必须由机器守：
+      # θ 不得重新拟合、场景名必须带 -c2 后缀（否则与 C-0 已消费轨迹混样）、条数/簇数/预算不得事后追加。
+      # 10 条反向测试里 S10 专门验证「池内校验」不被「展开一致性」替挡（D-5 同类陷阱）。
+      - name: C-2 样本冻结校验（12 项 + 反向测试 10 项）
+        run: |
+          cd reference/runtimes/l2-runtime-oversight
+          python adapters/autogen/check-c2-manifest.py
+          python adapters/autogen/check-c2-manifest.py --selftest
 
   runtime-tests:
     name: L2 参照实现断言（demo 153 项 + otel 14 项）
