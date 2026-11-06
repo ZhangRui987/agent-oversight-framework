@@ -1,6 +1,11 @@
 # 变更日志
 
 
+## v2.68.1（2026-11-06）：处置时延口径文案去掉 Markdown 标记
+
+- `obligations.mts` 的 `measureSignalToDisposition` 返回值 `note` 里原写 `**不是 MTTR**`，而面板用 `esc()` 渲染（只转义 `<>&"'`，不处理星号）⇒ 界面会原样显示 `**不是 MTTR**` 字样。改为「不是 MTTR。」。仅文案，无逻辑改动。
+- 教训归类：**面向展示的字符串里不写 Markdown 标记**——数据层不知道消费方是终端、JSON 还是 innerHTML，标记符号在两种消费方式下分别是噪声和语法。
+
 ## v2.68.0（2026-11-06）：处置通道实现层落地（10-D4 义务注册表 + 10-D5 完整性聚合）+ 门禁第 49 项
 
 - **10-D4 义务注册表 `tools/disposition/obligations.json`**：四个真实信号类别（`budget-exceeded` / `shadow-deviation` / `memory-write-audited` / `periodic-egress`）逐个声明级别 / 时限 / 责任角色 / 可逆性依据。写入路径接 **fail-closed**——`validateInput` 调 `assertDeclared`，未登记类别拒写并列出已登记项。级别 ↔ 时限的对应写死在 `PRIORITY_SLA_HOURS`，手改 JSON 把 P0 写成 168h 会直接抛错，不会悄悄放宽最高级别的时限。

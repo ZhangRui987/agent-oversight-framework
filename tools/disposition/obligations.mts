@@ -276,7 +276,7 @@ export function measureSignalToDisposition(
     n: spans.length,
     negative,
     note:
-      '本值 = 信号 ts → 首条生效处置 ts，**不是 MTTR**。' +
+      '本值 = 信号 ts → 首条生效处置 ts，不是 MTTR。' +
       'MTTD / 人工确认 / 处置动作 / 关闭四段无法从台账分离（10-D5 限制 2：禁止合成单一平均值）。' +
       'ts 为自报 wall-clock，跨机时钟差未校正。',
   };
