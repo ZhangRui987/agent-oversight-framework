@@ -28,7 +28,7 @@
 | 1 | `python scripts/verify_consistency.py` | 末行 `✅ 全部校验通过 — 可提交`，且 `[PASS]` 行数 = 53 | 0 | 16–25 s |
 | 2 | `node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts --strict` | 末行 `通过 9 / 警告 0 / 失败 0`（CI 口径：WARN 也算失败） | 0 | 6–11 s |
 | 3 | `node --experimental-transform-types tools/audit-panel/scenario/export-events.mts` | 七场景导出，写出 9 条事件 + 1 条 meta | 0 | 1–2 s |
-| 4 | `node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts --tamper-demo` | `落盘链 PASS` + 篡改演示「已检出」 | 0 | 1–2 s |
+| 4 | `node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts --tamper-demo` | `落盘链 PASS` + `链校验 已检出` + 末行 `演示结论 检出成功`（0 = 演示符合预期，不是"未检出"；未检出时退出 1） | 0 | 1–2 s |
 | 5 | `node --experimental-transform-types tools/audit-panel/rules/replay.mts` | `重放一致性 9/9 ✓` + 处置台账 `PASS（3 条）` | 0 | 1–2 s |
 | 6 | `node --experimental-transform-types tools/audit-panel/server/server.mts` | 启动横幅打印「当场验证 链 PASS · 重放 9/9 · V2 复核 PASS」 | — | <1 s |
 
@@ -73,7 +73,7 @@ node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts 
 审计面板事件文件 · 独立验证
 ──────────────────────────────────────────────────────────
   文件          D:\...\tools\audit-panel\data\events.jsonl
-  框架版本      v2.72.4（= `cat VERSION`，随版本变）
+  框架版本      v2.72.5（= `cat VERSION`，随版本变）
   schema        aof-audit-panel/1
   事件条数      9
   落盘链        PASS
@@ -81,14 +81,19 @@ node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts 
   全部检查通过：meta 一致 · seq 连续 · 链可重算 · 每条事件有规则与条款依据
 
   篡改演示（仅内存，不写盘）：
-    目标行        seq 4 · resource-over-budget
+    目标行        seq 4 · resource-over-budget（文件里的真实事件，非构造行）
     改动          detail 末尾追加"（已篡改）"
     链校验        已检出（重算值与原 chain_hash 不符）
+    若落盘        验链判 FAIL，退出码 1
     原 hash       e03d12f753bf2c8a…
     重算 hash     4bcb81d7d2c2e2f1…
+
+    演示结论      检出成功（预期结果）。本命令退出码 0 = 验链通过 且 演示符合预期，不是"未检出"。
 ```
 
-> **别把这一条当作「检查会红」的证据**：演示在内存里做、不写盘，所以**退出码仍是 0**。它证明的是「篡改能被检出」，不是「检查会失败」。要看红，走 §3。
+> **别把这一条当作「检查会红」的证据**：演示在内存里做、不写盘，所以**退出码仍是 0**。它证明的是「篡改能被检出」，不是「检查会失败」。
+>
+> **退出码 0 的准确含义是「验链通过 且 演示符合预期」**。反方向才是异常：若演示**没能**检出（链无防护力），本命令自 v2.72.5 起**退出 1**，而不是只打一个感叹号却正常退出。要看真的红，走 §3。
 
 ### 2.3 重放：日志说什么不算，重跑裁决一遍才算
 
@@ -144,7 +149,7 @@ echo "exit=$?"
 审计面板事件文件 · 独立验证
 ──────────────────────────────────────────────────────────
   文件          C:\Users\...\AppData\Local\Temp\tampered.jsonl
-  框架版本      v2.72.4（= `cat VERSION`，随版本变）
+  框架版本      v2.72.5（= `cat VERSION`，随版本变）
   schema        aof-audit-panel/1
   事件条数      9
   落盘链        FAIL
@@ -186,7 +191,7 @@ exit=1
 |---|---|---|
 | 门禁 7 项 FAIL，异常里是 `FileNotFoundError: [WinError 2]` | 缺 Node 或不在 PATH | 装 Node ≥ 22，`node --version` 确认 |
 | `git status` 显示 `events.jsonl` 被改，`git diff` 却是空的 | Windows `core.autocrlf=true` 的换行符差异 | `git checkout -- tools/audit-panel/data/events.jsonl` |
-| `--tamper-demo` 退出码 0，以为检查没生效 | 演示只在内存里做，不写盘 | 正常。要红请看 §3 |
+| `--tamper-demo` 退出码 0，以为检查没生效 | 演示只在内存里做，不写盘；0 的含义是「验链通过 且 演示符合预期」 | 正常。要红请看 §3。反向才该警惕：演示**没能**检出时命令退出 1（v2.72.5 起） |
 | `[seq 13] SKIP：沙箱现场不存在（CI 干净 clone）` | V2 realagent 产物依赖的沙箱现场未入库 | 预期行为。白名单 / 数值 / 链复核不受影响 |
 | `EADDRINUSE` | 7727 端口被占 | `--port=7811` 换端口 |
 | Git Bash 里路径带反斜杠报错 | Windows 路径 | 用正斜杠，或整体加引号 |

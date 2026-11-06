@@ -17,7 +17,15 @@
  *   node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts --file=<路径>
  *   node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts --tamper-demo
  *
- * 退出码：0 全部通过 / 1 存在失败。
+ * 退出码：0 全部通过（启用 --tamper-demo 时，还要求演示确实检出篡改）
+ *         1 存在失败，或演示未能检出（链无防护力）
+ *
+ * 关于 --tamper-demo 的退出码（易误读，故写在这里而不只写在文档里）：
+ *   演示**成功**时【不改】退出码。退出码回答的是"这条命令有没有完成它承诺的事"，
+ *   不是"仓库里有没有问题"。篡改被检出正是承诺之内；此时若返回非 0，
+ *   "演示成功"与"验链失败"就共用同一个信号，任何脚本或 CI 用它都会永久红灯。
+ *   反之若演示**没能**检出，说明这条链没有防护力——那必须退出 1，
+ *   而不是只打一个感叹号却让进程正常退出。
  *
  * ⚠️ 本验证器验的是**落盘链**（覆盖落盘内容），不是框架运行期链。
  *    落盘链只能证明"文件未被事后篡改"，不能证明事件真实发生过、也不证明发生在合成时间点。
@@ -147,6 +155,7 @@ function main(): void {
   linesOut.push('');
 
   // —— 篡改演示：证明这条链不是装饰 ——
+  // 退出码语义见文件头注释：检出成功不改退出码；未检出必须退出 1。
   if (args.tamperDemo) {
     const target = events.find((e) => e.category === 'resource-over-budget') ?? events[0]!;
     const tampered: Record<string, unknown> = { ...target };
@@ -158,15 +167,24 @@ function main(): void {
     for (let i = 0; i < idx; i++) p = String(events[i]!.chain_hash);
 
     const expected = canonicalHash(p, bodyOf(tampered));
-    const matches = expected === tampered.chain_hash;
+    const detected = expected !== tampered.chain_hash;
 
     linesOut.push('  篡改演示（仅内存，不写盘）：');
-    linesOut.push(`    目标行        seq ${String(target.seq)} · ${String(target.category)}`);
+    linesOut.push(`    目标行        seq ${String(target.seq)} · ${String(target.category)}（文件里的真实事件，非构造行）`);
     linesOut.push(`    改动          detail 末尾追加"（已篡改）"`);
-    linesOut.push(`    链校验        ${matches ? '未检出（异常！链无防护力）' : '已检出（重算值与原 chain_hash 不符）'}`);
+    linesOut.push(`    链校验        ${detected ? '已检出（重算值与原 chain_hash 不符）' : '未检出（异常！链无防护力）'}`);
+    linesOut.push(`    若落盘        ${detected ? '验链判 FAIL，退出码 1' : '验链仍判 PASS —— 这条链拦不住改动'}`);
     linesOut.push(`    原 hash       ${String(target.chain_hash).slice(0, 16)}…`);
     linesOut.push(`    重算 hash     ${expected.slice(0, 16)}…`);
     linesOut.push('');
+    linesOut.push(
+      detected
+        ? '    演示结论      检出成功（预期结果）。本命令退出码 0 = 验链通过 且 演示符合预期，不是"未检出"。'
+        : '    演示结论      未检出 —— 链无防护力，本命令退出码 1。',
+    );
+    linesOut.push('');
+
+    if (!detected) process.exitCode = 1;
   }
 
   process.stdout.write(linesOut.join('\n'));

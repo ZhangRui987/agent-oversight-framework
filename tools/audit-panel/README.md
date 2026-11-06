@@ -29,6 +29,8 @@
 node --experimental-transform-types tools/audit-panel/scenario/export-events.mts
 
 # 2) 独立验证事件文件（链重算 + 依据字段完整 + 篡改演示）
+#    退出码：0 = 验链通过 且 演示符合预期（演示成功不改退出码，别读成"没生效"）；
+#            1 = 存在失败，或演示未能检出（链无防护力）
 node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts --tamper-demo
 
 # 3) 重放校验（对每条拦截独立重执行规则，比对日志裁决——审计与看板的分界线）

@@ -6,6 +6,11 @@
  *   - CLI：node --experimental-transform-types tools/audit-panel/rules/verify-chain.mts
  *   - 库：export verifyChainFile() —— server 启动时调用（当场验证快照）
  *
+ * 退出码（CLI）：0 全部通过（启用 --tamper-demo 时还要求演示确实检出篡改）
+ *               1 存在失败，或演示未能检出（链无防护力）
+ * 与 scenario/verify-chain.mts 保持同一语义：演示成功不改退出码（否则"演示成功"与
+ * "验链失败"共用一个信号）；演示未检出必须退出 1（否则感叹号没有约束力）。
+ *
  * 验证内容：
  *   1. 首行为 meta，且 event_count 与实际事件条数一致；
  *   2. 每条事件的 chain_hash 可按 recipe 重算并匹配；
@@ -165,20 +170,28 @@ function main(): void {
     let p = '';
     for (let i = 0; i < idx; i++) p = String(events[i]!.chain_hash);
     const expected = canonicalHash(p, bodyOf(tampered));
-    const matches = expected === tampered.chain_hash;
+    const detected = expected !== tampered.chain_hash;
     out.push('  篡改演示（仅内存，不写盘）：');
-    lines_out_demo(out, target, matches, expected);
+    lines_out_demo(out, target, detected, expected);
+    if (!detected) process.exitCode = 1;
   }
 
   process.stdout.write(out.join('\n'));
 }
 
-function lines_out_demo(out: string[], target: Record<string, unknown>, matches: boolean, expected: string): void {
-  out.push(`    目标行        seq ${String(target.seq)} · ${String(target.category)}`);
+function lines_out_demo(out: string[], target: Record<string, unknown>, detected: boolean, expected: string): void {
+  out.push(`    目标行        seq ${String(target.seq)} · ${String(target.category)}（文件里的真实事件，非构造行）`);
   out.push(`    改动          detail 末尾追加"（已篡改）"`);
-  out.push(`    链校验        ${matches ? '未检出（异常！链无防护力）' : '已检出（重算值与原 chain_hash 不符）'}`);
+  out.push(`    链校验        ${detected ? '已检出（重算值与原 chain_hash 不符）' : '未检出（异常！链无防护力）'}`);
+  out.push(`    若落盘        ${detected ? '验链判 FAIL，退出码 1' : '验链仍判 PASS —— 这条链拦不住改动'}`);
   out.push(`    原 hash       ${String(target.chain_hash).slice(0, 16)}…`);
   out.push(`    重算 hash     ${expected.slice(0, 16)}…`);
+  out.push('');
+  out.push(
+    detected
+      ? '    演示结论      检出成功（预期结果）。本命令退出码 0 = 验链通过 且 演示符合预期，不是"未检出"。'
+      : '    演示结论      未检出 —— 链无防护力，本命令退出码 1。',
+  );
   out.push('');
 }
 

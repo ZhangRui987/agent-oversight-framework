@@ -28,7 +28,7 @@ Every number and output below was measured on 2026-11-06 in a **bare clone** (`g
 | 1 | `python scripts/verify_consistency.py` | last line `✅ 全部校验通过 — 可提交`, and `[PASS]` count = 53 | 0 | 16–25 s |
 | 2 | `node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts --strict` | last line `通过 9 / 警告 0 / 失败 0` (CI semantics: WARN also fails) | 0 | 6–11 s |
 | 3 | `node --experimental-transform-types tools/audit-panel/scenario/export-events.mts` | seven scenarios exported, 9 events + 1 meta line | 0 | 1–2 s |
-| 4 | `node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts --tamper-demo` | `落盘链 PASS` + tamper demo "detected" | 0 | 1–2 s |
+| 4 | `node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts --tamper-demo` | `落盘链 PASS` + `链校验 已检出` + final line `演示结论 检出成功` (0 = demo matched expectations, not "not detected"; exits 1 if the demo fails to detect) | 0 | 1–2 s |
 | 5 | `node --experimental-transform-types tools/audit-panel/rules/replay.mts` | `重放一致性 9/9 ✓` + ledger `PASS（3 条）` | 0 | 1–2 s |
 | 6 | `node --experimental-transform-types tools/audit-panel/server/server.mts` | banner prints on-startup verification summary | — | <1 s |
 
@@ -73,7 +73,7 @@ Measured output (paths vary by machine):
 审计面板事件文件 · 独立验证
 ──────────────────────────────────────────────────────────
   文件          D:\...\tools\audit-panel\data\events.jsonl
-  框架版本      v2.72.4 (= `cat VERSION`, changes per release)
+  框架版本      v2.72.5 (= `cat VERSION`, changes per release)
   schema        aof-audit-panel/1
   事件条数      9
   落盘链        PASS
@@ -81,14 +81,19 @@ Measured output (paths vary by machine):
   全部检查通过：meta 一致 · seq 连续 · 链可重算 · 每条事件有规则与条款依据
 
   篡改演示（仅内存，不写盘）：
-    目标行        seq 4 · resource-over-budget
+    目标行        seq 4 · resource-over-budget（文件里的真实事件，非构造行）
     改动          detail 末尾追加"（已篡改）"
     链校验        已检出（重算值与原 chain_hash 不符）
+    若落盘        验链判 FAIL，退出码 1
     原 hash       e03d12f753bf2c8a…
     重算 hash     4bcb81d7d2c2e2f1…
+
+    演示结论      检出成功（预期结果）。本命令退出码 0 = 验链通过 且 演示符合预期，不是"未检出"。
 ```
 
-> **Do not cite this as proof that "the check turns red"**: the demo runs in memory and writes nothing, so **the exit code is still 0**. It proves tampering is detectable, not that the check fails. For red, see §3.
+> **Do not cite this as proof that "the check turns red"**: the demo runs in memory and writes nothing, so **the exit code is still 0**. It proves tampering is detectable, not that the check fails.
+>
+> **What exit code 0 actually means: "the chain verified AND the demo behaved as expected."** The opposite direction is the anomaly: if the demo **fails to detect** the tamper (the chain has no protective power), this command **exits 1** since v2.72.5 — instead of printing an exclamation mark and exiting normally. For real red, see §3.
 
 ### 2.3 Replay: what the log claims does not count until re-adjudicated
 
@@ -144,7 +149,7 @@ Measured output:
 审计面板事件文件 · 独立验证
 ──────────────────────────────────────────────────────────
   文件          C:\Users\...\AppData\Local\Temp\tampered.jsonl
-  框架版本      v2.72.4 (= `cat VERSION`, changes per release)
+  框架版本      v2.72.5 (= `cat VERSION`, changes per release)
   schema        aof-audit-panel/1
   事件条数      9
   落盘链        FAIL
@@ -186,7 +191,7 @@ One attribution defect was also corrected: the WARN message used to say "suspect
 |---|---|---|
 | 7 checks FAIL with `FileNotFoundError: [WinError 2]` | Node missing or not on PATH | Install Node ≥ 22, verify `node --version` |
 | `git status` shows `events.jsonl` modified, `git diff` empty | Windows `core.autocrlf=true` line endings | `git checkout -- tools/audit-panel/data/events.jsonl` |
-| `--tamper-demo` exits 0, "so the check did nothing" | The demo runs in memory and writes nothing | Expected. For red see §3 |
+| `--tamper-demo` exits 0, "so the check did nothing" | The demo runs in memory and writes nothing; 0 means "chain verified AND demo behaved as expected" | Expected. For red see §3. The opposite is what to watch: if the demo **fails to detect**, the command exits 1 (since v2.72.5) |
 | `[seq 13] SKIP：沙箱现场不存在（CI 干净 clone）` | V2 realagent artifacts depend on a sandbox site not committed | Expected. Allow-list / numeric / chain checks unaffected |
 | `EADDRINUSE` | Port 7727 taken | `--port=7811` |
 | Path errors with backslashes in Git Bash | Windows paths | Use forward slashes or quote the whole path |

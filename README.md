@@ -1,6 +1,6 @@
 # AI 执行与监察体系（Agent Oversight Framework）
 
-[![Version](https://img.shields.io/badge/version-2.72.4-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.72.5-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (134/212)](https://img.shields.io/badge/evidence-B_135%2F213-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -121,7 +121,7 @@ graph TD
 
 ## 状态
 
-- 当前版本：v2.72.4（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
+- 当前版本：v2.72.5（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
 - 维护状态：**不声称建成，只声称维护状态**——开放作弊集合只能持续对抗
 - **诚实边界**：44 条未解问题显式登记（见 [`spec/13-boundaries.md`](spec/13-boundaries.md)）——这是本框架的诚实边界，也是研究者的选题清单；含全体系最大的工程缺口「去中心化蜂群反制」
 - 变更历史：见 [`CHANGELOG.md`](CHANGELOG.md)
@@ -185,7 +185,9 @@ node --experimental-transform-types reference/runtimes/l2-runtime-oversight/repl
 #    内容不变则无需处理；Windows（core.autocrlf=true）下可能 `git status` 显示 M 而 `git diff` 为空，
 #    那是换行符差异，`git checkout -- tools/audit-panel/data/events.jsonl` 还原即可，勿提交。
 node --experimental-transform-types tools/audit-panel/scenario/export-events.mts
-# ② 独立链验证（逐条重算哈希链，可检出任何篡改；--tamper-demo 看演示）
+# ② 独立链验证（逐条重算哈希链，可检出任何篡改；--tamper-demo 现场演示改动被检出）
+#    退出码别读错：演示【成功】时仍是 0——0 = 验链通过 且 演示符合预期，不是"没生效"。
+#    反方向才是异常：演示没能检出（链无防护力）会退出 1。要亲手把它弄红一次，见 REPRODUCE.md §3。
 node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts --tamper-demo
 # ③ 重放校验（用同一套规则重新裁决，比对日志——当前基线 9/9 MATCH）
 node --experimental-transform-types tools/audit-panel/rules/replay.mts
@@ -253,7 +255,7 @@ node --experimental-transform-types tools/audit-panel/server/server.mts
 
 见 [`CITATION.cff`](CITATION.cff)。
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.72.4). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.72.5). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## 质量保障（自指验证）
 
