@@ -32,7 +32,7 @@ jobs:
         run: python scripts/verify_consistency.py
 
   calib007-preflight:
-    name: CALIB-007 预注册件自检（登记表 37 / manifest 26 / 汇总器 19，均含反向测试）
+    name: CALIB-007 预注册件自检（登记表 37 / manifest 26 / 汇总器 20 / C-0 16，均含反向测试）
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -55,8 +55,14 @@ jobs:
           cd reference/runtimes/l2-runtime-oversight
           python adapters/autogen/check-attack-manifest.py
           python adapters/autogen/check-attack-manifest.py --selftest
-      - name: 汇总器自检（19 项，含 D-4 歧义行为）
+      - name: 汇总器自检（20 项，含 D-4 取严行为与单调性）
         run: python reference/runtimes/l2-runtime-oversight/aggregate-calib007.py --selftest
+      # 为什么加这一步：H5（C3 ≥ 0.80）是「换统计量」的判据，而它的阈值来自留出集，
+      # 不是来自任何可外部观察的东西。若定义漂移（例如并列时改成「取第一个」），
+      # 所有数值都会静默改变而没人发现。这 16 项里有 5 条反向测试专门钉住 C3 的定义
+      # 与三条判定条件，且已用六组突变验证过「改坏必 FAIL」。
+      - name: C-0 离线筛选自检（16 项，含 5 条反向测试）
+        run: python reference/runtimes/l2-runtime-oversight/adapters/autogen/check-c3-offline.py --selftest
 
   runtime-tests:
     name: L2 参照实现断言（demo 153 项 + otel 14 项）

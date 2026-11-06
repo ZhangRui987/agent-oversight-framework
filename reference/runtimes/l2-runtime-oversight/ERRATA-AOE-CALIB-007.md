@@ -13,6 +13,9 @@
 | D-4 | 措辞歧义 | H1 判读写的是「CI 下界 ≤ 0.04」，与假设正文「P95 ≤ 0.04」不等价 → **已裁定②取严（2026-11-05，采集开始前）**，见下 |
 | D-5 | 验证力虚高 | 登记表校验的两个反向测试用例实际不可能 FAIL → 已修，并下调「33 项含反向测试」的可信度表述 |
 | D-6 | 隔离缺口 | `.gitignore` 只覆盖 `adapters/**/out/`，而 §7 模板把产物落在 **runtime 根** `out/` → 首条正式命令的产物处于「未跟踪待提交」状态，已补齐 |
+| D-7 | 记录失真 | v2.63.0 产物哈希取的是**工作区 CRLF 字节**且未标口径，`git show` 复核必然对不上 → 已补双列（blob 可复核 / 工作区） |
+
+> **D-7 的定性**：它是**执行之后**发现的纯记录缺陷（前六条均在执行前或执行中）。哈希值本身没错，错在**没写清是哪个字节序列的哈希**——`core.autocrlf=true` 下工作区是 CRLF、blob 是 LF，两者必然不同。此类缺陷不会改变任何判定，但会让第三方复核失败，属「记录失真比数值错误更危险」那一类，故优先修。
 
 ---
 
@@ -145,3 +148,31 @@ git cat-file -p HEAD:reference/runtimes/l2-runtime-oversight/whitelist-registry.
 **补正**：`.gitignore` 增 `reference/runtimes/l2-runtime-oversight/out/`（保留原 `adapters/**/out/`）。实测：`git check-ignore -v` 命中新规则第 39 行；原 adapters 规则仍生效（命中第 34 行）；`git status` 回到只剩 `.gitignore` 本身的修改。
 
 **不改判定**：与判据、样本、口径无关，仅隔离层修复。但说明一件事——**「开跑检查单」里缺一项「产物隔离验证」**：模板路径变化须与 gitignore 同批验证，否则隔离层会静默失效。
+
+---
+
+## D-7 产物哈希缺少字节口径（记录失真）
+
+**事实**：v2.63.0 提交信息与 `results/RESULTS-AOE-CALIB-007-FORMAL-20261106.md` §六 写的是
+`4af01a3a…`（RAW json）与 `2bf4bb65…`（REPORT md）。这两个值是**工作区字节**（含 CRLF）的 sha256。
+而 git blob 里存的是 LF 规范化后的字节，实际值为：
+
+| 文件 | blob（可复核） | 工作区（CRLF） |
+|---|---|---|
+| `CALIBRATION-REALFRAMEWORK-RAW-20261106T0245.json` | `8b294e76f9f869e20b3e79321889955a87d5fa8ee0d731f1f2e3db3f7e8d3aa3` | `4af01a3a28d69756a02c135e9a0b1cf0c9922f08dedecadc6a091de00fa63478` |
+| `CALIBRATION-REPORT-REALFRAMEWORK-20261106T0245.md` | `ac96edbb58182f39e09e5da3f73fe9cebb82e8d719449ae0cbe940cffba40370` | `2bf4bb6531dac427d97fc3b6387b29d19f31664c348efa9505649aa42230e3cf` |
+
+**影响**：第三方按「`git show HEAD:<path> | sha256sum` 应等于记录值」复核时**必然失败**。哈希本身没算错，
+错在没写清是哪个字节序列。本机 `core.autocrlf=true`，工作区 CRLF / blob LF，两者**不可能相同**。
+
+**为什么现在才发现**：v2.63.0 记录哈希时直接对工作区文件跑 `sha256sum`，未区分口径；而 ERRATA D-6 附注
+里给的核验方式恰恰是 `git show HEAD:… | sha256sum`（blob 口径）——**两处口径不一致，且从未对跑**。
+与 D-6 同构：规则与实操各自演进、没有交叉验证。
+
+**补正**：`results/RESULTS-AOE-CALIB-007-FORMAL-20261106.md` §六 表格改为双列（blob / 工作区）并写明核验命令；
+本文件补本表。第三方复核一律用 blob 列。
+
+**固定动作（新增）**：今后凡在文档里写 sha256，**必须同时写口径**（`blob` 或 `workspace`），
+且核验命令与记录口径必须是同一个。单写一串哈希视为不完整记录。
+
+**不改判定**：与判据、样本、统计量、结论均无关。

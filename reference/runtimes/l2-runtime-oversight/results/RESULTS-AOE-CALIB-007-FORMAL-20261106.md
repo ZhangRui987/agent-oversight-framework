@@ -72,7 +72,9 @@
 
 ## 六、产物哈希
 
-| 文件 | sha256 |
-|---|---|
-| `CALIBRATION-REALFRAMEWORK-RAW-20261106T0245.json` | `4af01a3a28d69756a02c135e9a0b1cf0c9922f08dedecadc6a091de00fa63478` |
-| `CALIBRATION-REPORT-REALFRAMEWORK-20261106T0245.md` | `2bf4bb6531dac427d97fc3b6387b29d19f31664c348efa9505649aa42230e3cf` |
+| 文件 | sha256（git blob，可复核） | sha256（工作区字节，CRLF） |
+|---|---|---|
+| `CALIBRATION-REALFRAMEWORK-RAW-20261106T0245.json` | `8b294e76f9f869e20b3e79321889955a87d5fa8ee0d731f1f2e3db3f7e8d3aa3` | `4af01a3a28d69756a02c135e9a0b1cf0c9922f08dedecadc6a091de00fa63478` |
+| `CALIBRATION-REPORT-REALFRAMEWORK-20261106T0245.md` | `ac96edbb58182f39e09e5da3f73fe9cebb82e8d719449ae0cbe940cffba40370` | `2bf4bb6531dac427d97fc3b6387b29d19f31664c348efa9505649aa42230e3cf` |
+
+**核验方式（必须区分两列，否则永远对不上）**：`git show HEAD:<path> | sha256sum` 得第二列；工作区直接 `sha256sum` 得第三列。本机 `core.autocrlf=true`，两者必然不同——v2.63.0 提交信息里只写了第三列且未标口径，属记录失真，已在 `ERRATA-AOE-CALIB-007.md` **D-7** 登记并给出双列更正。第三方复核请用第二列。
