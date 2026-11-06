@@ -1,6 +1,6 @@
 # AI Execution & Oversight Framework
 
-[![Version](https://img.shields.io/badge/version-2.72.1-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.72.2-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (134/212)](https://img.shields.io/badge/evidence-B_135%2F213-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -120,18 +120,23 @@ Per [`CLASSIFICATION.md`](CLASSIFICATION.md), this repository has three levels:
 
 ## Status
 
-- Current version: v2.72.1 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
+- Current version: v2.72.2 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
 - Maintenance status: **does not claim "built"; claims only "maintained"** — an open cheating set can only be countered continuously
 - **Honest boundary**: 44 open problems explicitly registered (see [`spec/13-boundaries.md`](spec/13-boundaries.md)) — this framework's honest boundary and a problem list for researchers; includes the system's largest engineering gap, "decentralized-swarm countermeasures"
 - Change history: see [`CHANGELOG.md`](CHANGELOG.md)
 
 ## Quick start
 
+> **Prerequisites (read this first)**: Node.js **≥ 22** (CI pins 22 / 24) + Python **≥ 3.8** (consistency checks only, pure standard library; CI uses 3.12).
+> "Zero installs, zero dependencies" means **no npm / pip packages** — it does *not* mean Python alone is enough: the replication suite and the audit panel run on Node.
+> Without Node, `verify_consistency.py` reports 7 failures as `FileNotFoundError: [WinError 2]`-style tracebacks and **never says what is missing**. Check `node --version` ≥ v22 and `python --version` ≥ 3.8 first.
+
 **Quick tour (about 5 minutes)**:
 1. Read the six general principles in [`spec/01-principles.md`](spec/01-principles.md);
 2. Use the G×S table in [`spec/03-grading.md`](spec/03-grading.md) to determine the oversight grade of your current task, and check against the G → H coupling floor whether the deployer harness reaches the maturity required by that grade;
 3. Read the 44 open problems in [`spec/13-boundaries.md`](spec/13-boundaries.md), pick one, and open an issue to discuss;
-4. **Run it**: the audit panel's four commands (export → chain verification → replay → launch panel), then browse the real interception records and evidence grades of every governance rule in the browser — see "Beyond replication: the audit panel" below.
+4. **See how this repository governs itself**: `python scripts/verify_consistency.py` — 53 release-consistency checks, pure standard library, zero configuration, about 16 s, last line prints `✅ 全部校验通过 — 可提交` (details under "Governing itself with itself" below);
+5. **Run it**: the audit panel's four commands (export → chain verification → replay → launch panel), then browse the real interception records and evidence grades of every governance rule in the browser — see "Beyond replication: the audit panel" below.
 
 By role:
 1. **Deployer**: read [`spec/01-principles.md`](spec/01-principles.md) → [`spec/03-grading.md`](spec/03-grading.md) → [`spec/02-architecture.md`](spec/02-architecture.md), determine oversight intensity by G×S grading;
@@ -146,7 +151,9 @@ Want to verify hands-on rather than read conclusions? After cloning, run:
 
 ```bash
 node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts
-# exit code 0 = 9/9 passed; 1 = some experiment failed
+# exit code 0 = no failures (PASS and WARN both count as passing); 1 = some experiment failed
+# 0 does NOT mean "all 9 PASS": WARN does not change the exit code —
+# read the summary line (通过 N / 警告 M / 失败 K, total 9)
 ```
 
 With **zero installs, zero keys, zero network**, this reruns the repository's 9
@@ -157,6 +164,8 @@ The rationale for the tiers, including an honest account of why measured numeric
 cannot be byte-compared, is in the "tier-0 replication" section of
 [`reference/runtimes/l2-runtime-oversight/README.md`](reference/runtimes/l2-runtime-oversight/README.md).
 This entry point runs in CI on every push/PR.
+
+**About WARN (measured 2026-11-06)**: the same baselines produce "通过 4 / 警告 5 / 失败 0" on Windows with Node 22. All five WARNs are `env-diff` — differences only in float last digits and platform strings (baselines were recorded on linux), the expected cross-platform outcome of class A/B byte comparison, not experiment failures. Note also that because WARN does not change the exit code and CI only asserts exit 0, **the WARN count is not constrained by any check**; read the three counts in the summary line rather than exit 0 alone.
 
 > **Boundary**: this entry point covers only the **zero-dependency tier**. Experiments
 > requiring model API keys (AOE-ABSTAIN-001/002, AOE-CALIB-004, etc.) belong to the
@@ -173,6 +182,10 @@ A specification should survive replication — and it should also be *visible*. 
 
 ```bash
 # 1) export audit events (deterministic: byte-identical across runs of the same framework version)
+#    Note: this command **rewrites the committed** tools/audit-panel/data/events.jsonl.
+#    If content is unchanged, nothing to do; on Windows (core.autocrlf=true) `git status` may show M
+#    while `git diff` is empty — that is a line-ending artifact: `git checkout -- tools/audit-panel/data/events.jsonl`,
+#    do not commit it.
 node --experimental-transform-types tools/audit-panel/scenario/export-events.mts
 # 2) independent chain verification (recomputes the hash chain; detects any tampering)
 node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts --tamper-demo
@@ -240,7 +253,7 @@ This repository governs itself by its own specification (meta-governance):
 
 See [`CITATION.cff`](CITATION.cff).
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.72.1). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.72.2). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## Quality assurance (self-referential verification)
 

@@ -105,7 +105,7 @@ export function classifyFailure(golden: string, actual: string): CompareResult {
   if (allEnvLike) {
     return {
       verdict: "WARN",
-      detail: `env-diff：${bad.length} 行差异全部为浮点末位/平台串，疑似 Node 版本差异（非失败）`,
+      detail: `env-diff：${bad.length} 行差异全部为浮点末位/平台串，疑似运行环境差异（平台 / Node 版本；非失败）`,
     };
   }
   return { verdict: "FAIL", detail: `真失败：${bad.length} 行差异，首处 L${bad[0] + 1}` };

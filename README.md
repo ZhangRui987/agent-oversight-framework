@@ -1,6 +1,6 @@
 # AI 执行与监察体系（Agent Oversight Framework）
 
-[![Version](https://img.shields.io/badge/version-2.72.1-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.72.2-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (134/212)](https://img.shields.io/badge/evidence-B_135%2F213-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -121,18 +121,24 @@ graph TD
 
 ## 状态
 
-- 当前版本：v2.72.1（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
+- 当前版本：v2.72.2（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
 - 维护状态：**不声称建成，只声称维护状态**——开放作弊集合只能持续对抗
 - **诚实边界**：44 条未解问题显式登记（见 [`spec/13-boundaries.md`](spec/13-boundaries.md)）——这是本框架的诚实边界，也是研究者的选题清单；含全体系最大的工程缺口「去中心化蜂群反制」
 - 变更历史：见 [`CHANGELOG.md`](CHANGELOG.md)
 
 ## 快速开始
 
+> **环境前置（先看这一条）**：Node.js **≥ 22**（CI 固定 22 / 24）＋ Python **≥ 3.8**（仅门禁脚本用，纯标准库；CI 用 3.12）。
+> 「零安装、零依赖」指的是**不装任何 npm / pip 包**，不等于「有 Python 就够」——复现包与审计面板由 Node 执行。
+> 缺 Node 时 `verify_consistency.py` 会出现 7 项 FAIL，报错形如 `FileNotFoundError: [WinError 2]`，
+> 是 Python 框架 traceback 而**不会提示缺什么**。开工前先确认 `node --version` ≥ v22、`python --version` ≥ 3.8。
+
 **快速体验（约 5 分钟）**：
 1. 读 [`spec/01-principles.md`](spec/01-principles.md) 的六条总纲；
 2. 用 [`spec/03-grading.md`](spec/03-grading.md) 的 G×S 表判断你当前任务的监察等级，并按 G → H 耦合下限校验部署方 harness 是否达到该档所需的成熟度；
 3. 读 [`spec/13-boundaries.md`](spec/13-boundaries.md) 的 44 条未解问题，挑一条开 Issue 讨论；
-4. **跑起来看**：审计面板四条命令（导出 → 链验证 → 重放 → 起面板），浏览器查看每条治理规则的真实拦截记录与证据分级——见下文「不止复现：审计面板」。
+4. **先看这个仓库怎么管自己**：`python scripts/verify_consistency.py`——53 项发布一致性校验，纯标准库、零配置，约 16 秒，末行打印 `✅ 全部校验通过 — 可提交`（细则见下文「用自己治理自己」）；
+5. **跑起来看**：审计面板四条命令（导出 → 链验证 → 重放 → 起面板），浏览器查看每条治理规则的真实拦截记录与证据分级——见下文「不止复现：审计面板」。
 
 按角色深入：
 1. **部署方**：读 [`spec/01-principles.md`](spec/01-principles.md) → [`spec/03-grading.md`](spec/03-grading.md) → [`spec/02-architecture.md`](spec/02-architecture.md)，按 G×S 分级确定监察强度；
@@ -147,7 +153,8 @@ graph TD
 
 ```bash
 node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts
-# 退出码 0 = 9/9 通过；1 = 存在失败
+# 退出码 0 = 无失败（PASS 与 WARN 均计入通过）；1 = 存在失败
+# 注意 0 ≠「9 项全 PASS」：WARN 不改变退出码，须读末行「通过 N / 警告 M / 失败 K（合计 9）」
 ```
 
 这会在**零安装、零密钥、零网络**的前提下，重跑本仓库 9 个「零外部依赖」标定实验
@@ -156,6 +163,8 @@ node --experimental-transform-types reference/runtimes/l2-runtime-oversight/repl
 分档原因与「为什么测量数值不可字节比对」的诚实说明见
 [`reference/runtimes/l2-runtime-oversight/README.md`](reference/runtimes/l2-runtime-oversight/README.md)
 的「tier-0 复现」章。该入口已进 CI，push/PR 自动执行。
+
+**关于 WARN（2026-11-06 实测）**：同一份基准在 Windows / Node 22 上跑出「通过 4 / 警告 5 / 失败 0」，5 条 WARN 全部属 `env-diff`——差异仅为浮点末位与平台串（基准在 linux 录制），是 A/B 类字节比对的跨平台预期结果，不是实验失败。另须注意：因 WARN 不改退出码、CI 只断言 exit 0，**WARN 数不受任何检查约束**；判断是否通过请读汇总行三个数，不要只看 exit 0。
 
 > **边界**：本入口只覆盖**零依赖档**。需模型 API 密钥的实验（AOE-ABSTAIN-001/002、
 > AOE-CALIB-004 等）属 **tier-1 API 档**，逐条条件与成本上限见
@@ -170,6 +179,9 @@ node --experimental-transform-types reference/runtimes/l2-runtime-oversight/repl
 
 ```bash
 # ① 生成审计事件（确定性输出：同版本框架两次运行逐字节一致）
+#    注意：本命令会**重写已入库**的 tools/audit-panel/data/events.jsonl。
+#    内容不变则无需处理；Windows（core.autocrlf=true）下可能 `git status` 显示 M 而 `git diff` 为空，
+#    那是换行符差异，`git checkout -- tools/audit-panel/data/events.jsonl` 还原即可，勿提交。
 node --experimental-transform-types tools/audit-panel/scenario/export-events.mts
 # ② 独立链验证（逐条重算哈希链，可检出任何篡改；--tamper-demo 看演示）
 node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts --tamper-demo
@@ -238,7 +250,7 @@ node --experimental-transform-types tools/audit-panel/server/server.mts
 
 见 [`CITATION.cff`](CITATION.cff)。
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.72.1). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.72.2). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## 质量保障（自指验证）
 

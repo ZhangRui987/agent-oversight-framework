@@ -1,6 +1,24 @@
 # 变更日志
 
 
+## v2.72.2（2026-11-06）：对外第一屏的四处「说明与事实不一致」（另修一处归因失真）
+
+- **来源不是自觉自查，是陌生人视角实测**：在 `git clone` 出的裸工作树里只按 README 执行命令，五条命令全部 exit 0，但把输出与 README 的说法逐句对照，发现四处描述与实测不符。它们的共同点是**没有任何机器在检查**——所以错了很久也没人发现。
+- **① 「退出码 0 = 9/9 通过」是假的**：实测 exit 0 时输出为「通过 4 / 警告 5 / 失败 0」。`env-diff` 分类把浮点末位与平台串差异判为 WARN（设计上是对的：避免把环境差异误报成复现失败），但 README 把 exit 0 直接读作「9/9 通过」。改为「退出码 0 = 无失败（PASS 与 WARN 均计入通过）」，并另起一段写清 WARN 的含义与一条更硬的事实：**CI 只断言 exit 0，WARN 数不受任何检查约束**——判断是否通过须读汇总行的三个数。
+- **② 前置条件一处没写**：README / CONTRIBUTING 从未写过 Node / Python 版本（CI 固定 node 22 / 24、python 3.12）。实测把 node 从 PATH 拿掉后重跑门禁：**7 项 FAIL，报错是 `FileNotFoundError: [WinError 2]` 的 Python traceback**，没有一个字提示缺什么。快速开始顶部新增「环境前置」块：版本下限 + 一句「零安装指的是不装 npm / pip 包，不等于有 Python 就够」。
+- **③ 第 1 步就会弄脏工作树**：`export-events.mts` 会重写**已入库**的 `tools/audit-panel/data/events.jsonl`；Windows（`core.autocrlf=true`）下 `git status` 显示 M 而 `git diff` 为空。已在命令旁注明这是换行符差异、用 `git checkout --` 还原、勿提交。
+- **④ 最能证明自身能力的那道门禁不在快速开始里**：53 项自校验只在正文第 245 行出现，陌生人最先跑的反而是 6 秒的复现包。现列为快速体验第 4 步，写明「约 16 秒、末行 `✅ 全部校验通过 — 可提交`」。
+- **⑤ 顺带修一处归因失真**：`replicate-t0.mts` 的 WARN 文案写「疑似 Node 版本差异」，但本次实测用的是与维护者相同的 v22.22.2，真实主因是**平台**（win32 vs linux，基准在 linux 录制）。因 `replication-t0-golden/` 快照不含平台元信息，脚本本身无法判定具体是哪一项，故改为「疑似运行环境差异（平台 / Node 版本）」——记录失真比数值错误更危险，宁可少断言一项。
+- **本版本发布值**（未重锚 ⇒ 重复同一串；重复公布只增强外部见证）：
+
+  ```
+  aof-anchor/v1:audit-panel/events-v1:1:9:27c2fe8fa384f7b9920cbd83da521fb567f795332501101e35b3d18ffdc82739:7d8a896bed4ce976
+  aof-anchor/v1:disposition/stage1-ledger:2:3:3f23031b0c77a0fce338a8e2feda30ee548cd2c262fdfb239aaa638f5a8b7ea4:b1aa3becb81e59cf
+  ```
+
+- **范围（不夸大）**：四处文本 + 一处提示串 + 版本号联动，**不动任何判定逻辑、不动门禁项数（仍 53 项）**。它提升的是对外第一屏的可信度，不是技术能力；「WARN 数无机器约束」这条已如实写进 README，尚未补检查。
+
+
 ## v2.72.1（2026-11-06）：修掉一处指向已废止工具链的提示
 
 - **改了什么**：`scripts/check_release_invariant.py` 的 FAIL 提示原本写「工具链：`.workbuddy/create_release_v*.py` 或 GitHub 页面 Draft new release」。v2.72.0 把发版入口收进 `scripts/create_release.py` 之后，工作区里那 31 个一次性脚本已全部归档到 `.workbuddy/_archived/create_release_OBSOLETE_do_not_use/`，于是这条指引**指向不存在的文件**——唯一的修复指引把人引向已经拆掉的路。现改为 `python scripts/create_release.py --notes=<说明文件> --title=<标题>`，并写明「脚本自带预检且无跳过开关」。
