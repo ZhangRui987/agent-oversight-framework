@@ -1,0 +1,8 @@
+# 本目录 golden 快照的生成环境（仅溯源，不参与任何比对）
+# 由 replicate-t0.mts --emit-golden 写入；被测内容里不得出现 Node 版本/平台串。
+
+swarm-detection                Node v22.22.2 | win32/x64 | 2026-11-06T15:36:11.564Z
+concentration-threshold        Node v22.22.2 | win32/x64 | 2026-11-06T15:36:12.108Z
+config-reviewer-detection      Node v22.22.2 | win32/x64 | 2026-11-06T15:36:12.604Z
+c12-v2-reprojection            Node v22.22.2 | win32/x64 | 2026-11-06T15:36:12.966Z
+c12-v21-reverify               Node v22.22.2 | win32/x64 | 2026-11-06T15:36:13.411Z

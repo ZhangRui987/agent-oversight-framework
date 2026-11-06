@@ -105,7 +105,8 @@ function buildSamples(): Sample[] {
 function runCalibration() {
   const samples = buildSamples();
   console.log('=================================================================');
-  console.log('AOE-CALIB-003：指挥集中度阈值 ROC 标定 | Node', process.version, '|', process.platform + '/' + process.arch);
+  // 环境元信息不入被测内容（理由见 replicate-t0.mts 文件头「环境元信息」段）。
+  console.log('AOE-CALIB-003：指挥集中度阈值 ROC 标定');
   console.log(`样本：600 条（M 恶性梯度 8 档 × 50 = 400 / B1 常规良性 100 / B2 主从调度器 100）`);
   console.log('=================================================================\n');
 

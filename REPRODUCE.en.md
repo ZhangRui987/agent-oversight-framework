@@ -26,7 +26,7 @@ Every number and output below was measured on 2026-11-06 in a **bare clone** (`g
 | # | Command | Pass criterion | Exit | Time |
 |---|---|---|---|---|
 | 1 | `python scripts/verify_consistency.py` | last line `✅ 全部校验通过 — 可提交`, and `[PASS]` count = 53 | 0 | 16–25 s |
-| 2 | `node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts` | final three counts; 9 zero-dependency experiments | 0 | 6–11 s |
+| 2 | `node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts --strict` | last line `通过 9 / 警告 0 / 失败 0` (CI semantics: WARN also fails) | 0 | 6–11 s |
 | 3 | `node --experimental-transform-types tools/audit-panel/scenario/export-events.mts` | seven scenarios exported, 9 events + 1 meta line | 0 | 1–2 s |
 | 4 | `node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts --tamper-demo` | `落盘链 PASS` + tamper demo "detected" | 0 | 1–2 s |
 | 5 | `node --experimental-transform-types tools/audit-panel/rules/replay.mts` | `重放一致性 9/9 ✓` + ledger `PASS（3 条）` | 0 | 1–2 s |
@@ -73,7 +73,7 @@ Measured output (paths vary by machine):
 审计面板事件文件 · 独立验证
 ──────────────────────────────────────────────────────────
   文件          D:\...\tools\audit-panel\data\events.jsonl
-  框架版本      v2.72.3 (= `cat VERSION`, changes per release)
+  框架版本      v2.72.4 (= `cat VERSION`, changes per release)
   schema        aof-audit-panel/1
   事件条数      9
   落盘链        PASS
@@ -144,7 +144,7 @@ Measured output:
 审计面板事件文件 · 独立验证
 ──────────────────────────────────────────────────────────
   文件          C:\Users\...\AppData\Local\Temp\tampered.jsonl
-  框架版本      v2.72.3 (= `cat VERSION`, changes per release)
+  框架版本      v2.72.4 (= `cat VERSION`, changes per release)
   schema        aof-audit-panel/1
   事件条数      9
   落盘链        FAIL
@@ -166,17 +166,17 @@ That is the line between "a check with discriminating power" and "a check that a
 
 ## 4. Five known rough edges (stated honestly)
 
-**The first four were fixed in v2.72.2** (documentation and message wording only — no decision logic changed). **The fifth is still open.**
+**All five are now fixed**: the first four in v2.72.2 (documentation and message wording), the fifth in v2.72.4 (decision logic and the CI constraint).
 
 | # | Rough edge | Status | Workaround / note |
 |---|---|---|---|
-| 1 | `replicate-t0` exit 0 was read as "9/9 passed"; it is actually "通过 4 / 警告 5 / 失败 0" | Fixed in v2.72.2 | WARN = differences only in float last digits / platform strings. Read the three counts |
+| 1 | `replicate-t0` exit 0 was read as "9/9 passed"; it is actually "通过 4 / 警告 5 / 失败 0" | Wording fixed in v2.72.2; root cause fixed in v2.72.4 | Not one of those five WARNs was a numeric difference: all were the baselines checked out as CRLF by `core.autocrlf` (three more came from a platform string baked into the baseline header). Windows and linux both report `通过 9 / 警告 0 / 失败 0` now |
 | 2 | Node / Python versions were never documented; missing Node surfaced as a `FileNotFoundError` traceback | Fixed in v2.72.2 | See §0 |
 | 3 | `export-events.mts` rewrites the committed `events.jsonl`; on Windows `git status` shows M while `git diff` is empty | Fixed in v2.72.2 | Line-ending artifact: `git checkout -- tools/audit-panel/data/events.jsonl`, do not commit |
 | 4 | The 53 checks were not in "Quick start"; newcomers ran the 6-second replication suite first | Fixed in v2.72.2 | See §2.1 |
-| 5 | **The WARN count is not constrained by any check**; CI only asserts exit 0 | **Open, declared** | Adding a check requires first deciding what WARN should be on linux CI, otherwise it just buys intermittent red lights — and intermittent red trains people to disable alerts |
+| 5 | **The WARN count is not constrained by any check**; CI only asserts exit 0 | Fixed in v2.72.4: CI now runs `--strict`, so WARN turns it red | The assertion is "WARN also fails", not "WARN must be zero" — the former can absorb genuine environment noise later, while the latter turns noise into red lights and eventually trains people to disable alerts |
 
-One attribution defect was also corrected (now deliberately non-committal): `replication-t0-golden/` snapshots carry no platform metadata, so the script cannot tell platform differences from Node-version differences; the WARN message therefore says "suspected environment difference (platform / Node version)". **A distorted record is more dangerous than a wrong number.**
+One attribution defect was also corrected: the WARN message used to say "suspected platform / Node-version difference", but the measured run used the same Node 22.22.2 as the baselines — the real causes were **CRLF line endings** and a **platform string baked into the baseline header**, neither of which is a floating-point issue. Both are now eliminated, so `env-diff` only tolerates equivalent version/platform substitutions and numeric last digits within a 1e-9 relative bound, and reports the first offending line (`L{n}`) instead of leaving you to guess.
 
 ---
 

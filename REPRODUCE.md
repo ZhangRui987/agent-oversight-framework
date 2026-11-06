@@ -26,7 +26,7 @@
 | # | 命令 | 判定依据（怎么算对） | 退出码 | 耗时 |
 |---|---|---|---|---|
 | 1 | `python scripts/verify_consistency.py` | 末行 `✅ 全部校验通过 — 可提交`，且 `[PASS]` 行数 = 53 | 0 | 16–25 s |
-| 2 | `node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts` | 末行三数；9 个零依赖标定实验 | 0 | 6–11 s |
+| 2 | `node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts --strict` | 末行 `通过 9 / 警告 0 / 失败 0`（CI 口径：WARN 也算失败） | 0 | 6–11 s |
 | 3 | `node --experimental-transform-types tools/audit-panel/scenario/export-events.mts` | 七场景导出，写出 9 条事件 + 1 条 meta | 0 | 1–2 s |
 | 4 | `node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts --tamper-demo` | `落盘链 PASS` + 篡改演示「已检出」 | 0 | 1–2 s |
 | 5 | `node --experimental-transform-types tools/audit-panel/rules/replay.mts` | `重放一致性 9/9 ✓` + 处置台账 `PASS（3 条）` | 0 | 1–2 s |
@@ -73,7 +73,7 @@ node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts 
 审计面板事件文件 · 独立验证
 ──────────────────────────────────────────────────────────
   文件          D:\...\tools\audit-panel\data\events.jsonl
-  框架版本      v2.72.3（= `cat VERSION`，随版本变）
+  框架版本      v2.72.4（= `cat VERSION`，随版本变）
   schema        aof-audit-panel/1
   事件条数      9
   落盘链        PASS
@@ -144,7 +144,7 @@ echo "exit=$?"
 审计面板事件文件 · 独立验证
 ──────────────────────────────────────────────────────────
   文件          C:\Users\...\AppData\Local\Temp\tampered.jsonl
-  框架版本      v2.72.3（= `cat VERSION`，随版本变）
+  框架版本      v2.72.4（= `cat VERSION`，随版本变）
   schema        aof-audit-panel/1
   事件条数      9
   落盘链        FAIL
@@ -166,17 +166,17 @@ exit=1
 
 ## 4. 五条已知卡点（如实登记）
 
-以下是大规模实测中真实踩到的坑。**前四条在 v2.72.2 已修（改的是文档与提示，不是判定逻辑）**，第五条仍是公开的未修项。
+以下是大规模实测中真实踩到的坑。**五条均已修复**：前四条在 v2.72.2（改的是文档与提示），第五条在 v2.72.4（改的是判定与 CI 约束）。
 
 | # | 卡点 | 现状 | 规避 / 说明 |
 |---|---|---|---|
-| 1 | `replicate-t0` 退出码 0 曾被 README 读作「9/9 通过」，实测是「通过 4 / 警告 5 / 失败 0」 | v2.72.2 已订正 | WARN 表示差异仅为浮点末位/平台串。判断通过须读汇总行三数 |
+| 1 | `replicate-t0` 退出码 0 曾被 README 读作「9/9 通过」，实测是「通过 4 / 警告 5 / 失败 0」 | v2.72.2 订正文字；v2.72.4 修掉根因 | 那 5 条 WARN 一条数值差异都没有：全部是基准被 `core.autocrlf` 检出成 CRLF（另 3 条是基准首行写死平台串）。现 Windows 与 linux 均为 `通过 9 / 警告 0 / 失败 0` |
 | 2 | 文档从未写 Node / Python 版本；缺 Node 时报 `FileNotFoundError` traceback | v2.72.2 已在快速开始补「环境前置」 | 见本文 §0 |
 | 3 | `export-events.mts` 重写已入库的 `events.jsonl`；Windows 下 `git status` 显示 M 而 `git diff` 为空 | v2.72.2 已在命令旁注明 | 是换行符差异，`git checkout -- tools/audit-panel/data/events.jsonl` 还原，勿提交 |
 | 4 | 53 项门禁原不在「快速开始」里，陌生人最先跑的是 6 秒的复现包 | v2.72.2 已列为快速体验第 4 步 | 见本文 §2.1 |
-| 5 | **WARN 数量不受任何检查约束**：CI 只断言 exit 0 | **未修，如实登记** | 要补检查须先定「WARN 在 linux CI 上应为何值」，否则只是拿间歇红灯换人关掉告警 |
+| 5 | **WARN 数量不受任何检查约束**：CI 只断言 exit 0 | v2.72.4 已修：CI 改跑 `--strict`，WARN 即红 | 断言形式是「WARN 也判失败」而不是「WARN 必须为 0」——前者能容纳未来真实的环境噪声，后者会把噪声变成红灯，最终训练人关掉告警 |
 
-另有一处归因失真（v2.72.2 已改为不越界断言）：`replication-t0-golden/` 快照不含平台元信息，脚本无法判定差异属于平台还是 Node 版本，故 WARN 文案只写「疑似运行环境差异（平台 / Node 版本）」——**记录失真比数值错误更危险**。
+另有一处归因失真（v2.72.2 已改为不越界断言，v2.72.4 定位到真实原因）：当时 WARN 文案写「疑似平台 / Node 版本差异」，实测用的是与基准相同的 Node 22.22.2，真实主因是**行尾 CRLF** 与**基准头行写死的平台串**——两者都不是浮点精度问题。现在这两类已被消除，`env-diff` 只对「版本/平台串等价替换」与「1e-9 相对差内的数值末位」放行，并在明细里给出「首处 L{n}」，不必再靠猜。
 
 ---
 

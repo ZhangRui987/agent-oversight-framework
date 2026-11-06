@@ -81,11 +81,17 @@ demo 覆盖 24 组、153 项断言（实测全绿；**组数/断言数由 demo �
 
 ```bash
 node --experimental-transform-types replicate-t0.mts
-# 退出码 0 = 9/9 通过；1 = 存在失败（用 --only=<名> --raw 定位）
+# 退出码 0 = 无失败（当前基线：通过 9 / 警告 0 / 失败 0）；1 = 存在失败（用 --only=<名> --raw 定位）
 
 node --experimental-transform-types replicate-t0.mts --list     # 只列清单
-node --experimental-transform-types replicate-t0.mts --selftest # 比对内核自检（26 项）
+node --experimental-transform-types replicate-t0.mts --strict   # WARN 也计入失败（CI 口径）
+node --experimental-transform-types replicate-t0.mts --selftest # 比对内核自检（34 项）
 ```
+
+**两条口径（v2.72.4，都曾以"看起来通过"的方式误导过）**：
+
+- **行尾**：所有文本比对前统一 CRLF→LF。基准在 git 里存 LF，但 `core.autocrlf=true` 的 Windows 检出会把每行变成 CRLF；不归一化则整文件"逐行不同"，且旧判定会把它当环境噪声 —— 2026-11-06 实测 Windows 上 5 条 WARN 全部由此产生，一条数值差异都没有。仓库已加 `.gitattributes` 钉死该目录 `eol=lf` 作为第二道防线。
+- **环境元信息**：Node 版本与平台串**不进入被测内容**。此前写在实验 stdout 首行，导致换平台必然 WARN（linux 上恒 3 条）。现由运行器在横幅打印，并在 `--emit-golden` 时写入 `_environment.txt` 供溯源，不参与比对。
 
 ### 覆盖实验（9 个脚本 / 5 个 AOE 编号）
 

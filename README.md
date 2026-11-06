@@ -1,6 +1,6 @@
 # AI 执行与监察体系（Agent Oversight Framework）
 
-[![Version](https://img.shields.io/badge/version-2.72.3-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.72.4-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (134/212)](https://img.shields.io/badge/evidence-B_135%2F213-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -121,7 +121,7 @@ graph TD
 
 ## 状态
 
-- 当前版本：v2.72.3（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
+- 当前版本：v2.72.4（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
 - 维护状态：**不声称建成，只声称维护状态**——开放作弊集合只能持续对抗
 - **诚实边界**：44 条未解问题显式登记（见 [`spec/13-boundaries.md`](spec/13-boundaries.md)）——这是本框架的诚实边界，也是研究者的选题清单；含全体系最大的工程缺口「去中心化蜂群反制」
 - 变更历史：见 [`CHANGELOG.md`](CHANGELOG.md)
@@ -166,7 +166,7 @@ node --experimental-transform-types reference/runtimes/l2-runtime-oversight/repl
 [`reference/runtimes/l2-runtime-oversight/README.md`](reference/runtimes/l2-runtime-oversight/README.md)
 的「tier-0 复现」章。该入口已进 CI，push/PR 自动执行。
 
-**关于 WARN（2026-11-06 实测）**：同一份基准在 Windows / Node 22 上跑出「通过 4 / 警告 5 / 失败 0」，5 条 WARN 全部属 `env-diff`——差异仅为浮点末位与平台串（基准在 linux 录制），是 A/B 类字节比对的跨平台预期结果，不是实验失败。另须注意：因 WARN 不改退出码、CI 只断言 exit 0，**WARN 数不受任何检查约束**；判断是否通过请读汇总行三个数，不要只看 exit 0。
+**关于 WARN（v2.72.4 起有机器约束）**：本入口在 CI 中以 `--strict` 运行——**WARN 也计入失败**，任何一条非 PASS 都会让 CI 变红。此前口径是「WARN 不改退出码、CI 只断言 exit 0」，实测暴露过一次典型的声明失真：Windows / Node 22 上跑出「通过 4 / 警告 5 / 失败 0」，5 条 WARN 的差异行数 52/39/198/22/32，逐行核对后**一条数值差异都没有**——全部是基准被 `core.autocrlf` 检出成 CRLF，另 3 条是基准首行写死了平台串。现三层修好：比对前行尾归一化（CRLF→LF）、环境元信息移出被测内容（改记 `replication-t0-golden/_environment.txt`）、数值容差从「抹掉所有数字再比」收紧到 1e-9 相对差（此前任何数值改动都会被当成环境噪声）。当前 Windows 与 linux CI 实测均为 **通过 9 / 警告 0 / 失败 0**。
 
 > **边界**：本入口只覆盖**零依赖档**。需模型 API 密钥的实验（AOE-ABSTAIN-001/002、
 > AOE-CALIB-004 等）属 **tier-1 API 档**，逐条条件与成本上限见
@@ -253,7 +253,7 @@ node --experimental-transform-types tools/audit-panel/server/server.mts
 
 见 [`CITATION.cff`](CITATION.cff)。
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.72.3). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.72.4). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## 质量保障（自指验证）
 

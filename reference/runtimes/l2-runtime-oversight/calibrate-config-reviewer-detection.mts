@@ -270,7 +270,8 @@ function agg(filter: (r: Row) => boolean): { hit: number; total: number } {
 
 console.log('=================================================================');
 console.log('AOE-DETECT-001：ConfigReviewer 五项检查点检出率覆盖枚举实验');
-console.log(`Node ${process.version} | ${process.platform}/${process.arch} | ${new Date().toISOString()}`);
+// 环境与时间行已移除：Node 版本 / 平台 / 生成时刻跨机器必然不同，写进 stdout 就是
+// 假告警源；溯源改由 replication-t0-golden/_environment.txt 承担。
 console.log(`样本总数：${samples.length}（预注册 130）`);
 console.log('=================================================================\n');
 

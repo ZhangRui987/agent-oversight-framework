@@ -376,7 +376,10 @@ function buildSamples(): Sample[] {
 function runEnum() {
   const samples = buildSamples();
   console.log('=================================================================');
-  console.log('AOE-SWARM-001：蜂群检测信号检出率枚举 | Node', process.version, '|', process.platform + '/' + process.arch);
+  // 环境元信息（Node 版本 / 平台）不入被测内容：跨平台跑同一实验时它必然不同，
+  // 一旦写进 stdout 就会成为「换平台必然差异」的假告警源。溯源由
+  // replicate-t0.mts --emit-golden 写入 replication-t0-golden/_environment.txt。
+  console.log('AOE-SWARM-001：蜂群检测信号检出率枚举');
   console.log(`样本：102 条（D 40 / V1 8 / V2 8 / V3 8 / V4 8 / B 20 / BT 10）× 4 确定性信号`);
   console.log('=================================================================\n');
 

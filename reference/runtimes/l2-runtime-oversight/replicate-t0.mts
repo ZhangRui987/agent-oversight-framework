@@ -10,19 +10,30 @@
  *   - 不改仓库：默认只读；仅 --emit-golden 显式给出时才写入 golden 快照目录。
  *
  * 比对模式（详见同目录 README「tier-0 复现」章）：
- *   A 类 字节级确定性      —— 运行 stdout 逐字节等于入库 golden 快照。
+ *   A 类 字节级确定性      —— 运行 stdout 逐字节等于入库 golden 快照（行尾归一化后）。
  *   B 类 归一化后字节级    —— 归一化易变 token（ISO 时间戳 / 留痕文件名毫秒戳）后逐字节比对。
  *   C 类 仅结构不变量      —— 只断言小节标题 + 判定极性 + 行数容差；不断言测量数值。
+ *
+ * 行尾口径（v2.72.4）：所有文本比对前统一 CRLF→LF。golden 在 git 里存 LF，但
+ *   `core.autocrlf=true` 的 Windows 检出会把每行变成 CRLF；不归一化则两侧整文件
+ *   「逐行都不同」。更糟的是旧版 classifyFailure 会把这种差异判成「环境差异」——
+ *   等于把一处 git 配置问题伪装成复现结果问题（实测：Windows 上 5 个实验报 WARN，
+ *   差异行数 52/39/198/22/32，全部只差一个行尾 \r，一条数值差异都没有）。
+ *
+ * 环境元信息（Node 版本 / 平台架构）不进入被测内容：由本运行器在启动横幅打印，
+ *   并在 --emit-golden 时写入 replication-t0-golden/_environment.txt 供溯源。
+ *   旧版把它写进实验 stdout 的第 2/3 行，导致换平台必然 WARN（linux 上恒 3 条）。
  *
  * 用法：
  *   node --experimental-transform-types replicate-t0.mts              # 跑全部，打印汇总
  *   node --experimental-transform-types replicate-t0.mts --list       # 只列清单
  *   node --experimental-transform-types replicate-t0.mts --only=<名>  # 只跑一个
  *   node --experimental-transform-types replicate-t0.mts --raw        # 附带原始 stdout
+ *   node --experimental-transform-types replicate-t0.mts --strict     # WARN 也计入失败（CI 口径）
  *   node --experimental-transform-types replicate-t0.mts --selftest   # 比对内核自检
  *   node --experimental-transform-types replicate-t0.mts --emit-golden # 【写入】重建 A/B 类快照
  *
- * 退出码：0 全通过（或无实验失败）／1 存在 FAIL。WARN 不改变退出码。
+ * 退出码：0 全通过（或仅 WARN）／1 存在 FAIL。加 --strict 时 WARN 亦为 1。
  */
 
 import { spawnSync } from "node:child_process";
@@ -54,16 +65,31 @@ export interface CompareResult {
   detail: string;
 }
 
-/** A 类：字节级确定性。 */
+/** 行尾归一化（口径见文件头）：比对前把 CRLF 折叠为 LF。 */
+export function normalizeEol(text: string): string {
+  return text.replace(/\r\n/g, "\n");
+}
+
+/**
+ * 数值容差：相对误差上限。
+ * 取值依据——浮点打印噪声量级在 1e-16 相对误差附近；任何在常规精度（≥6 位有效数字）
+ * 上被写出来的数字改动，相对差 ≥1e-6。取 1e-9 是这两者之间留足两个数量级的间隙：
+ * 既能吸收真实的末位噪声，又不可能吞掉「AUC 0.6744 改成 0.6745」这类改动。
+ */
+export const NUMERIC_REL_TOL = 1e-9;
+
+/** A 类：字节级确定性（行尾归一化后）。 */
 export function compareA(actual: string, golden: string): CompareResult {
-  if (actual === golden) return { verdict: "PASS", detail: "stdout 与 golden 逐字节一致" };
-  return { verdict: "FAIL", detail: describeDiff(golden, actual) };
+  const a = normalizeEol(actual);
+  const g = normalizeEol(golden);
+  if (a === g) return { verdict: "PASS", detail: "stdout 与 golden 逐字节一致（行尾归一化后）" };
+  return { verdict: "FAIL", detail: describeDiff(g, a) };
 }
 
 /** B 类：归一化后字节级。 */
 export function compareB(actual: string, golden: string): CompareResult {
-  const a = normalize(actual);
-  const g = normalize(golden);
+  const a = normalize(normalizeEol(actual));
+  const g = normalize(normalizeEol(golden));
   if (a === g) return { verdict: "PASS", detail: "归一化后逐字节一致（差异仅限时间戳/留痕 ID）" };
   return { verdict: "FAIL", detail: describeDiff(g, a) };
 }
@@ -86,13 +112,19 @@ export function compareC(actual: string, anchors: string[]): CompareResult {
 
 /**
  * 假阴性护栏：把「环境导致的差异」与「真失败」区分开。
- * 规则：若两侧差异行数相同，且逐行差异**全部**形如「仅浮点末位或平台串不同」，
- *       判 WARN(env-diff)；否则判 FAIL。
+ * 规则：行数相同，且逐行差异**全部**只由「版本/平台串」或「容差内数值」构成 →
+ *       判 WARN(env-diff)；否则 FAIL。
  * 目的：避免把 Node 小版本浮点末位差误报为「复现失败」，那会损害而非增强可信度。
+ *
+ * 口径收紧（v2.72.4）：旧实现把**所有**数字一律替换成 "#" 再比对，等于「任何数值
+ *   差异都算环境差异」——把 AUC 0.6744 改成 0.9999 也判 WARN、退出码仍 0，护栏
+ *   变成了掩体。现改为逐 token 比数值：非数字段必须完全相同，数字段必须落在
+ *   NUMERIC_REL_TOL 内。同时 detail 补「首处 L{n}」——只报行数不给行号时，
+ *   连"差在哪"都无法定位（上一轮 CRLF 假告警就是靠外部脚本才查出来的）。
  */
 export function classifyFailure(golden: string, actual: string): CompareResult {
-  const g = golden.split("\n");
-  const a = actual.split("\n");
+  const g = normalizeEol(golden).split("\n");
+  const a = normalizeEol(actual).split("\n");
   if (g.length !== a.length) {
     return { verdict: "FAIL", detail: `行数不同（golden ${g.length} / 实际 ${a.length}）` };
   }
@@ -105,24 +137,44 @@ export function classifyFailure(golden: string, actual: string): CompareResult {
   if (allEnvLike) {
     return {
       verdict: "WARN",
-      detail: `env-diff：${bad.length} 行差异全部为浮点末位/平台串，疑似运行环境差异（平台 / Node 版本；非失败）`,
+      detail:
+        `env-diff：${bad.length} 行差异全部为版本/平台串或数值末位（相对差 ≤${NUMERIC_REL_TOL}），` +
+        `首处 L${bad[0] + 1}，疑似运行环境差异（非失败）`,
     };
   }
   return { verdict: "FAIL", detail: `真失败：${bad.length} 行差异，首处 L${bad[0] + 1}` };
 }
 
-/** 判定一处行差异是否「环境型」：去掉版本号、平台串与所有数字后仍相同。 */
+/**
+ * 判定一处行差异是否「环境型」：先抹掉版本号与平台串，再逐 token 比数值。
+ * 注意顺序：必须先抹「含字母的长模式」，再切数字；否则 "win32/x64" 会残留成
+ * "win##/x##"，与 "linux" 对不上（旧实现栽过）。
+ */
 function isEnvLikeDiff(l: string, r: string): boolean {
-  const strip = (s: string) =>
+  const prep = (s: string) =>
     s
-      // 顺序要紧：先长模式（含字母的版本/平台串），再裸数字。
-      // 反例：若先替换数字，"win32/x64" 会残留 "win##/x##"，与 "linux" 对不上。
       .replace(/v[0-9]+(\.[0-9]+)*/g, "<V>")
       .replace(/(win32|linux|darwin|freebsd|openbsd)\/(x64|arm64|ia32|arm)/g, "<PLAT>")
-      .replace(/[0-9]+(\.[0-9]+)?/g, "#")
       .replace(/\s+/g, " ")
       .trim();
-  return strip(l) === strip(r);
+  const a = prep(l);
+  const b = prep(r);
+  if (a === b) return true;
+  // 按「文本段 / 数字段」交替切开：偶数下标是文本，奇数下标是数字。
+  const pa = a.split(/([0-9]+(?:\.[0-9]+)?)/);
+  const pb = b.split(/([0-9]+(?:\.[0-9]+)?)/);
+  if (pa.length !== pb.length) return false;
+  for (let i = 0; i < pa.length; i++) {
+    if (i % 2 === 0) {
+      if (pa[i] !== pb[i]) return false;
+      continue;
+    }
+    const x = Number(pa[i]);
+    const y = Number(pb[i]);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+    if (Math.abs(x - y) > NUMERIC_REL_TOL * Math.max(1, Math.abs(x), Math.abs(y))) return false;
+  }
+  return true;
 }
 
 function describeDiff(golden: string, actual: string): string {
@@ -373,7 +425,8 @@ function verifyOne(e: Experiment, raw: boolean): { verdict: Verdict; detail: str
       stdout: run.stdout,
     };
   }
-  const golden = readFileSync(gp, "utf8");
+  // 读入即归一化行尾：与 compare* 的口径一致，避免「读取路径漏归一化」这类缝。
+  const golden = normalizeEol(readFileSync(gp, "utf8"));
   const r = e.mode === "A" ? compareA(run.stdout, golden) : compareB(run.stdout, golden);
   if (r.verdict === "FAIL") {
     // 假阴性护栏：区分环境差异与真失败
@@ -393,6 +446,7 @@ function normalizeish(s: string, mode: "A" | "B"): string {
 function emitGolden(only: string | null): number {
   if (!existsSync(GOLDEN_DIR)) mkdirSync(GOLDEN_DIR, { recursive: true });
   let n = 0;
+  const envRows: string[] = [];
   for (const e of EXPERIMENTS) {
     if (only && e.name !== only) continue;
     if (e.mode === "C") continue; // C 类无数值基准，不产快照
@@ -405,12 +459,26 @@ function emitGolden(only: string | null): number {
     // 比对时两侧都会 normalize，若存原始文本，则每次重建都会因时间戳/留痕 ID
     // 不同而产生字节差异（实测 3/5 快照不幂等），导致 CI 无谓红灯。
     // 存归一化文本后，重建即幂等，且比对语义完全等价。
-    const body = e.mode === "B" ? normalize(run.stdout) : run.stdout;
+    // 另：写入前统一 LF，避免 Windows 上写出 CRLF 快照（见文件头「行尾口径」）。
+    const body = normalizeEol(e.mode === "B" ? normalize(run.stdout) : run.stdout);
     writeFileSync(goldenPath(e), body, "utf8");
+    envRows.push(
+      `${e.name.padEnd(30)} Node ${process.version} | ${process.platform}/${process.arch} | ${new Date().toISOString()}`,
+    );
     console.log(
       `  ✓ 写入 ${e.name}.txt（${body.split("\n").length} 行${e.mode === "B" ? "，已归一化" : ""}）`,
     );
     n++;
+  }
+  // 环境溯源：单独成文件，不进入被测内容。写进快照正文的后果是「换平台必然 WARN」。
+  if (envRows.length > 0) {
+    const head = [
+      "# 本目录 golden 快照的生成环境（仅溯源，不参与任何比对）",
+      "# 由 replicate-t0.mts --emit-golden 写入；被测内容里不得出现 Node 版本/平台串。",
+      "",
+    ];
+    writeFileSync(join(GOLDEN_DIR, "_environment.txt"), head.concat(envRows, [""]).join("\n"), "utf8");
+    console.log(`  ✓ 写入 _environment.txt（${envRows.length} 行环境溯源）`);
   }
   console.log(`\n已写入 ${n} 个 golden 快照到 replication-t0-golden/`);
   console.log("⚠️  golden 入库后即为对照基准，变更须走版本链并在 CHANGELOG 说明。");
@@ -437,6 +505,9 @@ function listOnly(): void {
 function main(): number {
   const argv = process.argv.slice(2);
   const has = (f: string) => argv.includes(f);
+  // --strict：WARN 也计入失败。CI 用它把「WARN 数」变成机器约束——
+  // 只断言退出码时，WARN 再多也只是观感问题（v2.72.2 实测：exit 0 却有 5 条 WARN）。
+  const strict = has("--strict");
   const onlyArg = argv.find((a) => a.startsWith("--only="));
   const only = onlyArg ? onlyArg.slice("--only=".length) : null;
 
@@ -461,7 +532,7 @@ function main(): number {
 
   console.log("=".repeat(78));
   console.log(`tier-0（零依赖档）外部复现 · Node ${process.version} · ${process.platform}/${process.arch}`);
-  console.log(`实验 ${list.length} 个 · 零外部依赖 · 不访问网络 · 不写入仓库`);
+  console.log(`实验 ${list.length} 个 · 零外部依赖 · 不访问网络 · 不写入仓库${strict ? " · strict（WARN 亦判失败）" : ""}`);
   console.log("=".repeat(78) + "\n");
 
   let failed = 0;
@@ -498,6 +569,11 @@ function main(): number {
   console.log(
     `  通过 ${rows.length - failed - warned} / 警告 ${warned} / 失败 ${failed}  （合计 ${rows.length}）`,
   );
+  if (strict && warned > 0) {
+    console.log(`\n--strict：存在 ${warned} 条 WARN，按失败处理（CI 口径：WARN 不豁免）。`);
+    console.log("  处置：先看 WARN 明细的「首处 L{n}」定位行；确认是环境噪声还是真差异，再决定改基准或改代码。");
+    return 1;
+  }
   if (failed === 0) {
     console.log("\n结论：全部 tier-0 实验结构复现通过。");
   } else {
@@ -583,6 +659,37 @@ export function runSelfTest(): number {
     classifyFailure("a\nb\n", "a\nb\nc\n").verdict === "FAIL",
   );
   t("完全一致 → PASS", classifyFailure("same\n", "same\n").verdict === "PASS");
+
+  console.log("\n行尾与数值容差（v2.72.4 收紧口径）");
+  t("CRLF 与 LF 视为同一文本（行尾归一化）", compareA("a\r\nb\r\n", "a\nb\n").verdict === "PASS");
+  t("行尾归一化不掩盖真字节差", compareA("a\r\nb\r\n", "a\r\nc\r\n").verdict === "FAIL");
+  t(
+    "真数值改动 → FAIL（旧实现把所有数字抹成 # 会吞成 WARN）",
+    classifyFailure("AUC=0.6744\n", "AUC=0.6745\n").verdict === "FAIL",
+  );
+  t(
+    "容差内浮点末位 → WARN",
+    classifyFailure("AUC=0.67440000001\n", "AUC=0.67440000002\n").verdict === "WARN",
+  );
+  t(
+    "计数差 1 → FAIL（不是环境噪声）",
+    classifyFailure("TPR 10/10\n", "TPR 9/10\n").verdict === "FAIL",
+  );
+  t(
+    "WARN 明细给出定位行号",
+    /首处 L\d+/.test(classifyFailure("AUC=0.1\n", "AUC=0.10000000001\n").detail),
+  );
+  {
+    const goldens = existsSync(GOLDEN_DIR)
+      ? readdirSync(GOLDEN_DIR).filter((f) => f.endsWith(".txt") && !f.startsWith("_"))
+      : [];
+    t(
+      "golden 快照不含环境行（Node 版本/平台串不进被测内容）",
+      goldens.length > 0 &&
+        goldens.every((f) => !/Node v[0-9]|win32\/|linux\/|darwin\//.test(readFileSync(join(GOLDEN_DIR, f), "utf8"))),
+    );
+    t("环境溯源文件存在（_environment.txt）", existsSync(join(GOLDEN_DIR, "_environment.txt")));
+  }
 
   console.log("\n清单一致性");
   t("清单含 9 个实验", EXPERIMENTS.length === 9);

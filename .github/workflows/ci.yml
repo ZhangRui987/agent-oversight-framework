@@ -105,10 +105,13 @@ jobs:
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: ${{ matrix.node-version }}
-      - name: Selftest comparison kernel (26 项)
+      - name: Selftest comparison kernel (34 项)
         run: node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts --selftest
-      - name: Replicate tier-0 experiments (9 实验)
-        run: node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts
+      # --strict：WARN 也计入失败。此前本步只断言退出码，于是「exit 0 却有 5 条 WARN」
+      # 长期无人察觉——声明里写着「通过」，机器只查了「没失败」。现在 WARN 数受约束，
+      # 且 WARN 明细带「首处 L{n}」，红了能直接定位到行。
+      - name: Replicate tier-0 experiments (9 实验 · strict)
+        run: node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts --strict
       - name: Assert no repo writes (复现不得污染工作区)
         run: git diff --exit-code --stat
 

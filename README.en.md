@@ -1,6 +1,6 @@
 # AI Execution & Oversight Framework
 
-[![Version](https://img.shields.io/badge/version-2.72.3-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.72.4-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (134/212)](https://img.shields.io/badge/evidence-B_135%2F213-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -120,7 +120,7 @@ Per [`CLASSIFICATION.md`](CLASSIFICATION.md), this repository has three levels:
 
 ## Status
 
-- Current version: v2.72.3 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
+- Current version: v2.72.4 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
 - Maintenance status: **does not claim "built"; claims only "maintained"** — an open cheating set can only be countered continuously
 - **Honest boundary**: 44 open problems explicitly registered (see [`spec/13-boundaries.md`](spec/13-boundaries.md)) — this framework's honest boundary and a problem list for researchers; includes the system's largest engineering gap, "decentralized-swarm countermeasures"
 - Change history: see [`CHANGELOG.md`](CHANGELOG.md)
@@ -167,7 +167,7 @@ cannot be byte-compared, is in the "tier-0 replication" section of
 [`reference/runtimes/l2-runtime-oversight/README.md`](reference/runtimes/l2-runtime-oversight/README.md).
 This entry point runs in CI on every push/PR.
 
-**About WARN (measured 2026-11-06)**: the same baselines produce "通过 4 / 警告 5 / 失败 0" on Windows with Node 22. All five WARNs are `env-diff` — differences only in float last digits and platform strings (baselines were recorded on linux), the expected cross-platform outcome of class A/B byte comparison, not experiment failures. Note also that because WARN does not change the exit code and CI only asserts exit 0, **the WARN count is not constrained by any check**; read the three counts in the summary line rather than exit 0 alone.
+**About WARN (machine-enforced since v2.72.4)**: this entry point runs in CI with `--strict` — **WARN counts as failure**, so any non-PASS verdict turns CI red. The previous rule was "WARN does not change the exit code and CI only asserts exit 0", and measurement exposed a textbook case of a claim outrunning its check: on Windows / Node 22 the run produced "通过 4 / 警告 5 / 失败 0", yet those five WARNs (52/39/198/22/32 differing lines) contained **not a single numeric difference** — every one was the baselines being checked out as CRLF by `core.autocrlf`, plus three where the baseline header hard-coded a platform string. Fixed at three layers: line endings normalised before comparison (CRLF→LF), environment metadata moved out of the compared content (now recorded in `replication-t0-golden/_environment.txt`), and the numeric tolerance tightened from "strip every number" to a 1e-9 relative bound (previously any numeric change passed as environment noise). Measured today on Windows and in linux CI: **through 9 / warning 0 / failed 0**.
 
 > **Boundary**: this entry point covers only the **zero-dependency tier**. Experiments
 > requiring model API keys (AOE-ABSTAIN-001/002, AOE-CALIB-004, etc.) belong to the
@@ -256,7 +256,7 @@ This repository governs itself by its own specification (meta-governance):
 
 See [`CITATION.cff`](CITATION.cff).
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.72.3). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.72.4). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## Quality assurance (self-referential verification)
 

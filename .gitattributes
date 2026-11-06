@@ -1,0 +1,9 @@
+# 行尾口径：golden 快照是 A/B 类比对的逐字节基准，行尾必须钉死 LF。
+#
+# 背景（v2.72.4 实测）：仓库此前没有 .gitattributes，而 Windows 默认 core.autocrlf=true，
+# 检出时把 replication-t0-golden/*.txt 的每一行都转成 CRLF，实验输出却是 LF。
+# 结果是同一份基准在 Windows 上跑出 5 条 WARN（差异行数 52/39/198/22/32），
+# 一条数值差异都没有——那不是复现问题，是 checkout 配置问题。
+# 代码侧已做行尾归一化（replicate-t0.mts normalizeEol）兜底；此处是第二道防线：
+# 让任何人 clone 下来的基准就是 LF，不必依赖他的 git 配置。
+reference/runtimes/l2-runtime-oversight/replication-t0-golden/*.txt text eol=lf
