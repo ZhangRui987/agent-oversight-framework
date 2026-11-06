@@ -1,6 +1,6 @@
 # AI Execution & Oversight Framework
 
-[![Version](https://img.shields.io/badge/version-2.72.2-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.72.3-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (134/212)](https://img.shields.io/badge/evidence-B_135%2F213-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -120,7 +120,7 @@ Per [`CLASSIFICATION.md`](CLASSIFICATION.md), this repository has three levels:
 
 ## Status
 
-- Current version: v2.72.2 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
+- Current version: v2.72.3 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
 - Maintenance status: **does not claim "built"; claims only "maintained"** — an open cheating set can only be countered continuously
 - **Honest boundary**: 44 open problems explicitly registered (see [`spec/13-boundaries.md`](spec/13-boundaries.md)) — this framework's honest boundary and a problem list for researchers; includes the system's largest engineering gap, "decentralized-swarm countermeasures"
 - Change history: see [`CHANGELOG.md`](CHANGELOG.md)
@@ -146,6 +146,8 @@ By role:
 5. **Security researchers**: starting from the swarm-governance signals in [`spec/07-swarm-governance.md`](spec/07-swarm-governance.md), submit an [`evidence-correction`](https://github.com/ZhangRui987/agent-oversight-framework/issues/new?template=evidence-correction.yml) issue or open an issue to discuss attack paths.
 
 ### Zero-dependency replication: rerun the experiments with one command (no API keys)
+
+> Want to see how a check actually turns red? [`REPRODUCE.en.md`](REPRODUCE.en.md) gives three commands, a measured timing table, a **real failure sample** (change one character → `FAIL` + `exit 1`) and five known rough edges.
 
 Want to verify hands-on rather than read conclusions? After cloning, run:
 
@@ -207,6 +209,7 @@ Same discipline: zero installs, zero keys, zero network. Events are produced by 
 |---|---|
 | [`spec/`](spec/) | Specification body (13 documents: 01 principles → 13 honest boundaries) |
 | [`REFERENCES.md`](REFERENCES.md) | 213 graded evidence sources (single source of truth) |
+| [`REPRODUCE.en.md`](REPRODUCE.en.md) | Reproduction guide: three commands, measured timing table, real failure sample (one changed character → `FAIL`), five known rough edges. Chinese original: [`REPRODUCE.md`](REPRODUCE.md) |
 | [`tools/audit-panel/`](tools/audit-panel/) | Audit panel V1: event export / independent chain verification / replay verification / web UI (data from real execution of the reference implementation; honest boundaries built into the page) |
 | [`restricted/`](restricted/) | Restricted content (distributed only with deployment packages) |
 | [`scripts/`](scripts/) | Consistency-check tooling |
@@ -253,7 +256,7 @@ This repository governs itself by its own specification (meta-governance):
 
 See [`CITATION.cff`](CITATION.cff).
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.72.2). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.72.3). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## Quality assurance (self-referential verification)
 

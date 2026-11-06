@@ -1,6 +1,6 @@
 # AI 执行与监察体系（Agent Oversight Framework）
 
-[![Version](https://img.shields.io/badge/version-2.72.2-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.72.3-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (134/212)](https://img.shields.io/badge/evidence-B_135%2F213-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -121,7 +121,7 @@ graph TD
 
 ## 状态
 
-- 当前版本：v2.72.2（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
+- 当前版本：v2.72.3（见 [`VERSION`](VERSION)；本行由门禁第 38 项与 VERSION 联动校验）
 - 维护状态：**不声称建成，只声称维护状态**——开放作弊集合只能持续对抗
 - **诚实边界**：44 条未解问题显式登记（见 [`spec/13-boundaries.md`](spec/13-boundaries.md)）——这是本框架的诚实边界，也是研究者的选题清单；含全体系最大的工程缺口「去中心化蜂群反制」
 - 变更历史：见 [`CHANGELOG.md`](CHANGELOG.md)
@@ -148,6 +148,8 @@ graph TD
 5. **安全研究人员**：从 [`spec/07-swarm-governance.md`](spec/07-swarm-governance.md) 的蜂群治理信号出发，提交 [`evidence-correction`](https://github.com/ZhangRui987/agent-oversight-framework/issues/new?template=evidence-correction.yml) Issue 或开 Issue 讨论攻击路径。
 
 ### 零依赖复现：一条命令重跑实验（无需 API 密钥）
+
+> 想先看「检查怎么才会红」？[`REPRODUCE.md`](REPRODUCE.md) 给出三条命令、实测耗时表、**真实失败样例输出**（改一个字 → `FAIL` + `exit 1`）与五条已知卡点。
 
 想直接动手验证而非阅读结论？clone 后执行：
 
@@ -203,6 +205,7 @@ node --experimental-transform-types tools/audit-panel/server/server.mts
 |---|---|
 | [`spec/`](spec/) | 规范正文（13 篇：01 原则 → 13 诚实边界） |
 | [`REFERENCES.md`](REFERENCES.md) | 213 条分级证据（单一真相源） |
+| [`REPRODUCE.md`](REPRODUCE.md) | 复现指南：三条命令、实测耗时表、真实失败样例（改一个字即 `FAIL`）、五条已知卡点。英文版 [`REPRODUCE.en.md`](REPRODUCE.en.md) |
 | [`reference/runtimes/l2-runtime-oversight/`](reference/runtimes/l2-runtime-oversight/) | L2 运行时监察参照实现 + 标定实验脚本（含 [`replicate-t0.mts`](reference/runtimes/l2-runtime-oversight/replicate-t0.mts) 零依赖复现入口与 [`replication-t0-golden/`](reference/runtimes/l2-runtime-oversight/replication-t0-golden/) 对照快照） |
 | [`tools/audit-panel/`](tools/audit-panel/) | 审计面板 V1：事件导出 / 独立链验证 / 重放校验 / Web 三视图（数据来自参照实现真实执行；边界声明内建页面） |
 | [`restricted/`](restricted/) | 受限内容（仅随部署包分发） |
@@ -250,7 +253,7 @@ node --experimental-transform-types tools/audit-panel/server/server.mts
 
 见 [`CITATION.cff`](CITATION.cff)。
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.72.2). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.72.3). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## 质量保障（自指验证）
 
