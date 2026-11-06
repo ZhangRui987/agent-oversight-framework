@@ -108,4 +108,126 @@ Two direct contributions to this framework's resource ledger (spec/10): ① **Pe
 
 ## Resource externalities: a ledger coverage-boundary statement (added in v2.52.9)
 
-The ledger's four signals (budget ratio, shadow ratio, memory-write audit, periodic touch) all account for **the agent's own resource consumption**. The Wikimedia incident (key: openai-wikimedia-2026) exposes a dimension the ledger does not cover: **the resource externality of agent traffic on third-party infrastructure** — millions of public-API requests and hundreds of thousands of data queries "may have contributed to" a partial outage of the Wikidata Query Service in May 2026, with the cost borne by a third party (a volunteer-maintained public platform) that is party to no governance agreement. Boundary statement: (1) this ledger does not account for the resource externality an agent imposes on external systems — this is not an omission but a boundary of the current signal design; cross-organization resource accounting requires metering cooperation from the external system and exceeds what a single deploying party can observe; (2) obligation candidate: for agents that access external services at high frequency, deployers should proactively impose outbound rate limits and identifiable identity (aligned with the identity-infrastructure convergence line) so that affected parties gain metering and rate-limiting capability; (3) this obligation belongs, together with spec/13 #42 (disclosure timeliness), to the family of "the agent's organizational obligations toward third parties." ⚠️ Evidence grade B (victim's primary account); "may have contributed to" is the victim's careful wording and is not asserted as causation.
+The ledger's four signals (budget ratio, shadow ratio, memory-write audit, periodic touch) all account for **the agent's own resource consumption**.
+
+The Wikimedia incident (key: openai-wikimedia-2026) exposes a dimension the ledger does not cover: **the resource externality of agent traffic on third-party infrastructure** — millions of public-API requests and hundreds of thousands of data queries "may have contributed to" a partial outage of the Wikidata Query Service in May 2026, with the cost borne by a third party (a volunteer-maintained public platform) that is party to no governance agreement. Boundary statement: (1) this ledger does not account for the resource externality an agent imposes on external systems — this is not an omission but a boundary of the current signal design; cross-organization resource accounting requires metering cooperation from the external system and exceeds what a single deploying party can observe; (2) obligation candidate: for agents that access external services at high frequency, deployers should proactively impose outbound rate limits and identifiable identity (aligned with the identity-infrastructure convergence line) so that affected parties gain metering and rate-limiting capability; (3) this obligation belongs, together with spec/13 #42 (disclosure timeliness), to the family of "the agent's organizational obligations toward third parties." ⚠️ Evidence grade B (victim's primary account); "may have contributed to" is the victim's careful wording and is not asserted as causation.
+
+## Disposition channel: from "recording signals" to "answering signals" (added in v2.67.0; normative-layer closure of spec/13 #44)
+
+The four signals in this chapter previously produced but did not consume: once a signal was written to the ledger, no component in the framework answered it — no disposition event type, no disposition ledger, no deadline or obligation clause. The detection-to-disposition break meant a signal's governance value stopped at the record. `spec/13` #44 registered this break as an open problem and stated three requirements (event type / obligation clause / integrity signal). This section turns them into clauses.
+
+**Clause conventions**: numbers `10-D1` through `10-D10`; once published a number is never reused. A withdrawn clause keeps its original text and is marked "withdrawn"; it must not be deleted and renumbered. Strength uses three levels — `MUST` (mandatory; non-compliance means non-conformance), `SHOULD` (recommended; deviation requires justification), `MUST NOT` (prohibited).
+
+### 10-D1 Disposition event type (MUST)
+
+Every disposition of a ledger signal MUST be written as an **independent append-only event**, `event_type = "disposition"`, structurally isomorphic to the signal event: same chain, same serialization specification (`chain_hash = sha256(prev_hash + "|" + serialize(body))`). No side ledger.
+
+The event body has 13 fields in frozen key order (reordering keys counts as tampering):
+
+| Field | Type | Rule |
+|---|---|---|
+| `record_type` | string | fixed `"event"` |
+| `event_type` | string | fixed `"disposition"` |
+| `disp_seq` | int | monotonic from 1 within the ledger, never reused; proves write order, not time |
+| `target_seq` | int | `seq` of the disposed signal; strong reference |
+| `target_chain_hash` | string | first 16 lowercase hex chars of the signal's `chain_hash`; prevents misaligned references |
+| `signal_category` | string | signal category in kebab-case (e.g. `budget-exceeded`) |
+| `action` | string | one of four, see 10-D2 |
+| `actor` | string | disposer identifier; self-reported, not authenticated |
+| `rationale` | string | disposition basis, non-empty |
+| `reviewed_by` | string \| null | reviewer; required and must differ from `actor` for `confirm_false_positive` / `escalate` |
+| `supersedes` | int \| null | points to a corrected `disp_seq`; the corrected row is retained and does not count toward current state |
+| `plan` | string \| null | only for `park_for_observation`; otherwise must be null |
+| `ts` | int | wall-clock milliseconds; self-reported |
+
+**How it is checked**: `tools/disposition/verify_chain.py` (Python, standard library only) and `tools/disposition/verify-chain.mts` (Node) both verify the chain; either one failing means non-conformance. Both must reach the same conclusion on the same file — that is the only evidence for "a third party can independently recompute".
+
+### 10-D2 Action enumeration (MUST; four values; no silent extension)
+
+| Action | Meaning | `reviewed_by` | Semantic state |
+|---|---|---|---|
+| `confirm_false_positive` | judged a false positive; close the signal | required, differs from actor | closed |
+| `escalate` | raise the disposition level (to higher authority) | required, differs from actor | closed |
+| `route_to_human` | hand over to a human | may be null | **not closed** (handover ≠ disposition complete) |
+| `park_for_observation` | park for observation | may be null | observing (`plan` required) |
+
+New actions enter by "adding an enumeration value plus new precondition checks" and require a version bump; they **must not** be added silently.
+
+### 10-D3 Three-state derivation (MUST)
+
+| State | Condition |
+|---|---|
+| `unhandled` | no effective disposition, or latest is `route_to_human`, or the reviewer is missing |
+| `observing` | latest is `park_for_observation` |
+| `closed` | latest is `confirm_false_positive` or `escalate`, and `reviewed_by` is non-empty |
+
+`route_to_human` counting as `unhandled` is deliberate: otherwise "handed to a human" would be read as "closed". The three derivations must be implemented by a single function shared by the panel and the replay, not written twice.
+
+### 10-D4 Disposition obligation and deadlines (MUST; values are engineering placeholders, uncalibrated)
+
+Every signal category MUST declare a disposition obligation at registration: **who** disposes of it and **within what deadline**. A category without a declared obligation must not enter production collection (fail-closed) — a signal with no disposition path is noise.
+
+Three levels by reversibility of consequence:
+
+| Level | Signal category examples | Deadline | Calibration status |
+|---|---|---|---|
+| P0 | `memory-write-unauthorized`, signs of memory poisoning | 24h | **uncalibrated** (engineering placeholder) |
+| P1 | `budget-exceeded` (above 2x threshold), `shadow-ratio-deviation` | 72h | **uncalibrated** (engineering placeholder) |
+| P2 | `periodic-touch-hit`, advisory deviations | 7d | **uncalibrated** (engineering placeholder) |
+
+⚠️ The three numbers are **not calibration results**; they are placeholders that make the clause executable. Calibration is owned by `spec/13` #33 (the four runtime thresholds must check the sub-threshold behaviour distribution). Until that is done, any latency statistic based on 24h / 72h / 7d may report distributions only and must not be phrased as "meeting target" or "overdue rate within requirement".
+
+### 10-D5 Disposition-integrity signals (MUST)
+
+The disposition channel's own state must be a computable oversight signal, otherwise "who oversees the overseer" has no answer. Two derived quantities:
+
+- `undisposed_rate` = signals whose effective state is `unhandled` / total signals;
+- `overdue_rate` = signals still `unhandled` past the 10-D4 deadline / total signals.
+
+These are **second-order signals** (they measure oversight behaviour, not the monitored behaviour); their trigger thresholds are also uncalibrated. Three usage limits:
+
+1. `undisposed_rate` reaching zero **must not** be used to argue "the risk is gone" — it only shows every signal was answered, not that the answer was right;
+2. `overdue_rate` depends on `ts` (self-reported wall-clock) and `disp_seq` (write order only); any latency statistic must be labelled "self-reported, unverifiable", and MTTD / human confirmation / disposition action / MTTR must be reported as four separate segments, never merged into a single average;
+3. second-order signals **do not replace** the original signal: if disposition records are complete but the original signal still holds, the original signal governs.
+
+### 10-D6 Separation of disposer and reviewer (MUST; for `confirm_false_positive` and `escalate` only)
+
+Closing a signal or changing its disposition level requires a non-empty `reviewed_by` that differs from `actor`. The other two actions may leave it null.
+
+⚠️ This clause constrains the **declared** separation only: `actor` and `reviewed_by` are self-reported and the framework cannot prove two distinct humans acted. What it prevents is self-approval in the workflow (one person playing both roles must actively falsify a field, which is an attributable act), not identity forgery.
+
+### 10-D7 Closing a signal must not substitute for improving detection (MUST NOT)
+
+`confirm_false_positive` can close any signal with one entry — that is a design feature, not a defect, because every detector has false positives. But a drop in false-positive rate **must not** be credited to the disposition side. If the `confirm_false_positive` share of a signal category keeps rising, the correct trigger is **re-calibrating the detector**, not optimizing the disposition workflow.
+
+This targets the disposition-layer version of "win-win corruption": if the disposer and the signal producer reach a tacit understanding (you over-report, I over-close, both dashboards look good), the second-order signals improve together while real risk is unchanged.
+
+### 10-D8 Implementation status (honest boundary; must be read alongside the clauses)
+
+| Clause | Normative layer | Implementation layer |
+|---|---|---|
+| 10-D1 event type and fields | settled | **implemented** (standalone ledger + dual-verifier chain); **not** merged into the framework's single audit chain (stage 2) |
+| 10-D2 action enumeration | settled | **implemented** (four-value validation; out-of-range rejected at write time) |
+| 10-D3 three-state derivation | settled | **implemented** (single `stateOf` function shared by panel and replay) |
+| 10-D4 obligations and deadlines | settled | **not implemented** (no deadline evaluation or overdue alert; values are placeholders) |
+| 10-D5 integrity signals | settled | **not implemented** (definitions settled; aggregator and panel column absent) |
+| 10-D6 two-person separation | settled | **implemented** (`reviewed_by` != `actor` validation) |
+| 10-D7 no substitution for detection work | settled | manual discipline; no machine check |
+
+**Hence this section is "normative layer closed, implementation layer partial"**: the clauses pin down the morphology #44 asked for, but the automation for 10-D4 / 10-D5 is not in place, so `spec/13` #44 is recorded as "partially solved", not closed.
+
+### 10-D9 Relation to existing open problems
+
+- `#44`: moves from "unsolved" to "**partially solved**" — normative layer closed, implementation layer to converge; the original text and historical status are retained, not rewritten.
+- `#15` (selection of blocking actions): 10-D2 deliberately excludes `auto_block` / `auto_deduct`; escalation to blocking belongs to evolution after #15 selection and #3 calibration.
+- `#33` (calibration of four runtime thresholds): owns calibration of the 10-D4 deadlines and 10-D5 trigger thresholds.
+- `#29` / `#42`: no direct dependency; unchanged by this section.
+
+### 10-D10 Six boundaries (consistent with `tools/disposition/README.md` §6; none may be omitted)
+
+1. **Record only, never block**: the disposition channel provides no interception or deduction capability; the framework side remains "flag — review — human disposition";
+2. **Disposition is not effectiveness**: `confirm_false_positive` can switch off any signal; zero orphans does not mean the gap is solved;
+3. **Timing is untrustworthy**: `ts` is self-reported; the four latency segments must be reported separately;
+4. **Identity is not authenticated**: `actor` / `reviewed_by` can be forged; the only provable claim is that the file was not altered afterwards;
+5. **Limited trust domain**: the chain is computed inside the monitored process; if the process is compromised the whole chain can be recomputed (the G4 boundary reproduces as-is) — it must not be described as "tamper-proof";
+6. **Demo data is not real disposition**: `demo-` records in the in-repo ledger only demonstrate how the orphan list converges.

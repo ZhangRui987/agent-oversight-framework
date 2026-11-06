@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """发布一致性校验（推送前 / pre-commit 用）。
 
-校验项（共 47 项 = 47 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
+校验项（共 48 项 = 48 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
   1. 全仓库无 [TABLE START/END] 伪标记
   2. 所有 Markdown 表格表头后都有 |---| 分隔行
   3. 表格每行列数与分隔行一致
@@ -104,6 +104,13 @@
          ③ 打乱一行键序 → 两端必须 FAIL（键序冻结不是文档口号）；
          ④ 入库台账 tools/disposition/data/disposition.jsonl 可被 Python 独立验链。
          与第 40/44/46 项同构：任何可验证声明，要么生成、要么校验，不写第三种。
+  48. spec/10 处置条款 == tools/disposition 实现（v2.67.0 新增）
+      —— 教训来源：spec/13 #44 的「下一步」自 v2.61.0 起就写明三件事（事件类型 /
+         义务条款 / 完整性信号），但此前无人校验文档与实现是否对得上。条款化若没有
+         机器校验，只是文字：文档写四个动作、实现多一个，读者无法察觉。
+         本项解析 spec/10 中英双语的三处条款表（10-D1 字段 / 10-D2 动作 / 10-D3 三态），
+         与 ledger.mts 的 FIELD_ORDER / ACTIONS / stateOf 逐项比对，并校验中英时限一致；
+         内置三条反向测试（改动作名 / 改字段名 / 改时限），任一未被检出即 FAIL。
 
 用法：
   python scripts/verify_consistency.py [仓库根目录，默认脚本所在目录的上级]
@@ -1177,6 +1184,123 @@ check(
     "处置台账链可重算 + 篡改检出（Node 生成 → Python 验链 → 篡改/乱序必 FAIL；处置通道阶段 1 新增）",
     not _p47_bad,
     "; ".join(_p47_bad),
+)
+
+# ── 48. spec/10 处置条款 ↔ tools/disposition 实现一致性（v2.67.0 新增）──────
+# 教训来源：spec/13 #44 的「下一步」自 v2.61.0 起就写明三件事（事件类型 / 义务条款 /
+# 完整性信号），但无人校验文档与实现是否对得上。条款化若没有机器校验，只是文字——
+# 文档写了四个动作、实现多一个或少一个，读者无法察觉。
+# 本项做四件事：① 13 字段键序 ② 四动作枚举 ③ 三态派生 ④ 中英条款与时限不漂移；
+# 并内置三条反向测试，证明校验本身真的会 FAIL。
+
+def _c48_section_tokens(text, heading):
+    """取以 heading 开头的小节内、表格第一列的反引号 token（保序去重）。"""
+    lines = text.splitlines()
+    start = None
+    for i, ln in enumerate(lines):
+        if ln.startswith(heading):
+            start = i
+            break
+    if start is None:
+        return None
+    out = []
+    for ln in lines[start + 1:]:
+        if ln.startswith("#"):
+            break
+        if not ln.startswith("|"):
+            continue
+        cell = ln.split("|")[1]
+        for tok in re.findall(r"`([^`]+)`", cell):
+            if tok not in out:
+                out.append(tok)
+    return out
+
+
+def _c48_impl_order(src, name):
+    m = re.search(r"export const " + name + r" = \[(.*?)\] as const;", src, re.S)
+    if not m:
+        return None
+    return re.findall(r"'([^']+)'", m.group(1))
+
+
+def _c48_impl_states(src):
+    m = re.search(r"export function stateOf\(.*?\n\}", src, re.S)
+    if not m:
+        return None
+    return sorted(set(re.findall(r"state: '([a-z_]+)'", m.group(0))))
+
+
+def _c48_deadlines(text):
+    tok = _c48_section_tokens(text, "### 10-D4 ") or _c48_section_tokens(text, "### 10-D4 ")
+    if tok is None:
+        return None
+    body = text[text.index("### 10-D4 "):]
+    body = body[:body.find("\n### ", 5)] if "\n### " in body[5:] else body
+    return re.findall(r"\b(\d+[hd])\b", body)
+
+
+def _c48_verify(zh, en, impl):
+    bad = []
+    pairs = [
+        ("字段键序", "### 10-D1 ", _c48_impl_order(impl, "FIELD_ORDER")),
+        ("动作枚举", "### 10-D2 ", _c48_impl_order(impl, "ACTIONS")),
+        ("三态派生", "### 10-D3 ", _c48_impl_states(impl)),
+    ]
+    for label, heading, impl_vals in pairs:
+        zh_tok = _c48_section_tokens(zh, heading)
+        en_tok = _c48_section_tokens(en, heading)
+        if not zh_tok:
+            bad.append(f"{label}：spec/10 中文 {heading.strip()} 未取到条款 token")
+            continue
+        if not en_tok:
+            bad.append(f"{label}：spec/10 英文 {heading.strip()} 未取到条款 token")
+            continue
+        if impl_vals is None:
+            bad.append(f"{label}：无法从 ledger.mts 解析实现常量")
+            continue
+        if label == "字段键序":
+            if zh_tok != impl_vals:
+                bad.append(f"字段键序：spec {zh_tok} != 实现 {impl_vals}")
+            if en_tok != impl_vals:
+                bad.append(f"字段键序：英文 spec {en_tok} != 实现 {impl_vals}")
+        else:
+            if sorted(zh_tok) != sorted(impl_vals):
+                bad.append(f"{label}：spec {sorted(zh_tok)} != 实现 {sorted(impl_vals)}")
+            if sorted(en_tok) != sorted(impl_vals):
+                bad.append(f"{label}：英文 spec {sorted(en_tok)} != 实现 {sorted(impl_vals)}")
+        if zh_tok != en_tok:
+            bad.append(f"{label}：中英条款不一致（{len(zh_tok)} vs {len(en_tok)}）")
+
+    zh_dl, en_dl = _c48_deadlines(zh), _c48_deadlines(en)
+    if not zh_dl:
+        bad.append("时限：中文 10-D4 未取到时限值")
+    elif zh_dl != en_dl:
+        bad.append(f"时限：中英不一致（{zh_dl} vs {en_dl}）")
+    return bad
+
+
+_c48_zh = read(os.path.join(ROOT, "spec", "10-resource-ledger.md"))
+_c48_en = read(os.path.join(ROOT, "spec", "10-resource-ledger.en.md"))
+_c48_impl = read(os.path.join(ROOT, "tools", "disposition", "ledger.mts"))
+_c48_bad = _c48_verify(_c48_zh, _c48_en, _c48_impl)
+
+# 反向测试：三处扰动必须各自被检出，否则校验形同虚设
+_c48_mut = [
+    ("改动作名 escalate→escalate_now",
+     _c48_verify(_c48_zh.replace("`escalate`", "`escalate_now`"), _c48_en, _c48_impl)),
+    ("改字段名 target_seq→target_seq_v2",
+     _c48_verify(_c48_zh.replace("`target_seq`", "`target_seq_v2`"), _c48_en, _c48_impl)),
+    ("改英文时限 72h→48h",
+     _c48_verify(_c48_zh, _c48_en.replace("72h", "48h"), _c48_impl)),
+]
+for _c48_label, _c48_ret in _c48_mut:
+    if not _c48_ret:
+        _c48_bad.append(f"反向测试未检出：{_c48_label}（校验失效）")
+
+check(
+    "spec/10 处置条款 == tools/disposition 实现（13 字段键序 / 四动作 / 三态 / 中英时限；含 3 条反向测试）",
+    not _c48_bad,
+    "; ".join(_c48_bad),
 )
 
 # ── 汇总 ─────────────────────────────────────
