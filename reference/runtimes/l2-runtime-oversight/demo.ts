@@ -28,6 +28,8 @@
  *   [19] ConfigReviewer（spec/02 第四条：配置权即攻击面——五项配置内容审查，恶意配置注入被拦）
  *   [20] ResourceLedger（G5 闭合：spec/10 资源账本——预算比超阈审计 + 影子比偏离 + 记忆写入最高级审计 + 周期型外联检测）
  *   [21] CreditEventStream（G7 事件流侧闭合：spec/04 信用分输入事件流——成功/失败/超时/违规四类投影 + 中性事件 + Overseer 集成）
+ *   [22] SwarmMonitor（G8 告警侧闭合：交互图谱采集 + 涌现信号检测 + 熔断禁用）
+ *   [23] StepGuard/RateGuard（spec/09 四类运行时上限之 ①执行步数 ②调用频次；③④任务级「只出信号不拦截」的实测依据）
  *
  * 运行：node --experimental-transform-types demo.ts
  * 退出码：0 = 全部 PASS，1 = 有 FAIL
@@ -51,8 +53,10 @@ import {
   OrderedDurableChain,
   OwnerScopedStore,
   ResourceLedger,
+  RateGuard,
   RuntimeOverseer,
   SqliteLeaseAuthority,
+  StepGuard,
   guardedToolCall,
   isLeaseLostError,
   regressionGuard,
@@ -1266,6 +1270,131 @@ function testSwarmMonitor(): void {
 }
 
 // ============================================================================
+// [23] StepGuard / RateGuard —— spec/09 四类运行时上限之 ①执行步数 ②调用频次（v2.73.0）
+//     补这两类的理由见 index.ts §9b 头注释：v2.72.8 实测本参照实现中它们**完全不存在**，
+//     而 spec/09 原文写着「不得以『未标定』为由不设限制」——没有闸门时该句是空头。
+//
+//     本组断言刻意钉三处边界（都是「写了实现但容易写错」的地方）：
+//       - 恰好等于上限：上限读作「最多 N 步」，第 N 步必须放行（否则上限实际是 N−1）；
+//       - 被拦不入账：被拦的调用不计数、不占窗口配额，否则误配低阈值会把任务永久锁死；
+//       - 窗口边界：t − windowMs 的旧调用必须已出窗，不在窗口内多留一毫秒。
+//     另加两条 fail-closed 断言：非法阈值 / 缺时间基准必须抛错，不得静默降级为「不设限」。
+// ============================================================================
+function testRuntimeLimitGuards(): void {
+  console.log('\n[23] StepGuard / RateGuard（spec/09 四类运行时上限之 ①执行步数 ②调用频次）');
+
+  type Ev = { type: string; data: unknown };
+  const eventsOf = (log: AppendOnlyAuditLog): Ev[] =>
+    (log as unknown as { events: Ev[] }).events;
+
+  // —— ① 执行步数上限（maxSteps = 3）——
+  const logS = new AppendOnlyAuditLog();
+  const step = new StepGuard(3, logS);
+  const s1 = step.check('t-step', 'read_file');
+  const s2 = step.check('t-step', 'read_file');
+  const s3 = step.check('t-step', 'read_file');
+  check('[四类上限:execution-steps] 阈值下逐步放行（第 1、2 步 allow）',
+    s1.kind === 'allow' && s2.kind === 'allow');
+  check('[四类上限:execution-steps] 恰好等于上限仍放行（第 3 步 allow——「上限 = 3」读作最多 3 步）',
+    s3.kind === 'allow' && step.observed('t-step') === 3);
+
+  const s4 = step.check('t-step', 'read_file');
+  check('[四类上限:execution-steps] 超一步即拦（第 4 步 block，category=step-over-limit）',
+    s4.kind === 'block' && s4.category === 'step-over-limit');
+  check('[四类上限:execution-steps] 被拦的那一步不计数（observed 仍为 3，误配低阈值不会把任务永久锁死）',
+    step.observed('t-step') === 3);
+
+  step.check('t-other', 'write_file');
+  check('不同 taskId 的步数计数互不干扰',
+    step.observed('t-other') === 1 && step.observed('t-step') === 3);
+
+  const sBlocks = eventsOf(logS).filter((e) => e.type === 'runtime_limit_block');
+  const sData = sBlocks[0]?.data as { observed?: number; limit?: number; category?: string } | undefined;
+  check('步数拦截写入审计事件 runtime_limit_block（含 observed=4 / limit=3）',
+    sBlocks.length === 1 && sData?.observed === 4 && sData?.limit === 3
+      && sData?.category === 'step-over-limit');
+
+  // —— ② 单位时间调用频次上限（3 次 / 1000ms，时钟注入）——
+  const logR = new AppendOnlyAuditLog();
+  let nowMs = 1_000_000;
+  const rate = new RateGuard(3, 1000, () => nowMs, logR);
+  const r1 = rate.check('t-rate', 'http_get');
+  nowMs += 100;
+  const r2 = rate.check('t-rate', 'http_get');
+  nowMs += 100;
+  const r3 = rate.check('t-rate', 'http_get');
+  check('[四类上限:call-rate] 窗口内前 3 次放行',
+    r1.kind === 'allow' && r2.kind === 'allow' && r3.kind === 'allow');
+
+  nowMs += 100;
+  const r4 = rate.check('t-rate', 'http_get');
+  check('[四类上限:call-rate] 窗口内第 4 次被拦（category=rate-over-limit）',
+    r4.kind === 'block' && r4.category === 'rate-over-limit');
+
+  const winBefore = rate.observed('t-rate');
+  rate.check('t-rate', 'http_get');
+  const winAfter = rate.observed('t-rate');
+  check('被拦的调用不占窗口配额（连续尝试不会让窗口永不排空、退化为永久封锁）',
+    winBefore === 3 && winAfter === 3);
+
+  // 窗口边界：首次调用在 t0，推进到 t0+1000 ⇒ t0 已出窗（左开右闭），剩 2 条 ⇒ 本次放行
+  nowMs = 1_000_000 + 1000;
+  const r5 = rate.check('t-rate', 'http_get');
+  check('[四类上限:call-rate] 窗口滑过后恢复放行（t−windowMs 的旧调用已出窗，边界不多留一毫秒）',
+    r5.kind === 'allow' && r5.observed === 3);
+
+  const rBlocks = eventsOf(logR).filter((e) => e.type === 'runtime_limit_block');
+  const rData = rBlocks[0]?.data as { windowMs?: number; limit?: number } | undefined;
+  check('频次拦截写入审计事件 runtime_limit_block（含 windowMs / limit）',
+    rBlocks.length === 2 && rData?.windowMs === 1000 && rData?.limit === 3);
+
+  // 时钟确由构造参数注入：同一调用序列在两个不同 now 下必须得出不同裁决。
+  // 若实现隐式取 Date.now()，两次调用会落在同刻 ⇒ 守卫 B 的第二次也会被拦 ⇒ 本断言失败。
+  const logA = new AppendOnlyAuditLog();
+  const logB = new AppendOnlyAuditLog();
+  let clockA = 0;
+  let clockB = 0;
+  const gA = new RateGuard(1, 1000, () => clockA, logA);
+  const gB = new RateGuard(1, 1000, () => clockB, logB);
+  gA.check('x', 't');
+  const a2 = gA.check('x', 't');
+  gB.check('x', 't');
+  clockB = 1500;
+  const b2 = gB.check('x', 't');
+  check('时间基准由构造参数注入（同序列在不同 now 下裁决不同，排除隐式 Date.now()）',
+    a2.kind === 'block' && b2.kind === 'allow');
+
+  // —— fail-closed：非法阈值 / 缺时间基准必须抛错，不得静默降级为「不设限」——
+  let threwSteps = false;
+  try {
+    new StepGuard(0, logS);
+  } catch {
+    threwSteps = true;
+  }
+  check('maxSteps 非法值（0）fail-closed 抛错（不静默降级为不设限）', threwSteps);
+
+  let threwNow = false;
+  try {
+    new RateGuard(1, 1000, undefined as unknown as () => number, logR);
+  } catch {
+    threwNow = true;
+  }
+  check('now 省略时 fail-closed 抛错（时间基准不可隐式取 Date.now）', threwNow);
+
+  // —— ③④ 的任务级口径：实测「只出信号、不拦截」 ——
+  // 这两条不是为了证明 ③④ 可用，而是给 spec/09 状态表里「部分实现」提供实测依据：
+  // 任务级超预算/超时长的后果是「留痕」，不是「阻断」，所以状态列不能写「已实现」。
+  const logL = new AppendOnlyAuditLog();
+  const ledgerL = new ResourceLedger(logL);
+  const sigL = ledgerL.record('t-task', 'infer', { tokens: 12000, durationMs: 9000 },
+    { taskId: 't-task', maxTokens: 1000, maxDurationMs: 5000 });
+  check('[四类上限:resource-consumption] 任务级超资源预算只产出 budget-exceeded 信号，不拦截（「部分实现」的实测依据，非疏漏）',
+    sigL.some((s) => s.kind === 'budget-exceeded' && s.detail.includes('tokens')) && sigL.length >= 2);
+  check('[四类上限:task-duration] 任务级累计时长超预算同样只出信号、继续执行（同上）',
+    sigL.some((s) => s.kind === 'budget-exceeded' && s.detail.includes('duration')));
+}
+
+// ============================================================================
 // main
 // ============================================================================
 async function main(): Promise<void> {
@@ -1304,6 +1433,7 @@ async function main(): Promise<void> {
   testCreditEventStream();
   await testCreditStreamOverseer();
   testSwarmMonitor();
+  testRuntimeLimitGuards();
 
   console.log(`\n=== 结果：${failures === 0 ? 'ALL PASS ✅' : `${failures} FAIL ❌`}（${totalGroups} 组 ${totalChecks} 项断言）===`);
   process.exit(failures === 0 ? 0 : 1);

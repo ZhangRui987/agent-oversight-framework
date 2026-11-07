@@ -105,7 +105,7 @@
          ③ 打乱一行键序 → 两端必须 FAIL（键序冻结不是文档口号）；
          ④ 入库台账 tools/disposition/data/disposition.jsonl 可被 Python 独立验链。
          与第 40/44/46 项同构：任何可验证声明，要么生成、要么校验，不写第三种。
-  48. spec/10 处置条款 == tools/disposition 实现（v2.67.0 新增）
+  48. 条款↔实现：spec/09 四类上限状态表 + spec/10 处置条款（v2.67.0 新增；v2.73.0 并入 spec/09）
       —— 教训来源：spec/13 #44 的「下一步」自 v2.61.0 起就写明三件事（事件类型 /
          义务条款 / 完整性信号），但此前无人校验文档与实现是否对得上。条款化若没有
          机器校验，只是文字：文档写四个动作、实现多一个，读者无法察觉。
@@ -927,6 +927,8 @@ _sub_readme = read(os.path.join(ROOT, "reference", "runtimes",
 _decl_sub_readme = re.search(r"demo 覆盖 (\d+) 组、(\d+) 项断言", _sub_readme)
 _demo_bad = []
 _actual, _err = None, ""
+# 供第 48 项复用（校验 spec/09 四类上限的「已实现」是否有对应 demo 断言），避免二次实跑
+_DEMO_STDOUT = ""
 try:
     _proc = subprocess.run(
         ["node", "--experimental-transform-types", _DEMO_REL],
@@ -936,6 +938,7 @@ try:
     _m = re.search(r"=== 结果：.*?（(\d+) 组 (\d+) 项断言）===", _proc.stdout)
     if _m:
         _actual = (int(_m.group(1)), int(_m.group(2)))
+        _DEMO_STDOUT = _proc.stdout
         if _proc.returncode != 0:
             _demo_bad.append(f"demo 实跑存在 FAIL（退出码 {_proc.returncode}）")
     elif _proc.returncode != 0:
@@ -1402,6 +1405,92 @@ _c48_en = read(os.path.join(ROOT, "spec", "10-resource-ledger.en.md"))
 _c48_impl = read(os.path.join(ROOT, "tools", "disposition", "ledger.mts"))
 _c48_bad = _c48_verify(_c48_zh, _c48_en, _c48_impl)
 
+# ── 48b（v2.73.0 并入）：spec/09 四类运行时上限 ↔ 参照实现 ──────────────────
+# 动机：v2.72.8 实测 spec/09 写着「不得以未标定为由不设限制」，而四类中 ①执行步数
+# ②调用频次在 reference/runtimes/l2-runtime-oversight 里**完全不存在**，且全仓无任何
+# 门禁校验 spec/09——条文在、实现无、无人查，一路绿灯活过多版。
+# 判据（四条，每条都有牙）：
+#   ① 中英各有一张四行状态表，标识序列 == 期望四类（缺行 / 多行 / 改标识都 FAIL）
+#   ② 「实现落点」的类名必须能在 index.ts 找到 export 声明（改了类名没改表也能抓到）
+#   ③ 每一类都必须有 `[四类上限:<id>]` 的 PASS 断言——「部分实现」不是豁免，
+#      缺口必须被实测过，否则状态列只是文字
+#   ④ 状态列以「部分实现 / 未实现」开头时，必须写明缺口形态（冒号后非空）
+#
+# ⚠️ 不用「状态字符串长度」判缺口：那是在数形容词，写完一句废话就能过。
+
+_EXPECTED_LIMIT_IDS = ["execution-steps", "call-rate", "task-duration", "resource-consumption"]
+
+
+def _c48b_limit_rows(text, header):
+    """取 spec/09 四类上限状态表，返回 [{id, site, status, ncols}]；表不存在返回 None。"""
+    lines = text.splitlines()
+    for i, ln in enumerate(lines):
+        if ln.startswith("|") and header in ln:
+            rows = []
+            for row in lines[i + 2:]:
+                if not row.startswith("|"):
+                    break
+                cells = [c.strip() for c in row.strip().strip("|").split("|")]
+                ids = re.findall(r"`([^`]+)`", cells[1]) if len(cells) > 1 else []
+                sites = re.findall(r"`([^`]+)`", cells[2]) if len(cells) > 2 else []
+                rows.append({
+                    "id": ids[0] if ids else None,
+                    "site": sites[0] if sites else None,
+                    "status": cells[3] if len(cells) > 3 else "",
+                    "ncols": len(cells),
+                })
+            return rows
+    return None
+
+
+def _c48b_verify(zh, en, impl, demo_out):
+    bad = []
+    zh_rows = _c48b_limit_rows(zh, "| 类别 | 标识 |")
+    en_rows = _c48b_limit_rows(en, "| Class | Id |")
+    if zh_rows is None:
+        bad.append("spec/09 中文未找到四类状态表（表头应为「| 类别 | 标识 |」）")
+        return bad
+    if en_rows is None:
+        bad.append("spec/09 英文未找到四类状态表（表头应为「| Class | Id |」）")
+        return bad
+    zh_ids = [r["id"] for r in zh_rows]
+    en_ids = [r["id"] for r in en_rows]
+    if zh_ids != _EXPECTED_LIMIT_IDS:
+        bad.append(f"中文状态表标识 {zh_ids} != 期望四类 {_EXPECTED_LIMIT_IDS}")
+    if en_ids != zh_ids:
+        bad.append(f"英文状态表标识 {en_ids} != 中文 {zh_ids}")
+    if not (demo_out or "").strip():
+        bad.append("demo 输出为空（第 40 项未取得实跑结果）——四类状态表无法校验")
+        return bad
+    for r in zh_rows:
+        rid = r["id"]
+        if not rid:
+            bad.append(f"状态表有一行未用反引号给出标识：{r['status'][:20]}")
+            continue
+        if r["ncols"] < 4:
+            bad.append(f"{rid}：状态表该行列数 {r['ncols']} < 4")
+            continue
+        if not r["site"]:
+            bad.append(f"{rid}：实现落点未用反引号给出类名")
+        elif not re.search(r"export (?:class|const|function|type|interface) "
+                           + re.escape(r["site"]) + r"\b", impl):
+            bad.append(f"{rid}：实现落点 {r['site']} 在 index.ts 中无对应 export 声明")
+        if not re.search(r"PASS\s+\[四类上限:" + re.escape(rid) + r"\]", demo_out):
+            bad.append(f"{rid}：demo 输出无「[四类上限:{rid}]」的 PASS 断言"
+                       f"（状态列缺实测依据——部分实现不是免测理由）")
+        st = r["status"]
+        if re.match(r"^(部分实现|未实现)", st):
+            parts = re.split(r"[：:]", st, maxsplit=1)
+            if len(parts) < 2 or len(parts[1].strip()) < 4:
+                bad.append(f"{rid}：状态「{st[:12]}」未写明缺口形态（冒号后为空）")
+    return bad
+
+
+_c48b_zh09 = read(os.path.join(ROOT, "spec", "09-oversight.md"))
+_c48b_en09 = read(os.path.join(ROOT, "spec", "09-oversight.en.md"))
+_c48b_impl = read(os.path.join(ROOT, "reference", "runtimes", "l2-runtime-oversight", "index.ts"))
+_c48_bad.extend(_c48b_verify(_c48b_zh09, _c48b_en09, _c48b_impl, _DEMO_STDOUT))
+
 # 反向测试：三处扰动必须各自被检出，否则校验形同虚设
 _c48_mut = [
     ("改动作名 escalate→escalate_now",
@@ -1415,8 +1504,26 @@ for _c48_label, _c48_ret in _c48_mut:
     if not _c48_ret:
         _c48_bad.append(f"反向测试未检出：{_c48_label}（校验失效）")
 
+# 48b 反向测试：三处变异必须各自被检出（各自指向不同的检查分支）
+_c48b_mut = [
+    ("标识 execution-steps → execution-steps-v2",
+     _c48b_verify(_c48b_zh09.replace("`execution-steps`", "`execution-steps-v2`", 1),
+                  _c48b_en09, _c48b_impl, _DEMO_STDOUT)),
+    ("实现落点 StepGuard → StepGuardX（类名不存在）",
+     _c48b_verify(_c48b_zh09.replace("| `StepGuard` |", "| `StepGuardX` |", 1),
+                  _c48b_en09, _c48b_impl, _DEMO_STDOUT)),
+    ("demo 输出删掉 execution-steps 的 PASS 行",
+     _c48b_verify(_c48b_zh09, _c48b_en09, _c48b_impl,
+                  "\n".join(ln for ln in _DEMO_STDOUT.splitlines()
+                            if "[四类上限:execution-steps]" not in ln))),
+]
+for _c48b_label, _c48b_ret in _c48b_mut:
+    if not _c48b_ret:
+        _c48_bad.append(f"48b 反向测试未检出：{_c48b_label}（校验失效）")
+
 check(
-    "spec/10 处置条款 == tools/disposition 实现（13 字段键序 / 四动作 / 三态 / 中英时限；含 3 条反向测试）",
+    "条款↔实现：spec/09 四类上限状态表 + spec/10 处置条款"
+    "（13 字段键序 / 四动作 / 三态 / 中英时限；含 6 条反向测试）",
     not _c48_bad,
     "; ".join(_c48_bad),
 )

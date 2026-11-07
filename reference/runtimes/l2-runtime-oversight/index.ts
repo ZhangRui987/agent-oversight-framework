@@ -1103,6 +1103,159 @@ export async function guardedToolCall(
 }
 
 // ============================================================================
+// 9b. StepGuard / RateGuard —— spec/09「运行时参数硬限制」四类中的前两类
+//
+// spec/09 §运行时参数硬限制（v2.48.0）把看门狗确定性拦截规则的最小集定为四类：
+//   ① 执行步数上限  ② 单位时间调用频次上限  ③ 单任务执行时长上限  ④ 资源消耗上限
+//
+// 本组补 ① 与 ②。补的理由不是「功能更全」，而是：v2.72.8 实测本参照实现中这两类
+// **完全不存在**（③④ 至少已有单次调用级 ExitGuard 拦截 + 任务级 ResourceLedger 信号），
+// 而 spec/09 原文写着「标定完成前，阈值应取保守值并显式记录，不得以『未标定』为由不设限制」——
+// 对这两类而言该句此前是空头承诺：既未标定，也无闸门。
+//
+// 设计取舍（三条，均有前例支撑）：
+//   1. 两道守卫都是**执行前**裁决（与 EntryGuard 同侧）：步数与频次在调用发生前即可知，
+//      不需等结果返回。这与 ExitGuard 的事后裁决互补，不是替代。
+//   2. 时间基准**必须注入**（now 为必填构造参数，无默认值）：隐式取 Date.now() 会让同一输入
+//      在不同时刻得出不同裁决，属不可复现；本项目已因隐式时钟返工过一次，故此处不留默认值。
+//   3. 阈值仍是**工程占位**，由 spec/13 #33 承接标定。本实现只保证「有闸门、可复现、留痕」，
+//      不声称阈值合宜——标定完成前任何基于这些阈值的拦截率统计都只能报分布。
+//
+// 任务级累计（③④ 的任务级口径）不在本组：把 ResourceLedger 的 budget-exceeded 从
+// 「信号」升级为「拦截」是改变运行时行为，需单独决策 + 版本说明，不随本组默认生效。
+// ============================================================================
+
+/** 四类上限中已实现为拦截的类别标识（与 spec/09 状态表的标记一一对应）。 */
+export type RuntimeLimitCategory = 'step-over-limit' | 'rate-over-limit';
+
+/** 执行前上限裁决。 */
+export type LimitVerdict =
+  | { kind: 'allow'; observed: number; limit: number }
+  | { kind: 'block'; category: RuntimeLimitCategory; reason: string; observed: number; limit: number };
+
+/**
+ * 执行步数上限守卫（spec/09 四类之 ①）——按 taskId 累计工具调用次数。
+ *
+ * 语义：上限是「最多 N 步」。第 N 步放行，第 N+1 步拦截（边界值刻意定义为闭区间，
+ * 因为「上限 = 3」应读作 1、2、3 步可用，而不是 1、2 步可用）。
+ *
+ * 被拦截的那一步**不计数**：它没有被执行，若计入，一道误配的低阈值会把任务永久锁死，
+ * 且「被拦次数」无法从「已用步数」中分离出来。
+ */
+export class StepGuard {
+  private readonly counts = new Map<string, number>();
+
+  constructor(
+    /** 每任务允许的最大执行步数（正整数；非法值直接抛错，不静默降级）。 */
+    private readonly maxSteps: number,
+    /** 审计日志：每次拦截记一条。 */
+    private readonly audit: { append: (type: string, data: unknown) => unknown },
+  ) {
+    if (!Number.isInteger(maxSteps) || maxSteps <= 0) {
+      throw new Error(`StepGuard: maxSteps 必须为正整数（fail-closed），收到 ${String(maxSteps)}`);
+    }
+  }
+
+  check(taskId: string, tool: string): LimitVerdict {
+    const observed = (this.counts.get(taskId) ?? 0) + 1;
+    if (observed > this.maxSteps) {
+      const reason = `step ${observed} > maxSteps ${this.maxSteps}`;
+      this.audit.append('runtime_limit_block', {
+        category: 'step-over-limit',
+        taskId,
+        tool,
+        observed,
+        limit: this.maxSteps,
+        reason,
+      });
+      return { kind: 'block', category: 'step-over-limit', reason, observed, limit: this.maxSteps };
+    }
+    this.counts.set(taskId, observed);
+    return { kind: 'allow', observed, limit: this.maxSteps };
+  }
+
+  /** 当前已用步数（只读查询，供断言与面板使用）。 */
+  observed(taskId: string): number {
+    return this.counts.get(taskId) ?? 0;
+  }
+
+  /** 任务结束后清理计数，避免长驻进程内 Map 无界增长。 */
+  reset(taskId: string): void {
+    this.counts.delete(taskId);
+  }
+}
+
+/**
+ * 单位时间调用频次上限守卫（spec/09 四类之 ②）——滑动窗口计数。
+ *
+ * 时间基准由构造参数 now 注入（**必填、无默认值**）：隐式 Date.now() 会让「同一调用序列
+ * 在不同时刻得出不同裁决」，既不可复现也无法在测试里构造窗口边界。
+ *
+ * 语义：窗口 windowMs 内最多 maxCalls 次。被拦截的调用不占窗口配额（同 StepGuard 的理由）。
+ * 窗口按「左开右闭」处理：t - ts < windowMs 计入当前窗口，恰好等于 windowMs 的旧调用已出窗。
+ */
+export class RateGuard {
+  private readonly windows = new Map<string, number[]>();
+
+  constructor(
+    /** 窗口内允许的最大调用次数（正整数）。 */
+    private readonly maxCalls: number,
+    /** 窗口长度（毫秒，正整数）。 */
+    private readonly windowMs: number,
+    /** 时间基准（毫秒）。必填——不得隐式取 Date.now()，否则裁决不可复现。 */
+    private readonly now: () => number,
+    /** 审计日志：每次拦截记一条。 */
+    private readonly audit: { append: (type: string, data: unknown) => unknown },
+  ) {
+    if (!Number.isInteger(maxCalls) || maxCalls <= 0) {
+      throw new Error(`RateGuard: maxCalls 必须为正整数（fail-closed），收到 ${String(maxCalls)}`);
+    }
+    if (!Number.isInteger(windowMs) || windowMs <= 0) {
+      throw new Error(`RateGuard: windowMs 必须为正整数（fail-closed），收到 ${String(windowMs)}`);
+    }
+    if (typeof now !== 'function') {
+      throw new Error('RateGuard: now 必须为函数（时间基准不可省略）');
+    }
+  }
+
+  check(taskId: string, tool: string): LimitVerdict {
+    const t = this.now();
+    const win = (this.windows.get(taskId) ?? []).filter((ts) => t - ts < this.windowMs);
+    const observed = win.length + 1;
+    if (observed > this.maxCalls) {
+      const reason = `calls ${observed} in ${this.windowMs}ms > maxCalls ${this.maxCalls}`;
+      this.audit.append('runtime_limit_block', {
+        category: 'rate-over-limit',
+        taskId,
+        tool,
+        observed,
+        limit: this.maxCalls,
+        windowMs: this.windowMs,
+        at: t,
+        reason,
+      });
+      // 被拦不计入窗口：否则持续尝试会让窗口永不排空，守卫退化为永久封锁
+      this.windows.set(taskId, win);
+      return { kind: 'block', category: 'rate-over-limit', reason, observed, limit: this.maxCalls };
+    }
+    win.push(t);
+    this.windows.set(taskId, win);
+    return { kind: 'allow', observed, limit: this.maxCalls };
+  }
+
+  /** 当前窗口内的调用次数（只读查询）。 */
+  observed(taskId: string): number {
+    const t = this.now();
+    return (this.windows.get(taskId) ?? []).filter((ts) => t - ts < this.windowMs).length;
+  }
+
+  /** 任务结束后清理窗口。 */
+  reset(taskId: string): void {
+    this.windows.delete(taskId);
+  }
+}
+
+// ============================================================================
 // 10. ResourceLedger —— G5 资源账本闭合（spec/10 三信号 + 第四类周期型外联）
 //     spec/10-resource-ledger.md 四类信号：
 //       ① 预算比：每任务预设算力预算，超阈值即触发审计（非拦截——超支可能合理，但必须解释）
