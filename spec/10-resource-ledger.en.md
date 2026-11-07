@@ -153,6 +153,8 @@ The event body has 13 fields in frozen key order (reordering keys counts as tamp
 
 New actions enter by "adding an enumeration value plus new precondition checks" and require a version bump; they **must not** be added silently.
 
+**Deliberate omission in the action enum (design declaration, v2.76.0; do not read this as an unfinished checklist).** The four actions above deliberately exclude automatic-disposition actions such as `auto_block` / `auto_deduct` — this is a **design choice, not a gap**: the disposition channel's semantics are that "every signal must be **answered**" (confirmed / escalated / routed / parked by a human, with separation of duties per 10-D6), not "executed automatically". The evolution path toward automatic blocking is already registered: it belongs to a decision after spec/13 #15 (blocking-action selection) and #3 (real-business calibration) are complete, and **this table must not be extended before those preconditions are met** — auto-disposing real signals with uncalibrated placeholder thresholds is more dangerous than not disposing at all (it manufactures the illusion that a gate exists). The relationship to the four spec/09 runtime-parameter interceptors (`StepGuard` / `RateGuard`, v2.73.0) must be kept clear: those are **deterministic interception of parameter breaches** (threshold gates, before the signal exists), while this clause is about **response actions after a signal exists** (answered by humans, separation of duties) — two different layers, not substitutes for each other; the former's existence must not be read as "the disposition channel already has blocking capability".
+
 ### 10-D3 Three-state derivation (MUST)
 
 | State | Condition |
