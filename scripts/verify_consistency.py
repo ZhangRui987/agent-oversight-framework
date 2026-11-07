@@ -105,7 +105,7 @@
          ③ 打乱一行键序 → 两端必须 FAIL（键序冻结不是文档口号）；
          ④ 入库台账 tools/disposition/data/disposition.jsonl 可被 Python 独立验链。
          与第 40/44/46 项同构：任何可验证声明，要么生成、要么校验，不写第三种。
-  48. 条款↔实现：spec/09 四类上限状态表 + spec/10 处置条款（v2.67.0 新增；v2.73.0 并入 spec/09）
+  48. 条款↔实现：spec/09 四类上限状态表 + spec/10 处置条款 + spec/04 消费端（v2.67.0 新增；v2.73.0 并入 spec/09；v2.74.0 并入 spec/04）
       —— 教训来源：spec/13 #44 的「下一步」自 v2.61.0 起就写明三件事（事件类型 /
          义务条款 / 完整性信号），但此前无人校验文档与实现是否对得上。条款化若没有
          机器校验，只是文字：文档写四个动作、实现多一个，读者无法察觉。
@@ -1521,9 +1521,50 @@ for _c48b_label, _c48b_ret in _c48b_mut:
     if not _c48b_ret:
         _c48_bad.append(f"48b 反向测试未检出：{_c48b_label}（校验失效）")
 
+# ── 48c（v2.74.0 并入）：spec/04 信用回避消费端 ↔ AbstentionGate ────────────
+# 动机：spec/04 写明「行为摘要显式不算分、不做回避判定」「消费端落地前，任何基于
+# 本事件流的准入决策都不存在」——事件流自 v2.36.0 落地，判定代码长期一行没有，
+# 且全仓无门禁校验 spec/04 ↔ 实现。判据（fail-closed，读不到声明句即 FAIL）：
+#   ① 中英声明句存在；② index.ts 有 export class AbstentionGate；
+#   ③ demo 有 [消费端:o21] 与 [消费端:window] 的 PASS——判据必须被实测过。
+
+_C48C_ZH_ANCHOR = "L1 消费端已落地（判定侧，v2.74.0）"
+_C48C_EN_ANCHOR = "L1 consumer landed (judgment side, v2.74.0)"
+
+
+def _c48c_verify(zh, en, impl, demo_out):
+    bad = []
+    if _C48C_ZH_ANCHOR not in zh:
+        bad.append("spec/04 中文缺消费端声明句（读不到 ≠ 通过）")
+    if _C48C_EN_ANCHOR not in en:
+        bad.append("spec/04 英文缺消费端声明句（读不到 ≠ 通过）")
+    if "export class AbstentionGate" not in impl:
+        bad.append("index.ts 无 export class AbstentionGate（声明在、实现无）")
+    for _cid in ("o21", "window"):
+        if not re.search(r"PASS\s+\[消费端:" + _cid + r"\]", demo_out or ""):
+            bad.append(f"demo 输出无「[消费端:{_cid}]」的 PASS 断言（消费端判据缺实测依据）")
+    return bad
+
+
+_c48c_zh04 = read(os.path.join(ROOT, "spec", "04-credit-abstention.md"))
+_c48c_en04 = read(os.path.join(ROOT, "spec", "04-credit-abstention.en.md"))
+_c48_bad.extend(_c48c_verify(_c48c_zh04, _c48c_en04, _c48b_impl, _DEMO_STDOUT))
+
+_c48c_mut = [
+    ("删掉 spec/04 中文声明句",
+     _c48c_verify(_c48c_zh04.replace(_C48C_ZH_ANCHOR, ""), _c48c_en04, _c48b_impl, _DEMO_STDOUT)),
+    ("demo 删掉 [消费端:o21] 的 PASS 行",
+     _c48c_verify(_c48c_zh04, _c48c_en04, _c48b_impl,
+                  "\n".join(ln for ln in _DEMO_STDOUT.splitlines()
+                            if "[消费端:o21]" not in ln))),
+]
+for _c48c_label, _c48c_ret in _c48c_mut:
+    if not _c48c_ret:
+        _c48_bad.append(f"48c 反向测试未检出：{_c48c_label}（校验失效）")
+
 check(
-    "条款↔实现：spec/09 四类上限状态表 + spec/10 处置条款"
-    "（13 字段键序 / 四动作 / 三态 / 中英时限；含 6 条反向测试）",
+    "条款↔实现：spec/09 四类上限状态表 + spec/10 处置条款 + spec/04 消费端"
+    "（13 字段键序 / 四动作 / 三态 / 中英时限；含 8 条反向测试）",
     not _c48_bad,
     "; ".join(_c48_bad),
 )

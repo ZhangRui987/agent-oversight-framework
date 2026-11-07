@@ -639,6 +639,133 @@ export class CreditEventStream {
 }
 
 // ============================================================================
+// 7b. AbstentionGate —— spec/04 信用回避的 L1 消费端（判定侧，v2.74.0）
+//
+// spec/04:10 写明「行为摘要显式不计算信用分值、不做回避判定」「在消费端落地前，
+// 任何基于本事件流的准入决策都不存在」；spec/04 量规 v2.1（v2.66.0）已把触发判据
+// 标定到构造分布内（O21 ≥ 0.40，真违规捕获 42/42 × 良性零误伤 0/96），但当时
+// 「长期运行 H 维度标定与 L1 消费端落地仍缺」。本类补消费端的**判定侧**：
+// 给定违规记录 → 确定性裁决 { allow / abstain / escalate } + 依据全留痕。
+//
+// 语义映射（spec/04 §低信用触发三档）：
+//   abstain  ↔ T2 降档（O21 ≥ θ2——该载体不得承担高风险任务）
+//   escalate ↔ T3 强制重评（窗口内真操守违规 ≥ n_v；窗口计数**不随半衰期衰减**）
+//   T1（S < 0.4 持续 7 天）不实现：需要综合 S 的时间序列，且综合 S 已被
+//   CALIB-004/005 判「混通道」缺陷，等量规 v2 的 S 侧重投影。
+//
+// ⚠️ 三条设计前提，缺一则本类不可用：
+//   1. **通道隔离**：countsAsOperational=false 的违规（over-attempt-cap 等协议摩擦）
+//      完全不进 O21 与窗口计数。这不是可选优化——量规 v2.1 的核心修订就是
+//      「over-cap 归能力/协议通道」，把 over-cap 误传 true 会把已标定的
+//      「良性零误伤 0/96」结论直接作废。注意 CreditEventStream 的 violation kind
+//      目前**只**来自 over-attempt-cap 路径 ⇒ 本类**不**从 CreditEventStream 投影，
+//      调用方必须自己区分两类违规再喂进来。
+//   2. **判定 ≠ 执行**：本类只产出裁决与依据；是否真的把 Agent 移出派单池是
+//      调用方的决定——自动化执行属生产启用（spec/04 §防博弈小结 限定③）。
+//   3. **参数全部必填、无默认值**：θ2（0.40，构造分布内标定）、半衰期 H（30 天，
+//      **工程占位**——长期运行 H 标定仍缺，spec/13 #9 不闭合）、窗口长度与 n_v
+//      （C 级设计推演占位）。调用方传什么就是什么，本类不替调用方装作「已标定」。
+// ============================================================================
+
+/** 单条违规记录——调用方从自己的违规源整理后喂给 AbstentionGate。 */
+export interface IntegrityViolationRecord {
+  /** 违规发生时间（毫秒时间戳）。必须显式给出；晚于 now 的记录会在 check 时抛错。 */
+  ts: number;
+  /** 违规类别标识（如 unauthorized-write / post-hoc-edit）。仅用于留痕与归因。 */
+  category: string;
+  /**
+   * 是否计入操守通道。⚠️ over-attempt-cap 等协议摩擦必须传 false（量规 v2.1：
+   * over-cap 归能力/协议通道）；只有真操守违规（未授权写入 / 事后补改等）传 true。
+   */
+  countsAsOperational: boolean;
+}
+
+/** 信用回避裁决。contributions 仅含操守通道违规的当前权重（已按半衰期衰减）。 */
+export type AbstentionVerdict = {
+  kind: 'allow' | 'abstain' | 'escalate';
+  /** O21 = min(1, Σ 真操守违规·2^(−Δt/H))。无违规时为 0（空和，不是「无法计算」）。 */
+  o21: number;
+  /** 窗口内真操守违规条数（不衰减）。 */
+  windowViolations: number;
+  triggeredBy: null | 'o21' | 'window';
+  contributions: Array<{ category: string; weight: number }>;
+};
+
+export class AbstentionGate {
+  constructor(
+    /** 触发阈值 θ2（0 < θ2 ≤ 1）。量规 v2.1 构造分布内标定下界 0.40。 */
+    private readonly theta2: number,
+    /** 半衰期（天）。工程占位值（v2.1 标定用 30）由调用方显式传入并自行标注。 */
+    private readonly halfLifeDays: number,
+    /** 窗口长度（天）。T3 的「30 天窗口」——与半衰期是两个独立参数，即使数值相同。 */
+    private readonly windowDays: number,
+    /** 窗口内违规上限 n_v（≥ 1）。达到即 escalate（强制重评），后果比 abstain 重。 */
+    private readonly windowMaxViolations: number,
+    /** 时间基准（毫秒）。必填——不得隐式取 Date.now()，否则裁决不可复现。 */
+    private readonly now: () => number,
+    /** 审计日志：abstain / escalate 各记一条；allow 不写（B2 边界，沿用）。 */
+    private readonly audit: { append: (type: string, data: unknown) => unknown },
+  ) {
+    if (!(Number.isFinite(theta2) && theta2 > 0 && theta2 <= 1)) {
+      throw new Error(`AbstentionGate: theta2 必须在 (0, 1]，收到 ${String(theta2)}`);
+    }
+    if (!(Number.isFinite(halfLifeDays) && halfLifeDays > 0)) {
+      throw new Error(`AbstentionGate: halfLifeDays 必须为正数，收到 ${String(halfLifeDays)}`);
+    }
+    if (!(Number.isFinite(windowDays) && windowDays > 0)) {
+      throw new Error(`AbstentionGate: windowDays 必须为正数，收到 ${String(windowDays)}`);
+    }
+    if (!(Number.isInteger(windowMaxViolations) && windowMaxViolations >= 1)) {
+      throw new Error(`AbstentionGate: windowMaxViolations 必须为 ≥1 的整数，收到 ${String(windowMaxViolations)}`);
+    }
+    if (typeof now !== 'function') {
+      throw new Error('AbstentionGate: now 必须为函数（时间基准不可省略）');
+    }
+  }
+
+  check(agentId: string, violations: readonly IntegrityViolationRecord[]): AbstentionVerdict {
+    const t = this.now();
+    const DAY = 86_400_000;
+    let o21 = 0;
+    let windowViolations = 0;
+    const contributions: Array<{ category: string; weight: number }> = [];
+    for (const v of violations) {
+      if (!Number.isFinite(v.ts) || v.ts > t) {
+        throw new Error(
+          `AbstentionGate: 违规记录 ts=${String(v.ts)} 晚于当前时间 ${String(t)}`
+          + '（时钟倒挂——检查注入的 now 与数据源）',
+        );
+      }
+      if (!v.countsAsOperational) continue;
+      const dt = t - v.ts;
+      const weight = Math.pow(2, -dt / (this.halfLifeDays * DAY));
+      o21 += weight;
+      contributions.push({ category: v.category, weight });
+      if (dt < this.windowDays * DAY) windowViolations += 1;
+    }
+    o21 = Math.min(1, o21);
+    const windowTriggered = windowViolations >= this.windowMaxViolations;
+    const o21Triggered = o21 >= this.theta2;
+    // T3（escalate）后果重于 T2（abstain），两条同时触发时按重的报。
+    const kind = windowTriggered ? 'escalate' : o21Triggered ? 'abstain' : 'allow';
+    const triggeredBy = windowTriggered ? 'window' : o21Triggered ? 'o21' : null;
+    if (kind !== 'allow') {
+      this.audit.append('credit_abstention', {
+        agentId,
+        kind,
+        triggeredBy,
+        o21,
+        theta2: this.theta2,
+        windowViolations,
+        windowMaxViolations: this.windowMaxViolations,
+        contributions,
+      });
+    }
+    return { kind, o21, windowViolations, triggeredBy, contributions };
+  }
+}
+
+// ============================================================================
 // 8. EvalGuard —— 对应 L2 随机烈度抽查 + 证据纠错回灌
 //    OpenMAIC eval/orchestration: A/B prompt 变体 + 采样 + 确定性裁决（非
 //    LLM-as-judge）+ 错误样本排除（API 失败不算 END）+ 阈值退出码门禁。

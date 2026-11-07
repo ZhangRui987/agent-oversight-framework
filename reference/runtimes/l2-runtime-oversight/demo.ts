@@ -30,6 +30,7 @@
  *   [21] CreditEventStream（G7 事件流侧闭合：spec/04 信用分输入事件流——成功/失败/超时/违规四类投影 + 中性事件 + Overseer 集成）
  *   [22] SwarmMonitor（G8 告警侧闭合：交互图谱采集 + 涌现信号检测 + 熔断禁用）
  *   [23] StepGuard/RateGuard（spec/09 四类运行时上限之 ①执行步数 ②调用频次；③④任务级「只出信号不拦截」的实测依据）
+ *   [24] AbstentionGate（spec/04 信用回避 L1 消费端判定侧：O21/θ2 判定 + 窗口升级 + 操守/能力通道隔离）
  *
  * 运行：node --experimental-transform-types demo.ts
  * 退出码：0 = 全部 PASS，1 = 有 FAIL
@@ -57,6 +58,8 @@ import {
   RuntimeOverseer,
   SqliteLeaseAuthority,
   StepGuard,
+  AbstentionGate,
+  type IntegrityViolationRecord,
   guardedToolCall,
   isLeaseLostError,
   regressionGuard,
@@ -1395,6 +1398,130 @@ function testRuntimeLimitGuards(): void {
 }
 
 // ============================================================================
+// [24] AbstentionGate —— spec/04 信用回避的 L1 消费端（判定侧，v2.74.0）
+//     补这一环的理由见 index.ts §7b：spec/04 写明「行为摘要显式不算分、不做回避
+//     判定」「消费端落地前，任何基于本事件流的准入决策都不存在」——事件流自 v2.36.0
+//     起就在，但算分与裁决一行代码都没有，门禁也不查 spec/04。
+//
+//     判据 = 量规 v2.1 的构造分布内标定：O21 ≥ θ2（0.40，真违规捕获 42/42 ×
+//     良性零误伤 0/96）。本组刻意钉四处：
+//       - 通道隔离：over-attempt-cap 不算操守违规（v2.1 核心修订）——喂错通道
+//         会把「良性零误伤 0/96」的标定结论作废，所以这条不是优化是前提；
+//       - 窗口计数不随半衰期衰减（T3 的独立价值：半衰期把 O21 衰到 ≈0，
+//         窗口升级仍然触发）；
+//       - T2/T3 后果分级（O21 触发=abstain，窗口触发=escalate，并发时按重的报）；
+//       - 参数全部必填 fail-closed（θ2/H/窗口/n_v/时钟——占位值由调用方显式传，
+//         本类不替调用方装作「已标定」）。
+// ============================================================================
+function testAbstentionGate(): void {
+  console.log('\n[24] AbstentionGate（spec/04 信用回避 L1 消费端：O21/θ2 判定 + 窗口升级）');
+
+  type Ev = { type: string; data: unknown };
+  const eventsOf = (log: AppendOnlyAuditLog): Ev[] =>
+    (log as unknown as { events: Ev[] }).events;
+
+  const DAY = 86_400_000;
+  const T0 = 1_800_000_000_000;
+  const ago = (days: number): number => T0 - days * DAY;
+  const v = (ts: number, category = 'unauthorized-write', op = true): IntegrityViolationRecord =>
+    ({ ts, category, countsAsOperational: op });
+
+  // 主 gate：θ2=0.40（量规 v2.1 标定下界）、H=30（工程占位）、窗口 30 天 / 3 次（C 级推演占位）
+  const logA = new AppendOnlyAuditLog();
+  let nowMs = T0;
+  const gate = new AbstentionGate(0.40, 30, 30, 3, () => nowMs, logA);
+
+  const r0 = gate.check('ag-0', []);
+  check('无违规 → allow 且 O21 = 0（空集是「没有违规」的空和，不是「无法计算」）',
+    r0.kind === 'allow' && r0.o21 === 0 && r0.windowViolations === 0);
+
+  nowMs = T0;
+  const r1 = gate.check('ag-1', [v(T0 - 3_600_000)]);
+  check('[消费端:o21] 新近单次真违规 → abstain（O21 ≈ 1 ≥ θ2 = 0.40，量规 v2.1 标定判据）',
+    r1.kind === 'abstain' && r1.triggeredBy === 'o21' && r1.o21 > 0.99);
+
+  const gateHalf = new AbstentionGate(0.5, 30, 30, 3, () => nowMs, logA);
+  const r2 = gateHalf.check('ag-2', [v(T0 - 30 * DAY)]);
+  check('[消费端:o21] 边界：O21 恰好等于 θ2 仍触发（Δt = H ⇒ 2^−1 = 0.5 ≥ 0.5）',
+    r2.kind === 'abstain' && Math.abs(r2.o21 - 0.5) < 1e-12);
+
+  nowMs = T0;
+  const r3 = gate.check('ag-3', [v(T0 - 60 * DAY)]);
+  check('[消费端:o21] 半衰期衰减：Δt = 2H ⇒ O21 = 0.25 < 0.40 → allow',
+    r3.kind === 'allow' && Math.abs(r3.o21 - 0.25) < 1e-12);
+
+  nowMs = T0;
+  const r4 = gate.check('ag-4', [v(T0 - 3_600_000, 'over-attempt-cap', false)]);
+  check('通道隔离：over-attempt-cap 必须传 countsAsOperational=false——新近也不进 O21（v2.1 核心修订，喂错通道即作废「良性零误伤 0/96」）',
+    r4.kind === 'allow' && r4.o21 === 0 && r4.windowViolations === 0);
+
+  nowMs = T0;
+  const r5 = gate.check('ag-5', [0, 1, 2, 3, 4].map((i) => v(T0 - 3_600_000 - i)));
+  check('O21 钳制：多条同刻违规 → O21 = min(1, ·) = 1，不爆表（窗口 5 条也触发，按重的报 escalate）',
+    r5.kind === 'escalate' && r5.o21 === 1 && r5.contributions.length === 5);
+
+  nowMs = T0;
+  const r6 = gate.check('ag-6', [v(T0 - 3_600_000)]);
+  check('T2/T3 后果分级：O21 触发但窗口内仅 1 条 → abstain（降档），不升级为 escalate',
+    r6.kind === 'abstain' && r6.triggeredBy === 'o21' && r6.windowViolations === 1);
+
+  // 窗口计数不衰减：H=1 天把每条 29.5 天前的违规权重衰到 2^−29.5 ≈ 0 ⇒ O21 ≈ 0，
+  // 但窗口计数仍是 3 ≥ n_v ⇒ escalate。半衰期拦不住窗口升级，这就是 T3 的独立价值。
+  const logW = new AppendOnlyAuditLog();
+  const gateFast = new AbstentionGate(0.40, 1, 30, 3, () => nowMs, logW);
+  nowMs = T0;
+  const r7 = gateFast.check('ag-7', [v(ago(29.5)), v(ago(29.6)), v(ago(29.7))]);
+  check('[消费端:window] 窗口计数不随半衰期衰减（H=1 天 ⇒ O21 ≈ 0，3 条 29.5 天前真违规仍 escalate）',
+    r7.kind === 'escalate' && r7.triggeredBy === 'window' && r7.windowViolations === 3 && r7.o21 < 0.001);
+
+  nowMs = T0;
+  const r8 = gate.check('ag-8', [v(T0 - 30 * DAY), v(T0 - 30 * DAY + 3_600_000)]);
+  check('窗口边界：恰好 windowDays 天前的违规不计入窗口（dt < window 严格小于），窗口内 1 条、O21 钳制到 1 → abstain',
+    r8.kind === 'abstain' && r8.windowViolations === 1 && Math.abs(r8.o21 - 1) < 1e-9);
+
+  // 时间基准确由构造参数注入：同一条违规记录，两个不同 now 得出相反裁决。
+  const logC1 = new AppendOnlyAuditLog();
+  const logC2 = new AppendOnlyAuditLog();
+  const rec = v(T0);
+  const g1 = new AbstentionGate(0.5, 30, 30, 3, () => T0, logC1);
+  const g2 = new AbstentionGate(0.5, 30, 30, 3, () => T0 + 60 * DAY, logC2);
+  const c1 = g1.check('ag-c', [rec]);
+  const c2 = g2.check('ag-c', [rec]);
+  check('时间基准由构造参数注入（同一记录在不同 now 下裁决相反：abstain vs allow，排除隐式 Date.now()）',
+    c1.kind === 'abstain' && c2.kind === 'allow');
+
+  // fail-closed：非法参数 / 缺时钟全部抛错，不静默降级为「永不回避」。
+  let fc = 0;
+  const mk = (t2: number, h: number, nowFn: unknown): void => {
+    try {
+      new AbstentionGate(t2, h, 30, 3, nowFn as () => number, logA);
+    } catch {
+      fc += 1;
+    }
+  };
+  mk(0, 30, () => T0);
+  mk(1.5, 30, () => T0);
+  mk(0.40, 0, () => T0);
+  mk(0.40, 30, undefined);
+  check('fail-closed：theta2=0 / theta2=1.5 / halfLifeDays=0 / now 缺失，四种非法构造全部抛错', fc === 4);
+
+  let threwFuture = false;
+  try {
+    nowMs = T0;
+    gate.check('ag-f', [v(T0 + 1)]);
+  } catch {
+    threwFuture = true;
+  }
+  check('fail-closed：违规 ts 晚于注入的 now（时钟倒挂）在 check 时抛错', threwFuture);
+
+  const abstainEvents = eventsOf(logA).filter((e) => e.type === 'credit_abstention');
+  check('abstain 各写一条 credit_abstention 审计（allow 不写，B2 边界沿用）',
+    abstainEvents.length === 5
+    && (abstainEvents[0]?.data as { kind?: string }).kind === 'abstain'
+    && (abstainEvents[0]?.data as { theta2?: number }).theta2 === 0.40);
+}
+
+// ============================================================================
 // main
 // ============================================================================
 async function main(): Promise<void> {
@@ -1434,6 +1561,7 @@ async function main(): Promise<void> {
   await testCreditStreamOverseer();
   testSwarmMonitor();
   testRuntimeLimitGuards();
+  testAbstentionGate();
 
   console.log(`\n=== 结果：${failures === 0 ? 'ALL PASS ✅' : `${failures} FAIL ❌`}（${totalGroups} 组 ${totalChecks} 项断言）===`);
   process.exit(failures === 0 ? 0 : 1);
