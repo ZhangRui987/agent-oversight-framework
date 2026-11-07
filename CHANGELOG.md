@@ -1,6 +1,36 @@
 # 变更日志
 
 
+## v2.72.7（2026-11-07）：收口两处技术债——「同一逻辑两份实现」与「导入即副作用」
+
+- **起点是上一版自己登记的两处债**：v2.72.5 的 CHANGELOG 写着「`rules/verify-chain.mts` 与 `scenario/verify-chain.mts` 已漂移 162 行……两个验证器不可能同时正确」与「`rules/*.mts` 的 `main()` 在模块顶层无条件执行」。本版不新做功能，只把这两句变成结构。
+- **先纠一个自己写错的数**：实测差异是 **191** 行（diff 增删合计，EOL 归一后），不是 162——v2.72.5 之后两份文件各自又改了 `--tamper-demo` 分支，差异反而扩大。旧数留在 v2.72.5 小节不动（不改历史），本版按实测值记。
+- **七处分歧里，只有一处分歧会给出相反结论**：`scenario/` 只认 `source_scenario`，`rules/` 允许 `session_id` 替代。用数据判定谁对——
+
+  ```
+  data/events.jsonl             9 条 · 链 0 错 · 缺 source_scenario 0 · 缺 session_id 0
+  data/realagent-events.jsonl  14 条 · 链 0 错 · 缺 source_scenario 14 · 缺 session_id 0
+  ```
+
+  ⇒ **两边各对一半**：`rules/` 的宽容对 V2 正确、对 V1 削弱；`scenario/` 的严格对 V1 正确、对 V2 误报。「谁对」这个问题本身是伪命题，真实原因是两套事件流的来源字段不同名。
+- **口径改为显式声明，不做隐式 OR**：`verifyChainFile(file, { source: 'scenario' | 'session' })` 第二参数**必填无默认值**；CLI 的 `--source` 缺省 `scenario`，与 CLI 默认文件 `data/events.jsonl` 绑定，**默认值落在 fail-closed 一侧**（拿默认口径验 V2 文件 → 判 FAIL 并指名缺 `source_scenario`，不是静默通过）。被否掉的方案是 `source_id ?? session_id` 的 OR 判定——表面兼容两边，实际让 V1 少字段也能过，等于把检查调软。
+- **实现收口为一份**：新增 `rules/chain-core.mts` 承载全部逻辑（verify / 报告渲染 / 篡改演示 / CLI 运行时），`scenario/verify-chain.mts` 与 `rules/verify-chain.mts` 退化为入口壳，输出**逐字节相同**。依赖方向保持 `scenario → rules`（与既有 `scenario → rules/rule-map` 一致），公开路径一字未改（CI、REPRODUCE、README、`check-anchor.mts` 的 `verifier` 字段全部照旧）。
+- **守卫只加在会被 import 的模块上**：`rules/` 三个模块（server 导入）加 `isEntryPoint()` 守卫；`scenario/verify-chain.mts` 是纯入口、无 importer，**不加**——守卫若判错会让命令静默不执行并退出 0，对纯入口是净风险。`scenario/export-events.mts` 与三个 calibrate 脚本同样不动，改由新门禁在「被 import 那一天」拦住。
+- **新增门禁第 53 → 54 项，四条断言缺一可绕**：A 静态（收集相对 import 图，**被 import** 的文件不得有行首 `main();`——判据取「有 importer」而非「有 export」，因为危害来自 importer）；B 导入静默（三个模块 import 后 stdout 为空且退出 0）；C CLI 仍活（两个验链入口各跑一次必须 exit 0 且打出 `落盘链 PASS`——没有 C，B 可被「守卫把 CLI 一起关掉」满足）；D 口径有牙（默认口径验 V2 必 exit 1 并指名 `source_scenario`，`--source=session` 必 exit 0——两个 profile 都要能让检查失败一次，否则宽容分支就是死代码）。
+- **四条反向测试逐条实测，每条都指名到分支**：① 在 `rules/verify-chain.mts` 写回 `main();` → FAIL 且报出该文件路径；② 守卫恒 `true` → FAIL「导入有副作用：stdout 非空（46 行，首行「审计面板事件文件 · 独立验证」）」；③ 守卫恒 `false` → FAIL「rules 验链 CLI 未打出「落盘链 PASS」——守卫可能把 CLI 一起关掉了」；④ `session` 口径指向不存在字段 → FAIL「`--source=session` 验 V2 文件应 exit 0，实为 1——session 口径分支不可达」。第一版 R4 变异写坏成语法错误、把整条链一起弄红，属于「变异没落在被检查项上」，已重做。
+- **顺带补一个长期没人读的声明处**：第 19 项（门禁项数声明一致）原先只采集 README 双语 / CONTRIBUTING 双语 / ci.yml / 脚本头注释 7 处，**REPRODUCE 双语里的 4 处项数声明无人机器读取**——而它正是陌生人最先读的文档。已补 8 条正则进采集表，反向测试（把 REPRODUCE 的 54 改回 53）确认第 19 项会 FAIL 并报出「声明项数 [53, 54] != 实际 check 数 54」。
+- **实测效果**：server 启动前不再出现 CLI 块（导入三个模块原先合计打印 46 行，现为 0 行，退出码不再被导入方污染）；`/api/verification` 的 `chain` 对象只多一个字符串字段 `sourceProfile`，不删不改既有键。
+- **本版本发布值**（未重锚 ⇒ 重复同一串；重复公布只增强外部见证）：
+
+  ```
+  aof-anchor/v1:audit-panel/events-v1:1:9:27c2fe8fa384f7b9920cbd83da521fb567f795332501101e35b3d18ffdc82739:7d8a896bed4ce976
+  aof-anchor/v1:disposition/stage1-ledger:2:3:3f23031b0c77a0fce338a8e2feda30ee548cd2c262fdfb239aaa638f5a8b7ea4:b1aa3becb81e59cf
+  ```
+
+- **范围（不夸大）**：不改任何判定阈值、不动实验数据、不动处置台账链（`tools/disposition/verify-chain.mts` 是另一种格式与语义，合并成「一个验证器」是伪统一）。它把「同一逻辑只有一个实现」「导入不产生副作用」变成机器可校验的不变量，不新增任何检测能力。
+- **本版未做（仍挂账）**：AOE-CALIB-007 在 `REFERENCES.md` 仍无证据条目（与 CALIB-001…006 处理不一致，补登记牵动 README 三处计数 + `spec/11` 行数 + 门禁第 24 / 44 项，属独立一版）。
+
+
 ## v2.72.6（2026-11-07）：把 CALIB-007 的结果写回规范正文——三处「承诺」与实际状态分叉
 
 - **起点是一句自己许下的承诺**：`spec/07` §阈值标定前置条件 自 v2.62.1 起写着「**结果未出**……实验完成后按报告判定再更新本节」。而结果从 v2.63.0 就已进仓（v2.64.0 R1 冻结、v2.66.0 样本外 Go、v2.67.0 收尾）。**正文落后 9 个 patch 版本**——这不是漏写，是许下的更新义务没兑现。

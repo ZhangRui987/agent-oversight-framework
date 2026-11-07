@@ -1,6 +1,6 @@
 # Reproducing this repository (REPRODUCE)
 
-> **Goal**: let someone who has never heard of this repository see, in **three commands and about half a minute**, that these checks **really do fail** — not just read "we have 53 checks".
+> **Goal**: let someone who has never heard of this repository see, in **three commands and about half a minute**, that these checks **really do fail** — not just read "we have 54 checks".
 >
 > Every command is **zero-install, zero-key, zero-network**. No `.workbuddy/`, no `.env`, no `node_modules`, no `.venv`, and no need to read 13 spec chapters first.
 
@@ -25,7 +25,7 @@ Every number and output below was measured on 2026-11-06 in a **bare clone** (`g
 
 | # | Command | Pass criterion | Exit | Time |
 |---|---|---|---|---|
-| 1 | `python scripts/verify_consistency.py` | last line `✅ 全部校验通过 — 可提交`, and `[PASS]` count = 53 | 0 | 16–25 s |
+| 1 | `python scripts/verify_consistency.py` | last line `✅ 全部校验通过 — 可提交`, and `[PASS]` count = 54 | 0 | 16–25 s |
 | 2 | `node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts --strict` | last line `通过 9 / 警告 0 / 失败 0` (CI semantics: WARN also fails) | 0 | 6–11 s |
 | 3 | `node --experimental-transform-types tools/audit-panel/scenario/export-events.mts` | seven scenarios exported, 9 events + 1 meta line | 0 | 1–2 s |
 | 4 | `node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts --tamper-demo` | `落盘链 PASS` + `链校验 已检出` + final line `演示结论 检出成功` (0 = demo matched expectations, not "not detected"; exits 1 if the demo fails to detect) | 0 | 1–2 s |
@@ -40,7 +40,7 @@ Clone size ≈ 19 MB (no `node_modules` / `.venv`).
 
 ## 2. Three commands: see how this repository governs itself
 
-### 2.1 The 53 consistency checks
+### 2.1 The 54 consistency checks
 
 ```bash
 python scripts/verify_consistency.py
@@ -56,10 +56,10 @@ Confirm the count (53 is exact, not approximate):
 
 ```bash
 python scripts/verify_consistency.py | grep -c "^  \[PASS\]"
-# 53
+# 54
 ```
 
-What matters is the scope: these 53 checks reconcile **bilingual structure of 13 spec chapters, graded counts of 213 evidence entries, the open-problems register, 9 event hash chains, 3 disposition ledger rows, and publication records of anchor digests**. It is also wired as a pre-commit hook — red means you cannot commit.
+What matters is the scope: these 54 checks reconcile **bilingual structure of 13 spec chapters, graded counts of 213 evidence entries, the open-problems register, 9 event hash chains, 3 disposition ledger rows, and publication records of anchor digests**. It is also wired as a pre-commit hook — red means you cannot commit.
 
 ### 2.2 Chain verification: change one character and it is caught
 
@@ -73,9 +73,10 @@ Measured output (paths vary by machine):
 审计面板事件文件 · 独立验证
 ──────────────────────────────────────────────────────────
   文件          D:\...\tools\audit-panel\data\events.jsonl
-  框架版本      v2.72.5 (= `cat VERSION`, changes per release)
+  框架版本      v2.72.7 (= `cat VERSION`, changes per release)
   schema        aof-audit-panel/1
   事件条数      9
+  依据口径      scenario（每条事件须有 source_scenario）
   落盘链        PASS
 
   全部检查通过：meta 一致 · seq 连续 · 链可重算 · 每条事件有规则与条款依据
@@ -90,6 +91,17 @@ Measured output (paths vary by machine):
 
     演示结论      检出成功（预期结果）。本命令退出码 0 = 验链通过 且 演示符合预期，不是"未检出"。
 ```
+
+The `依据口径` (source profile) line is new in v2.72.7: chain verification requires a provenance field on
+every event, and V1 (`events.jsonl`) uses `source_scenario` while V2 (`realagent-events.jsonl`) uses
+`session_id`. The default profile is `scenario`; verifying a V2 file requires the explicit form:
+
+```bash
+node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts --source=session --file=tools/audit-panel/data/realagent-events.jsonl
+```
+
+Verifying a V2 file without `--source` **fails and names the missing `source_scenario`** — a wrong profile is
+a failure, not a silent pass.
 
 > **Do not cite this as proof that "the check turns red"**: the demo runs in memory and writes nothing, so **the exit code is still 0**. It proves tampering is detectable, not that the check fails.
 >
@@ -149,9 +161,10 @@ Measured output:
 审计面板事件文件 · 独立验证
 ──────────────────────────────────────────────────────────
   文件          C:\Users\...\AppData\Local\Temp\tampered.jsonl
-  框架版本      v2.72.5 (= `cat VERSION`, changes per release)
+  框架版本      v2.72.7 (= `cat VERSION`, changes per release)
   schema        aof-audit-panel/1
   事件条数      9
+  依据口径      scenario（每条事件须有 source_scenario）
   落盘链        FAIL
 
   失败项：
@@ -178,7 +191,7 @@ That is the line between "a check with discriminating power" and "a check that a
 | 1 | `replicate-t0` exit 0 was read as "9/9 passed"; it is actually "通过 4 / 警告 5 / 失败 0" | Wording fixed in v2.72.2; root cause fixed in v2.72.4 | Not one of those five WARNs was a numeric difference: all were the baselines checked out as CRLF by `core.autocrlf` (three more came from a platform string baked into the baseline header). Windows and linux both report `通过 9 / 警告 0 / 失败 0` now |
 | 2 | Node / Python versions were never documented; missing Node surfaced as a `FileNotFoundError` traceback | Fixed in v2.72.2 | See §0 |
 | 3 | `export-events.mts` rewrites the committed `events.jsonl`; on Windows `git status` shows M while `git diff` is empty | Fixed in v2.72.2 | Line-ending artifact: `git checkout -- tools/audit-panel/data/events.jsonl`, do not commit |
-| 4 | The 53 checks were not in "Quick start"; newcomers ran the 6-second replication suite first | Fixed in v2.72.2 | See §2.1 |
+| 4 | The checks were not in "Quick start"; newcomers ran the 6-second replication suite first | Fixed in v2.72.2 | See §2.1 |
 | 5 | **The WARN count is not constrained by any check**; CI only asserts exit 0 | Fixed in v2.72.4: CI now runs `--strict`, so WARN turns it red | The assertion is "WARN also fails", not "WARN must be zero" — the former can absorb genuine environment noise later, while the latter turns noise into red lights and eventually trains people to disable alerts |
 
 One attribution defect was also corrected: the WARN message used to say "suspected platform / Node-version difference", but the measured run used the same Node 22.22.2 as the baselines — the real causes were **CRLF line endings** and a **platform string baked into the baseline header**, neither of which is a floating-point issue. Both are now eliminated, so `env-diff` only tolerates equivalent version/platform substitutions and numeric last digits within a 1e-9 relative bound, and reports the first offending line (`L{n}`) instead of leaving you to guess.

@@ -134,7 +134,7 @@ try {
 const verifiedAt = new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
 const bootVerification = {
   verifiedAt,
-  chain: { ...verifyChainFile(DATA_FILE), file: 'data/events.jsonl (V1 确定性)' },
+  chain: { ...verifyChainFile(DATA_FILE, { source: 'scenario' }), file: 'data/events.jsonl (V1 确定性)' },
   replay: { ...replayFile(DATA_FILE, DISPOSITION_FILE), file: 'data/events.jsonl (V1 确定性)' },
   disposition: {
     ...verifyLedgerFile(DISPOSITION_FILE),

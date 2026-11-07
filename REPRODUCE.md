@@ -1,6 +1,6 @@
 # 复现指南（REPRODUCE）
 
-> **目标**：让一个从没听过本仓库的人，在**三条命令、半分钟**之内，亲眼看到这套检查**真的会失败**——而不只是读到「我们有 53 项校验」。
+> **目标**：让一个从没听过本仓库的人，在**三条命令、半分钟**之内，亲眼看到这套检查**真的会失败**——而不只是读到「我们有 54 项校验」。
 >
 > 全部命令**零安装、零密钥、零联网**。**不需要** `.workbuddy/`、`.env`、`node_modules`、`.venv`，也不需要先读 13 章 spec。
 
@@ -25,7 +25,7 @@
 
 | # | 命令 | 判定依据（怎么算对） | 退出码 | 耗时 |
 |---|---|---|---|---|
-| 1 | `python scripts/verify_consistency.py` | 末行 `✅ 全部校验通过 — 可提交`，且 `[PASS]` 行数 = 53 | 0 | 16–25 s |
+| 1 | `python scripts/verify_consistency.py` | 末行 `✅ 全部校验通过 — 可提交`，且 `[PASS]` 行数 = 54 | 0 | 16–25 s |
 | 2 | `node --experimental-transform-types reference/runtimes/l2-runtime-oversight/replicate-t0.mts --strict` | 末行 `通过 9 / 警告 0 / 失败 0`（CI 口径：WARN 也算失败） | 0 | 6–11 s |
 | 3 | `node --experimental-transform-types tools/audit-panel/scenario/export-events.mts` | 七场景导出，写出 9 条事件 + 1 条 meta | 0 | 1–2 s |
 | 4 | `node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts --tamper-demo` | `落盘链 PASS` + `链校验 已检出` + 末行 `演示结论 检出成功`（0 = 演示符合预期，不是"未检出"；未检出时退出 1） | 0 | 1–2 s |
@@ -40,7 +40,7 @@
 
 ## 2. 三条命令：先看这个仓库怎么管自己
 
-### 2.1 门禁 53 项
+### 2.1 门禁 54 项
 
 ```bash
 python scripts/verify_consistency.py
@@ -56,10 +56,10 @@ python scripts/verify_consistency.py
 
 ```bash
 python scripts/verify_consistency.py | grep -c "^  \[PASS\]"
-# 53
+# 54
 ```
 
-这件事的分量在别处：这 53 项对账的是 **13 章 spec 的双语结构、213 条证据的分级计数、未解问题登记册、9 条事件哈希链、3 条处置台账、外锚摘要串的发布记录**。它同时挂在 pre-commit 上——红了就提交不了。
+这件事的分量在别处：这 54 项对账的是 **13 章 spec 的双语结构、213 条证据的分级计数、未解问题登记册、9 条事件哈希链、3 条处置台账、外锚摘要串的发布记录**。它同时挂在 pre-commit 上——红了就提交不了。
 
 ### 2.2 链验证：改一个字就检得出
 
@@ -73,9 +73,10 @@ node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts 
 审计面板事件文件 · 独立验证
 ──────────────────────────────────────────────────────────
   文件          D:\...\tools\audit-panel\data\events.jsonl
-  框架版本      v2.72.5（= `cat VERSION`，随版本变）
+  框架版本      v2.72.7（= `cat VERSION`，随版本变）
   schema        aof-audit-panel/1
   事件条数      9
+  依据口径      scenario（每条事件须有 source_scenario）
   落盘链        PASS
 
   全部检查通过：meta 一致 · seq 连续 · 链可重算 · 每条事件有规则与条款依据
@@ -90,6 +91,16 @@ node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts 
 
     演示结论      检出成功（预期结果）。本命令退出码 0 = 验链通过 且 演示符合预期，不是"未检出"。
 ```
+
+`依据口径` 一行是 v2.72.7 新增：验链要求每条事件有来源字段，而 V1（`events.jsonl`）用的是
+`source_scenario`、V2（`realagent-events.jsonl`）用的是 `session_id`。默认口径为 `scenario`；
+验 V2 文件必须显式指定：
+
+```bash
+node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts --source=session --file=tools/audit-panel/data/realagent-events.jsonl
+```
+
+不传 `--source` 去验 V2 文件会**判 FAIL 并指名缺 `source_scenario`**——口径不对是失败，不是静默通过。
 
 > **别把这一条当作「检查会红」的证据**：演示在内存里做、不写盘，所以**退出码仍是 0**。它证明的是「篡改能被检出」，不是「检查会失败」。
 >
@@ -149,9 +160,10 @@ echo "exit=$?"
 审计面板事件文件 · 独立验证
 ──────────────────────────────────────────────────────────
   文件          C:\Users\...\AppData\Local\Temp\tampered.jsonl
-  框架版本      v2.72.5（= `cat VERSION`，随版本变）
+  框架版本      v2.72.7（= `cat VERSION`，随版本变）
   schema        aof-audit-panel/1
   事件条数      9
+  依据口径      scenario（每条事件须有 source_scenario）
   落盘链        FAIL
 
   失败项：
@@ -178,7 +190,7 @@ exit=1
 | 1 | `replicate-t0` 退出码 0 曾被 README 读作「9/9 通过」，实测是「通过 4 / 警告 5 / 失败 0」 | v2.72.2 订正文字；v2.72.4 修掉根因 | 那 5 条 WARN 一条数值差异都没有：全部是基准被 `core.autocrlf` 检出成 CRLF（另 3 条是基准首行写死平台串）。现 Windows 与 linux 均为 `通过 9 / 警告 0 / 失败 0` |
 | 2 | 文档从未写 Node / Python 版本；缺 Node 时报 `FileNotFoundError` traceback | v2.72.2 已在快速开始补「环境前置」 | 见本文 §0 |
 | 3 | `export-events.mts` 重写已入库的 `events.jsonl`；Windows 下 `git status` 显示 M 而 `git diff` 为空 | v2.72.2 已在命令旁注明 | 是换行符差异，`git checkout -- tools/audit-panel/data/events.jsonl` 还原，勿提交 |
-| 4 | 53 项门禁原不在「快速开始」里，陌生人最先跑的是 6 秒的复现包 | v2.72.2 已列为快速体验第 4 步 | 见本文 §2.1 |
+| 4 | 门禁原不在「快速开始」里，陌生人最先跑的是 6 秒的复现包 | v2.72.2 已列为快速体验第 4 步 | 见本文 §2.1 |
 | 5 | **WARN 数量不受任何检查约束**：CI 只断言 exit 0 | v2.72.4 已修：CI 改跑 `--strict`，WARN 即红 | 断言形式是「WARN 也判失败」而不是「WARN 必须为 0」——前者能容纳未来真实的环境噪声，后者会把噪声变成红灯，最终训练人关掉告警 |
 
 另有一处归因失真（v2.72.2 已改为不越界断言，v2.72.4 定位到真实原因）：当时 WARN 文案写「疑似平台 / Node 版本差异」，实测用的是与基准相同的 Node 22.22.2，真实主因是**行尾 CRLF** 与**基准头行写死的平台串**——两者都不是浮点精度问题。现在这两类已被消除，`env-diff` 只对「版本/平台串等价替换」与「1e-9 相对差内的数值末位」放行，并在明细里给出「首处 L{n}」，不必再靠猜。

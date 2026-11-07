@@ -30,6 +30,7 @@ import { fileURLToPath } from 'node:url';
 
 import { SCENARIOS } from '../realagent/scenarios.mts';
 import { ALL_TOOL_NAMES, WORKSPACE } from '../realagent/tools.mts';
+import { isEntryPoint } from '../cli-entry.mts';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FILE = resolve(HERE, '../data/realagent-events.jsonl');
@@ -229,4 +230,6 @@ function main(): void {
   if (!ok) process.exitCode = 1;
 }
 
-main();
+// 本模块被 server import（verifyRealagentFile）；顶层无条件执行会让 server 启动时打印整段复核报告，
+// 并在失败时把 exitCode=1 留给 server 进程。v2.72.7 起只在被直接执行时运行 CLI。
+if (isEntryPoint(import.meta.url)) main();

@@ -36,6 +36,8 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { isEntryPoint } from '../cli-entry.mts';
+
 import {
   ConfigReviewer,
   EntryGuard,
@@ -409,4 +411,6 @@ function main(): void {
   if (failFast.length > 0) process.exitCode = 1;
 }
 
-main();
+// 本模块被 server import（replayFile）；顶层无条件执行会让 server 启动时打印整段重放报告，
+// 并在失败时把 exitCode=1 留给 server 进程。v2.72.7 起只在被直接执行时运行 CLI。
+if (isEntryPoint(import.meta.url)) main();

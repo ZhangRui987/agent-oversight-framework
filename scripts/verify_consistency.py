@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """发布一致性校验（推送前 / pre-commit 用）。
 
-校验项（共 53 项 = 53 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
+校验项（共 54 项 = 54 个 check( 调用，按运行顺序；v2.26.1 起本清单项数与实际调用数一致，由第 39 项自校验）：
   1. 全仓库无 [TABLE START/END] 伪标记
   2. 所有 Markdown 表格表头后都有 |---| 分隔行
   3. 表格每行列数与分隔行一致
@@ -170,6 +170,16 @@
          ② 结构断言：脚本必须消费 `check_anchor_publish.py` 与 `git ls-remote`，且
          **不得出现 `--force`**（能跳过检查就等于没有检查）；
          ③ 发版脚本唯一化：仓库内只有这一份实现，不再每版复制。
+  54. 被导入模块无导入副作用（v2.72.7 新增）
+      —— 教训来源：`tools/audit-panel/rules/*.mts` 的 `main()` 在模块顶层无条件执行，
+         server 一 `import` 就先打印整段 CLI 验证报告，且验链失败会把 `process.exitCode = 1`
+         留给 server 进程——「验链失败」与「端口占用 / 数据缺失」共用一个退出码信号。
+         四条断言，缺一条都可被绕过：A 静态（收集相对 import 图，**被 import** 的文件不得有
+         行首 `main();`——判据取「有 importer」而非「有 export」，因为危害来自 importer）；
+         B 导入静默（三个 rules 模块 import 后 stdout 为空且退出 0）；C CLI 仍活（两个验链入口
+         各跑一次必须 exit 0 且打出 PASS——没有 C，B 可被「守卫把 CLI 一起关掉」满足）；
+         D 口径有牙（默认口径验 V2 文件必 exit 1 并指名 source_scenario，`--source=session`
+         必 exit 0——两个 profile 都要能让检查失败一次，否则宽容分支就是死代码）。
 
 用法：
   python scripts/verify_consistency.py [仓库根目录，默认脚本所在目录的上级]
@@ -179,6 +189,7 @@
 import datetime
 import json
 import os
+import pathlib
 import re
 import shutil
 import subprocess
@@ -829,6 +840,15 @@ _DECL_SITES = [
     (".github/workflows/ci.yml", r"发布一致性校验（(\d+) 项）"),
     (".github/workflows/ci.yml", r"(\d+) 项门禁"),
     ("scripts/verify_consistency.py", r"校验项（共 (\d+) 项"),
+    # v2.72.7 补：REPRODUCE 是陌生人最先读的文档，此前它的项数声明无人机器读取
+    ("REPRODUCE.md", r"我们有 (\d+) 项校验"),
+    ("REPRODUCE.md", r"`\[PASS\]` 行数 = (\d+)"),
+    ("REPRODUCE.md", r"### 2\.1 门禁 (\d+) 项"),
+    ("REPRODUCE.md", r"这 (\d+) 项对账的是"),
+    ("REPRODUCE.en.md", r"we have (\d+) checks"),
+    ("REPRODUCE.en.md", r"`\[PASS\]` count = (\d+)"),
+    ("REPRODUCE.en.md", r"### 2\.1 The (\d+) consistency checks"),
+    ("REPRODUCE.en.md", r"these (\d+) checks reconcile"),
 ]
 _declared = set()
 _missing_sites = []
@@ -1690,6 +1710,149 @@ check(
     "发版脚本：预检挡在创建之前（7 条自检）+ 可跳过开关不得存在",
     not _p53_bad,
     "; ".join(_p53_bad) if _p53_bad else _p53_note,
+)
+
+# ── 54. 被导入模块无导入副作用（v2.72.7 新增）────────────────────
+# 教训来源：v2.72.5 登记的两处技术债之一。`tools/audit-panel/rules/*.mts` 的 `main()` 在模块
+# 顶层无条件执行 ⇒ server 一 import 就打印整段 CLI 验证块，且失败时把 exitCode=1 留给 server。
+# 四条断言互相补位（详见本脚本头注释第 54 项）：
+#   A 静态 import 图 / B 导入静默 / C CLI 仍活 / D 口径有牙。
+_p54_bad = []
+_p54_note = ""
+
+# A. 收集相对 import 图：被 import 的文件不得在顶层调用 main()
+_p54_sources = []
+for _p54_dp, _p54_dn, _p54_fns in os.walk(ROOT):
+    _p54_dn[:] = [
+        d for d in _p54_dn if d not in ("node_modules", ".git", ".venv", "_archived", "out", "results-t0")
+    ]
+    for _p54_fn in _p54_fns:
+        if _p54_fn.endswith(".mts"):
+            _p54_sources.append(os.path.join(_p54_dp, _p54_fn))
+
+_p54_import_re = re.compile(r"""(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)['"]([^'"]+)['"]""")
+_p54_main_re = re.compile(r"^main\(\);", re.M)
+_p54_imported = set()
+for _p54_src in _p54_sources:
+    try:
+        _p54_txt = read(_p54_src)
+    except Exception:
+        continue
+    for _p54_spec in _p54_import_re.findall(_p54_txt):
+        if not _p54_spec.startswith("."):
+            continue
+        _p54_tgt = os.path.normpath(os.path.join(os.path.dirname(_p54_src), _p54_spec))
+        if os.path.isfile(_p54_tgt):
+            _p54_imported.add(_p54_tgt)
+
+_p54_offenders = []
+for _p54_tgt in sorted(_p54_imported):
+    try:
+        if _p54_main_re.search(read(_p54_tgt)):
+            _p54_offenders.append(os.path.relpath(_p54_tgt, ROOT).replace("\\", "/"))
+    except Exception:
+        continue
+if _p54_offenders:
+    _p54_bad.append("被 import 的模块在顶层执行 main()：" + ", ".join(_p54_offenders))
+
+# B/C/D. 运行期断言（需 node）
+_p54_rules_mods = [
+    os.path.join("tools", "audit-panel", "rules", "verify-chain.mts"),
+    os.path.join("tools", "audit-panel", "rules", "replay.mts"),
+    os.path.join("tools", "audit-panel", "rules", "verify-realagent.mts"),
+]
+_p54_scenario_cli = os.path.join("tools", "audit-panel", "scenario", "verify-chain.mts")
+_p54_rules_cli = os.path.join("tools", "audit-panel", "rules", "verify-chain.mts")
+_p54_v2_file = os.path.join("tools", "audit-panel", "data", "realagent-events.jsonl")
+
+if not _p54_bad:
+    # 探针从环境变量取模块清单，**不占用 argv**——否则被导入的 CLI 会把探针的 argv 当成
+    # 自己的参数，走进「未知参数」分支而以 1 退出，掩盖真正要看的东西（stdout 是否被污染）。
+    _p54_probe = (
+        "const files = JSON.parse(process.env.AOF_P54_FILES);"
+        "for (const f of files) { await import(f); }"
+    )
+    _p54_probe_args = ["node", "--experimental-transform-types", "--input-type=module", "-e", _p54_probe]
+    _p54_probe_env = dict(os.environ)
+    _p54_probe_env["AOF_P54_FILES"] = json.dumps(
+        [pathlib.Path(os.path.join(ROOT, m)).as_uri() for m in _p54_rules_mods]
+    )
+
+    def _p54_run(_argv, _env=None):
+        return subprocess.run(
+            _argv,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=120,
+            cwd=ROOT,
+            env=_env,
+        )
+
+    try:
+        _p54_imp = _p54_run(_p54_probe_args, _p54_probe_env)
+        if _p54_imp.returncode != 0:
+            _p54_bad.append(
+                "导入三个 rules 模块即失败（exit "
+                + str(_p54_imp.returncode)
+                + "）："
+                + ((_p54_imp.stderr or "").strip().splitlines() or ["(无输出)"])[-1][:200]
+            )
+        elif (_p54_imp.stdout or "").strip():
+            _p54_head = (_p54_imp.stdout or "").strip().splitlines()
+            _p54_bad.append(
+                f"导入有副作用：stdout 非空（{len(_p54_head)} 行，首行「{_p54_head[0][:60]}」）——"
+                "说明 main() 未加 isEntryPoint 守卫"
+            )
+
+        for _p54_name, _p54_path in (("scenario", _p54_scenario_cli), ("rules", _p54_rules_cli)):
+            _p54_cli = _p54_run(["node", "--experimental-transform-types", _p54_path])
+            _p54_out = (_p54_cli.stdout or "") + (_p54_cli.stderr or "")
+            if _p54_cli.returncode != 0:
+                _p54_bad.append(f"{_p54_name} 验链 CLI 退出 {_p54_cli.returncode}（应 0）")
+            elif not re.search(r"落盘链\s+PASS", _p54_cli.stdout or ""):
+                _p54_bad.append(
+                    f"{_p54_name} 验链 CLI 未打出「落盘链 PASS」——守卫可能把 CLI 一起关掉了"
+                )
+
+        _p54_strict = _p54_run(["node", "--experimental-transform-types", _p54_scenario_cli, "--file=" + _p54_v2_file])
+        if _p54_strict.returncode != 1:
+            _p54_bad.append(
+                f"默认口径验 V2 文件应 exit 1，实为 {_p54_strict.returncode}——"
+                "「缺 source_scenario」这条判定失去约束力"
+            )
+        elif "source_scenario" not in (_p54_strict.stdout or ""):
+            _p54_bad.append("默认口径验 V2 文件的失败项未指名 source_scenario")
+
+        _p54_loose = _p54_run(
+            [
+                "node",
+                "--experimental-transform-types",
+                _p54_scenario_cli,
+                "--source=session",
+                "--file=" + _p54_v2_file,
+            ]
+        )
+        if _p54_loose.returncode != 0:
+            _p54_bad.append(
+                f"--source=session 验 V2 文件应 exit 0，实为 {_p54_loose.returncode}——"
+                "session 口径分支不可达（宽容分支是死代码）"
+            )
+        if not _p54_bad:
+            _p54_note = (
+                f"import 图 {len(_p54_imported)} 个被导入模块无顶层 main()；"
+                "3 模块导入静默；2 个验链 CLI 均 PASS；scenario/session 两口径各失败/通过一次"
+            )
+    except FileNotFoundError:
+        _p54_bad.append("未找到 node——本项需 node ≥ 22 运行 .mts（CI consistency job 已配置 Setup Node）")
+    except subprocess.TimeoutExpired:
+        _p54_bad.append("运行 .mts 超时（120s）")
+
+check(
+    "被导入模块无导入副作用（静态 import 图 + 导入静默 + CLI 仍活 + 口径有牙）",
+    not _p54_bad,
+    "; ".join(_p54_bad) if _p54_bad else _p54_note,
 )
 
 # ── 汇总 ─────────────────────────────────────

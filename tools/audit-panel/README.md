@@ -125,6 +125,20 @@ md5sum tools/audit-panel/data/events.jsonl   # 应与上一次相同
 
 `meta.chain.recompute_recipe` 给出了第三方独立重算的完整步骤，`verify-chain.mts` 是它的可执行实现。
 
+**实现只有一份（v2.72.7 起）**：`scenario/verify-chain.mts`（CLI，CI 与本文档用）与 `rules/verify-chain.mts`
+（库，`server/` 启动时导入）此前各有一份完整实现，实测漂移 191 行，且对「缺依据字段」的判定**相反**——
+前者只认 `source_scenario`，后者允许 `session_id` 替代。两个入口不可能同时正确，故收口为一份：
+实现在 `rules/chain-core.mts`，两个路径都只是「参数解析 / 再导出 + 入口守卫」，输出逐字节相同。
+
+**来源字段按显式口径判定**（`--source=`）：`scenario`（默认，要求 `source_scenario`，对应 V1
+`data/events.jsonl`）/ `session`（要求 `session_id`，对应 V2 `data/realagent-events.jsonl`）。
+口径不对会判 FAIL 并指名缺哪个字段，不会静默通过——例如拿默认口径去验 V2 文件：
+
+```bash
+node --experimental-transform-types tools/audit-panel/scenario/verify-chain.mts --file=tools/audit-panel/data/realagent-events.jsonl
+#   落盘链        FAIL   ← 缺 source_scenario（口径 scenario）
+```
+
 ## 事件契约要点
 
 一行一事件，首行为 `meta`（记录 schema 版本、框架版本、覆盖矩阵、边界声明、链校验结果）。

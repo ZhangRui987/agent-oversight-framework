@@ -1,6 +1,6 @@
 # AI Execution & Oversight Framework
 
-[![Version](https://img.shields.io/badge/version-2.72.6-blue)](VERSION)
+[![Version](https://img.shields.io/badge/version-2.72.7-blue)](VERSION)
 [![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey)](LICENSE)
 [![Evidence: B (134/212)](https://img.shields.io/badge/evidence-B_135%2F213-yellow)](spec/11-traceability.md)
 [![Status: maintenance](https://img.shields.io/badge/status-maintenance-orange)](spec/13-boundaries.md)
@@ -122,7 +122,7 @@ Per [`CLASSIFICATION.md`](CLASSIFICATION.md), this repository has three levels:
 
 ## Status
 
-- Current version: v2.72.6 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
+- Current version: v2.72.7 (see [`VERSION`](VERSION); this line is checked against VERSION by consistency check #38)
 - Maintenance status: **does not claim "built"; claims only "maintained"** — an open cheating set can only be countered continuously
 - **Honest boundary**: 44 open problems explicitly registered (see [`spec/13-boundaries.md`](spec/13-boundaries.md)) — this framework's honest boundary and a problem list for researchers; includes the system's largest engineering gap, "decentralized-swarm countermeasures"
 - Change history: see [`CHANGELOG.md`](CHANGELOG.md)
@@ -138,7 +138,7 @@ Per [`CLASSIFICATION.md`](CLASSIFICATION.md), this repository has three levels:
 1. Read the six general principles in [`spec/01-principles.md`](spec/01-principles.md);
 2. Use the G×S table in [`spec/03-grading.md`](spec/03-grading.md) to determine the oversight grade of your current task, and check against the G → H coupling floor whether the deployer harness reaches the maturity required by that grade;
 3. Read the 44 open problems in [`spec/13-boundaries.md`](spec/13-boundaries.md), pick one, and open an issue to discuss;
-4. **See how this repository governs itself**: `python scripts/verify_consistency.py` — 53 release-consistency checks, pure standard library, zero configuration, about 16 s, last line prints `✅ 全部校验通过 — 可提交` (details under "Governing itself with itself" below);
+4. **See how this repository governs itself**: `python scripts/verify_consistency.py` — 54 release-consistency checks, pure standard library, zero configuration, about 16 s, last line prints `✅ 全部校验通过 — 可提交` (details under "Governing itself with itself" below);
 5. **Run it**: the audit panel's four commands (export → chain verification → replay → launch panel), then browse the real interception records and evidence grades of every governance rule in the browser — see "Beyond replication: the audit panel" below.
 
 By role:
@@ -262,11 +262,11 @@ This repository governs itself by its own specification (meta-governance):
 
 See [`CITATION.cff`](CITATION.cff).
 
-> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.72.6). https://github.com/ZhangRui987/agent-oversight-framework
+> APA: Zhang, R. (2026). *AI Execution and Oversight Framework* (v2.72.7). https://github.com/ZhangRui987/agent-oversight-framework
 
 ## Quality assurance (self-referential verification)
 
-This repository governs itself with itself: [`scripts/verify_consistency.py`](scripts/verify_consistency.py) provides 53 release-consistency checks (table format / evidence-grade counts / incident-number conventions / section numbering / terminology / bidirectional reference checks / citation-key quality / G-grade jurisdictional-prefix validity / verification-log key-set sync / jurisdiction-enumeration consistency / demo assertion declarations vs. actual runtime output / production-gaps header-state vs. table consistency / correction-log timeliness / spec bilingual structural alignment / spec/11 line-count declarations vs. bilingual reality / spec/13 open-problems register integrity / panel product-version consistency / disposition-ledger chain recomputation and tamper detection / obligation-registry-vs-clauses three-way consistency / disposition-bridge same-chain integration / disposition-chain external anchoring and tail-truncation detection / anchor-digest publication declarations and provenance / release-script preflight ahead of creation), mounted as a pre-commit hook (`.githooks/`). See [`CONTRIBUTING.md`](CONTRIBUTING.md) for enabling; every commit runs it automatically and blocks on failure. Manual run: `python scripts/verify_consistency.py` (pure standard library, no dependencies to install).
+This repository governs itself with itself: [`scripts/verify_consistency.py`](scripts/verify_consistency.py) provides 54 release-consistency checks (table format / evidence-grade counts / incident-number conventions / section numbering / terminology / bidirectional reference checks / citation-key quality / G-grade jurisdictional-prefix validity / verification-log key-set sync / jurisdiction-enumeration consistency / demo assertion declarations vs. actual runtime output / production-gaps header-state vs. table consistency / correction-log timeliness / spec bilingual structural alignment / spec/11 line-count declarations vs. bilingual reality / spec/13 open-problems register integrity / panel product-version consistency / disposition-ledger chain recomputation and tamper detection / obligation-registry-vs-clauses three-way consistency / disposition-bridge same-chain integration / disposition-chain external anchoring and tail-truncation detection / anchor-digest publication declarations and provenance / release-script preflight ahead of creation), mounted as a pre-commit hook (`.githooks/`). See [`CONTRIBUTING.md`](CONTRIBUTING.md) for enabling; every commit runs it automatically and blocks on failure. Manual run: `python scripts/verify_consistency.py` (pure standard library, no dependencies to install).
 
 This is not a document maintained by good faith alone; it is a specification with an automated gate.
 
