@@ -17,8 +17,8 @@
   11. README 顶部声明（合计 & B 级）== 实测（实测派生）
   12. README 分布行（A/B/C/D/G）== 实测（实测派生）
   13. CHANGELOG 声明「新增 1 条 G 级」（v2.11.0，历史锚点防回退）
-  14. README 双语全文「证据总数」一致（所有出现的总数 == 实测合计，动态）
-  15. README 双语全文「B 级数」一致（所有出现的 B 级数 == 实测 B，动态）
+  14. README 双语全文「证据总数」一致（所有出现的总数 == 实测合计，含 badge 的 alt 文本与 REPRODUCE 双语声明；动态）
+  15. README 双语全文「B 级数」一致（所有出现的 B 级数 == 实测 B，含 badge 的 alt 文本；动态）
       —— v2.52.18 改造说明：4-12 项原为硬编码期望值（每加一条证据须同步改本脚本十余处，
          v2.52.13–17 五轮四险的根因）；改造后新增证据只改 REFERENCES + README + 注脚
          三处声明，本脚本零改动。先例：第 24-26 项未解问题数（v2.51.1 起同模式）。
@@ -44,7 +44,8 @@
   31. 引用键非通用词（不在黑名单且长度 ≥ 4）
   32. G 类引用键前缀合法（cn- / us- / eu- / uk- / ca- / au- / jp- / kr- / sg- / int- / iso- / owasp-）
   33. G 类条目须声明【键: XXX】且键含管辖前缀（G 类无 arXiv 号，强制声明键以防漏检）
-  34. VERIFICATION-LOG 覆盖全部条目（不分等级；REFERENCES 键/arXiv 号 ⊆ LOG 首列，包含匹配）
+  34. VERIFICATION-LOG 覆盖全部条目（不分等级；REFERENCES 键/arXiv 号 ⊆ LOG 首列，包含匹配；
+      且头部「覆盖全部 N 条条目」声明 == 实测条数，v2.72.8 新增——此处曾停在 175 而实测 213）
       —— v2.44.0 起从「仅 G 键」扩展为全量覆盖，堵死非 G 类欠账复发路径
   35. VERIFICATION-LOG 无幽灵行（LOG 首列均可归因到 REFERENCES 条目）
      —— ⚠️ 历史注记：旧清单曾把 34/35 合写为一个编号项，导致「门禁项数」声明
@@ -386,13 +387,38 @@ for _label, _content in (("README.md", readme), ("README.en.md", readme_en)):
     for _n in _bb:
         if _n != b:
             _bad_b.append(f"{_label} 出现 B 级数 {_n} != 实测 {b}")
+    # badge 的 alt 文本（图片不加载、纯文本渲染、读屏软件取的就是它）——v2.72.8 新增。
+    # 实测：alt 长期停在「B (134/212)」而 badge URL 已是 135/213，**同一行两个数打架**且门禁全绿；
+    # 既有正则只认「N 条来源 / N sources / N are grade B」，括号形态不在其中。
+    # 读不到即 FAIL（fail-closed）：改一句措辞不该让检查静默失效。
+    _alt = re.search(r"Evidence:\s*B\s*\((\d+)\s*/\s*(\d+)\)", _content)
+    if _alt is None:
+        _bad_total.append(f"{_label} badge alt 计数缺失或格式变更（读不到 ≠ 通过）")
+    else:
+        if int(_alt.group(2)) != total:
+            _bad_total.append(f"{_label} badge alt 总数 {_alt.group(2)} != 实测 {total}")
+        if int(_alt.group(1)) != b:
+            _bad_b.append(f"{_label} badge alt B 级数 {_alt.group(1)} != 实测 {b}")
+# v2.72.8 新增：REPRODUCE 双语里的证据条数声明。它是陌生人最先读的文档，此前**无任何正则读它**
+# （第 19 项只采集它的「门禁项数」声明）。实测 v2.72.7 时点该处停在 213 而实测同步为 213——
+# 恰好没错，但没人保证它下一次会对；登记新证据时它必错。
+for _rlabel, _rrx in (
+    ("REPRODUCE.md", r"(\d{2,3})\s*条证据的分级计数"),
+    ("REPRODUCE.en.md", r"graded counts of\s*(\d{2,3})\s*evidence entries"),
+):
+    _rc = read(os.path.join(ROOT, _rlabel))
+    _rm = re.search(_rrx, _rc)
+    if _rm is None:
+        _bad_total.append(f"{_rlabel} 证据条数声明缺失或格式变更（读不到 ≠ 通过）")
+    elif int(_rm.group(1)) != total:
+        _bad_total.append(f"{_rlabel} 证据条数声明 {_rm.group(1)} != 实测 {total}")
 check(
-    f"README 双语全文「证据总数」一致（所有出现的总数 == {total}）",
+    f"README 双语全文「证据总数」一致（所有出现的总数 == {total}；含 badge alt）",
     not _bad_total,
     "; ".join(_bad_total[:5]),
 )
 check(
-    f"README 双语全文「B 级数」一致（所有出现的 B 级数 == {b}）",
+    f"README 双语全文「B 级数」一致（所有出现的 B 级数 == {b}；含 badge alt）",
     not _bad_b,
     "; ".join(_bad_b[:5]),
 )
@@ -661,14 +687,13 @@ _ref_non_g_keys = [m.group(1) for m in _NONG_LINE_RE.finditer(refs)]
 # （非 G 键 + G 键合集），覆盖所有已回填类型。
 _LOG_PATH = os.path.join(ROOT, "VERIFICATION-LOG.md")
 _log_cells = []
-if os.path.exists(_LOG_PATH):
-    with open(_LOG_PATH, encoding="utf-8") as _f:
-        for _ln in _f:
-            _m = re.match(r"^\|\s*([^|]+?)\s*\|", _ln)
-            if _m:
-                _cell = _m.group(1).strip()
-                if _cell and not _cell.startswith("-") and "条目键" not in _cell:
-                    _log_cells.append(_cell)  # 保留完整首列（含「短名（arXiv:xxxx）」形态），覆盖判定用包含匹配
+_log_text = read(_LOG_PATH) if os.path.exists(_LOG_PATH) else ""
+for _ln in _log_text.splitlines():
+    _m = re.match(r"^\|\s*([^|]+?)\s*\|", _ln)
+    if _m:
+        _cell = _m.group(1).strip()
+        if _cell and not _cell.startswith("-") and "条目键" not in _cell:
+            _log_cells.append(_cell)  # 保留完整首列（含「短名（arXiv:xxxx）」形态），覆盖判定用包含匹配
 # 每条条目的匹配 token：arXiv 号加「arXiv:」前缀、键原样
 _entry_tokens = []
 for _keys, _has_arx, _lit, _land, _tag in _entries:
@@ -683,10 +708,24 @@ _ghost_in_log = sorted(
     c for c in _log_cells
     if not any(any(tok in c for tok in _toks) for _keys, _toks, _tag in _entry_tokens)
 )
+# ── v2.72.8 新增：LOG 头部的「覆盖全部 N 条条目」是**声明**，此前无任何机器读取。
+# 实测（v2.72.7）：该处停在「175 条」，而 REFERENCES 已 213 条——与第 14/15 项同病
+# （声明在、读数不在），且它恰好是「长期无人读」的第三处。声明句缺失即 FAIL（fail-closed），
+# 不允许「读不到就跳过」——否则改一句措辞就能让检查静默失效。
+_p34_decl = re.search(r"覆盖全部\s*(\d+)\s*条条目", _log_text)
+_p34_decl_bad = []
+if _p34_decl is None:
+    _p34_decl_bad.append("LOG 头部「覆盖全部 N 条条目」声明句缺失或格式变更（读不到 ≠ 通过）")
+elif int(_p34_decl.group(1)) != total:
+    _p34_decl_bad.append(f"LOG 覆盖声明 {_p34_decl.group(1)} != REFERENCES 实测 {total}")
 check(
-    "VERIFICATION-LOG 覆盖全部条目（不分等级；REFERENCES 键/arXiv 号均须在 LOG 出现）",
-    not _uncovered,
-    f"{len(_uncovered)} 条未登记：{'; '.join(_uncovered[:5])}",
+    "VERIFICATION-LOG 覆盖全部条目（不分等级；REFERENCES 键/arXiv 号均须在 LOG 出现；"
+    "且头部「覆盖全部 N 条条目」声明 == 实测条数）",
+    not _uncovered and not _p34_decl_bad,
+    "; ".join(
+        ([f"{len(_uncovered)} 条未登记：{'; '.join(_uncovered[:5])}"] if _uncovered else [])
+        + _p34_decl_bad
+    ),
 )
 check(
     "VERIFICATION-LOG 无幽灵行（LOG 首列须可归因到 REFERENCES 条目）",
