@@ -59,7 +59,7 @@ python scripts/verify_consistency.py | grep -c "^  \[PASS\]"
 # 54
 ```
 
-What matters is the scope: these 54 checks reconcile **bilingual structure of 13 spec chapters, graded counts of 214 evidence entries, the open-problems register, 9 event hash chains, 3 disposition ledger rows, and publication records of anchor digests**. It is also wired as a pre-commit hook — red means you cannot commit.
+What matters is the scope: these 54 checks reconcile **bilingual structure of 13 spec chapters, graded counts of 215 evidence entries, the open-problems register, 9 event hash chains, 3 disposition ledger rows, and publication records of anchor digests**. It is also wired as a pre-commit hook — red means you cannot commit.
 
 ### 2.2 Chain verification: change one character and it is caught
 
