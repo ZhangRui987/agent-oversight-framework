@@ -171,6 +171,8 @@ NARCBENCH（arXiv:2604.01151，牛津；Aaron Rose、Carissa Cullen、Sahar Abde
 
 **运行时统计入口（v2.78.0）。** `C3` 已作为**纯统计量**进入运行时参照实现：`SwarmMonitor.commandConcentration()`（`reference/runtimes/l2-runtime-oversight/index.ts`），定义与本节标定逐字一致（top 节点并列全取、派发率 = 该节点 ASSIGN 数 / 该节点全部消息数、白名单不参与）；复现者第一条命令见 `c3-quickstart.mts`。**仅统计、不告警、不阻断**——本节四条限定与硬熔断禁用对任何消费方同样生效；阈值判定由消费方在读完 `APPLICABILITY-AOE-CALIB-007-R1.md` 后自行实现。
 
+**跨模型检验（R2，v2.79.0，2026-11-08 正式采样 345 条 / 5,185,367 token）。** 按 R2 预注册（3 模型臂 × HumanEval 公开题池，`results/RESULTS-AOE-CALIB-007-R2-20261108.md`）：**C3 ≥ 0.80 判据不跨模型迁移成立**——deepseek 对照臂迁移成立（FPR 0/75、TPR 0.975），qwen 不迁移（FPR 1/75），glm **不迁移**（良性 FPR 13/75、TPR 0.80，且良性 C3 最高 1.0）；分离窗口 glm 臂为负。根因（定性）：**[ASSIGN] 格式标记的使用习惯本身是模型相关的**——deepseek 良性流从不打标记（基线恒 0），glm 把派发标记当常规协作用语（良性基线最高 1.0）。据此按预注册翻车分支处置：**C3 ≥ 0.80 判据降级为「R1 任务池 + deepseek-chat 池内经验事实」**，不得作为跨模型/跨池的检测阈值引用；J3 台阶不稳健由理论担忧变为实测结论；新阈值/新统计量的选取属 R3（须新预注册）。本节四条限定与「S1 告警须与部署形态登记联合使用」**均不变**，硬熔断仍禁用。
+
 **这一前置条件不是保守，而是有量化支撑（本轮新增）。** *Soft-Label Governance for Distributional Safety in Multi-Agent Systems*（Aizierjiang Aiersilan、Raeli Savitt；arXiv:2604.19752，2026-03-19，DOI 10.48550/arXiv.2604.19752；代码与项目资源见 swarm-ai.org）提出 SWARM（**S**ystem-**W**ide **A**ssessment of **R**isk in **M**ulti-agent systems）——一个把二元的「好 / 坏」标签换成**软概率标签** p = P(v = +1) ∈ [0,1] 的治理仿真框架，其治理引擎含四类可配置杠杆：**交易税、熔断器、声誉衰减、随机审计**。其中「熔断器」对应本体系的规模熔断，「声誉衰减」对应信用分衰减，「随机审计」对应抽样复核。三项结果与本节直接相关：
 
 （1）**严格治理使福利下降超过 40%，却没有提升安全性。** 这是对「越阈即熔断」最直接的量化反对：阈值收紧的代价是确凿的，收益却未被观测到。这把本节的「不得启用硬熔断」从审慎建议提升为**有量化依据的约束**。
