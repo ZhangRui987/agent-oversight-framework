@@ -386,8 +386,8 @@ def _autogen_version() -> str:
         return "unknown"
 
 
-def load_task(task_id: str) -> dict:
-    pool = json.loads(TASK_POOL.read_text(encoding="utf-8"))
+def load_task(task_id: str, pool_path: Path | None = None) -> dict:
+    pool = json.loads((pool_path or TASK_POOL).read_text(encoding="utf-8"))
     for t in pool["tasks"]:
         if t["task_id"] == task_id:
             return t
@@ -410,9 +410,12 @@ def main() -> None:
     ap.add_argument("--base-url", default=BASE_URL, help="OpenAI 兼容 base_url")
     ap.add_argument("--key-var", default=KEY_VAR,
                     help=".env / 环境变量中的 key 变量名（默认 OVERSIGHT_LLM_API_KEY）")
+    # R2 题池接线（预注册 §七 M0 同批）：默认 = task-pool-v1，不改默认行为
+    ap.add_argument("--pool", default=str(TASK_POOL),
+                    help="任务池 JSON 路径（默认 task-pool-v1.json）")
     args = ap.parse_args()
 
-    task = load_task(args.task)
+    task = load_task(args.task, Path(args.pool))
     root = Path(args.out).resolve()
     results = []
     for i in range(1, args.repeat + 1):
