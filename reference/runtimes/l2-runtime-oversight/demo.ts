@@ -31,6 +31,7 @@
  *   [22] SwarmMonitor（G8 告警侧闭合：交互图谱采集 + 涌现信号检测 + 熔断禁用）
  *   [23] StepGuard/RateGuard（spec/09 四类运行时上限之 ①执行步数 ②调用频次；③④任务级「只出信号不拦截」的实测依据）
  *   [24] AbstentionGate（spec/04 信用回避 L1 消费端判定侧：O21/θ2 判定 + 窗口升级 + 操守/能力通道隔离）
+ *   [25] SwarmMonitor.commandConcentration（C3 统计入口：并列全取 + top 按消息数 + 4/5 台阶边界，仅统计不告警）
  *
  * 运行：node --experimental-transform-types demo.ts
  * 退出码：0 = 全部 PASS，1 = 有 FAIL
@@ -1522,8 +1523,106 @@ function testAbstentionGate(): void {
 }
 
 // ============================================================================
+// [25] SwarmMonitor.commandConcentration —— C3 统计入口（CALIB-007 / R1 §四，v2.78.0）
+//     把标定出来的统计量搬进运行时（此前只活在离线 adapter check-c3-offline.py，
+//     复现者跑得了「标定脚本」跑不了「检测器」）。定义与离线实现逐字一致；
+//     白名单不参与 C3（冻结定义无白名单）。
+//
+//     本组刻意钉五处（都是「搬进运行时容易搬错」的地方）：
+//       - 并列全取：「取第一个」会让数值依赖消息顺序，第三方无法复算（本批 245 条
+//         里 41 条存在 top 并列）；
+//       - top 按消息数选、不按派发数选——错误实现留在测试里并断言两者不同，
+//         定义漂移才会被发现（镜像 _c3_wrong_by_assign_count 纪律）；
+//       - k=5 时 4/5 = 0.80 恰为标定阈值——台阶值必须显式可见；
+//       - 小节点派发率 1.0 不得入选（语义是「发言最多的角色是不是纯指挥」）；
+//       - 空消息流 c3 = null（空集是「无法计算」，不是 0）；
+//       - 白名单不影响 C3（与 S1 的白名单豁免语义刻意不同，写清防混）。
+// ============================================================================
+function testCommandConcentration(): void {
+  console.log('\n[25] SwarmMonitor.commandConcentration（C3 统计入口：并列全取 + 台阶边界）');
+
+  const mk = (rows: [string, string][]): SwarmMonitor => {
+    const mon = new SwarmMonitor();
+    mon.ingestMsgs(rows.map(([from, type]) => ({
+      from, to: 'w', fromSandbox: 's1', toSandbox: 's1', type,
+    })));
+    return mon;
+  };
+  /** 错误实现（仅测试用）：按「派发数最多」选 top——与正式实现对拍钉定义。 */
+  const c3WrongByAssignCount = (rows: [string, string][]): number => {
+    const by = new Map<string, [string, string][]>();
+    for (const r of rows) {
+      const list = by.get(r[0]);
+      if (list) list.push(r);
+      else by.set(r[0], [r]);
+    }
+    let best: [string, string][] = [];
+    for (const list of by.values()) {
+      const a = list.filter((x) => x[1] === 'task_assign').length;
+      const ba = best.filter((x) => x[1] === 'task_assign').length;
+      if (a > ba || best.length === 0) best = list;
+    }
+    return best.filter((x) => x[1] === 'task_assign').length / best.length;
+  };
+
+  // 空消息流：c3 = null（不是 0）。
+  const empty = mk([]);
+  check('[c3:empty] 空消息流 → c3 = null（空集是「无法计算」，不是 0）',
+    empty.commandConcentration().c3 === null && empty.commandConcentration().msgCount === 0);
+
+  // r7 同构（离线自检同款）：Lead 5 条 note，Worker 2 条 task_assign。
+  // top = Lead（消息数最多），C3 = Lead 派发率 0/5 = 0 —— 不是 Worker 的 1.0。
+  const r7 = mk([
+    ...Array.from({ length: 5 }, (): [string, string] => ['Lead', 'note']),
+    ['Worker', 'task_assign'], ['Worker', 'task_assign'],
+  ]);
+  const c7 = r7.commandConcentration();
+  check('[c3:top-by-msgs] top 按消息数选：Lead 5 条 note 是 top，C3 = 0（Worker 派发率 1.0 但只有 2 条消息，不得入选）',
+    c7.c3 === 0 && c7.topNodes.length === 1 && c7.topNodes[0] === 'Lead' && c7.rates['Worker'] === 1);
+  check('[c3:wrong-impl] 错误实现（按派发数选 top）给出 1.0，与正式实现不同——定义被对拍钉住',
+    c3WrongByAssignCount([...Array.from({ length: 5 }, (): [string, string] => ['Lead', 'note']),
+      ['Worker', 'task_assign'], ['Worker', 'task_assign']] as [string, string][]) === 1);
+
+  // 台阶边界：5 节点各 5 条，指挥节点 A 派发 4 条 + note 1 条 ⇒ 4/5 = 0.80 恰为标定阈值。
+  const stair = mk([
+    ...Array.from({ length: 4 }, (): [string, string] => ['A', 'task_assign']),
+    ['A', 'note'],
+    ...Array.from({ length: 5 }, (): [string, string] => ['B', 'note']),
+    ...Array.from({ length: 5 }, (): [string, string] => ['C', 'note']),
+    ...Array.from({ length: 5 }, (): [string, string] => ['D', 'note']),
+    ...Array.from({ length: 5 }, (): [string, string] => ['E', 'note']),
+  ]);
+  const cs = stair.commandConcentration();
+  check('[c3:staircase] 台阶值：A 消息数并列最大（5 条）且派发率 4/5 = 0.80，恰为标定阈值（1/k 台阶，无结构裕度）',
+    cs.c3 === 0.8 && cs.topNodes.length === 5 && cs.topNodes.includes('A'));
+
+  // 并列全取：两个节点消息数并列最大，取派发率最大者（「取第一个」会依赖顺序）。
+  const tie = mk([
+    ['P', 'task_assign'], ['P', 'note'],
+    ['Q', 'task_assign'], ['Q', 'task_assign'],
+  ]);
+  const ct = tie.commandConcentration();
+  check('[c3:tie] 并列全取：P/Q 各 2 条并列 top，C3 = max(0.5, 1.0) = 1.0，与消息顺序无关',
+    ct.c3 === 1 && ct.topNodes.length === 2);
+
+  // 白名单不影响 C3：与 S1 的白名单豁免刻意不同（冻结定义无白名单）。
+  const wl = new SwarmMonitor({ schedulerWhitelist: new Set(['P']) });
+  wl.ingestMsgs([['P', 'task_assign'], ['P', 'note'], ['Q', 'task_assign'], ['Q', 'task_assign']]
+    .map(([from, type]) => ({ from, to: 'w', fromSandbox: 's1', toSandbox: 's1', type })));
+  const cw = wl.commandConcentration();
+  check('[c3:whitelist] 白名单不参与 C3：P 在白名单内，C3 仍为 1.0（与 S1 豁免语义刻意不同）',
+    cw.c3 === 1 && cw.topNodes.length === 2);
+
+  // 纯指挥型攻击同构（R1 攻击构造：top 节点全部消息都是派发）→ C3 = 1。
+  const pure = mk([['Boss', 'task_assign'], ['Boss', 'task_assign'], ['A', 'note'], ['B', 'note']]);
+  check('[c3:attack-shape] 纯指挥同构：Boss 消息最多且全为派发 → C3 = 1（语义是「存在纯指挥节点」，不是「存在攻击」）',
+    pure.commandConcentration().c3 === 1);
+}
+
+// ============================================================================
 // main
 // ============================================================================
+
 async function main(): Promise<void> {
 
   // v2.44.1：组数改为运行时计数生成——凡「\n[Nx] 标题」形态的组头输出即计一组
@@ -1562,6 +1661,7 @@ async function main(): Promise<void> {
   testSwarmMonitor();
   testRuntimeLimitGuards();
   testAbstentionGate();
+  testCommandConcentration();
 
   console.log(`\n=== 结果：${failures === 0 ? 'ALL PASS ✅' : `${failures} FAIL ❌`}（${totalGroups} 组 ${totalChecks} 项断言）===`);
   process.exit(failures === 0 ? 0 : 1);

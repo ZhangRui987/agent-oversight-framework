@@ -1741,6 +1741,55 @@ export class SwarmMonitor {
     return { nodes: last?.nodes.length ?? 0, edges: last?.edges.length ?? 0, crossSandboxEdges: cross, msgs: this.msgs.length };
   }
 
+  /**
+   * C3 指挥集中度统计（CALIB-007 / R1 §四，v2.78.0 进入运行时）。
+   *
+   * 定义（钉死，与 adapters/autogen/check-c3-offline.py 逐字一致，改定义须版本递增）：
+   *   top 节点 := 消息数等于最大值的所有节点（并列全取——「取第一个」会让逐轨迹
+   *               数值依赖消息顺序，第三方无法复算）；
+   *   派发率   := 该节点 ASSIGN 类型消息数 / 该节点全部消息数；
+   *   C3       := top 节点中派发率的最大值。
+   * 白名单**不参与** C3（冻结定义无白名单；部署形态先验属 #3，由消费方联合使用）。
+   *
+   * ⚠️ 三条边界必须与数值同行（APPLICABILITY-AOE-CALIB-007-R1.md，缺一不可）：
+   *   ① C3 是 1/k 台阶——k=5 时 4/5 恰等于标定阈值 0.80，与良性上界 0.75 之间
+   *      无结构性裕度，0.80 不得被读作「稳健阈值」；
+   *   ② 检出 100% 是攻击构造常数，真信息在良性侧；
+   *   ③ 语义是「存在纯指挥节点」，不是「存在攻击」。
+   * 本方法**只统计、不告警、不阻断**：阈值判定由消费方在读完上述文档后自行实现
+   * （spec/07 §阈值标定前置条件：真实多 Agent 业务标定完成前不得自动处置）。
+   * 空消息流返回 c3 = null（空集是「无法计算」，不是 0）。
+   */
+  commandConcentration(): {
+    c3: number | null;
+    msgCount: number;
+    topNodes: string[];
+    rates: Record<string, number>;
+  } {
+    if (this.msgs.length === 0) {
+      return { c3: null, msgCount: 0, topNodes: [], rates: {} };
+    }
+    const byFrom = new Map<string, SwarmMsg[]>();
+    for (const m of this.msgs) {
+      const list = byFrom.get(m.from);
+      if (list) list.push(m);
+      else byFrom.set(m.from, [m]);
+    }
+    const rates: Record<string, number> = {};
+    let maxMsgs = 0;
+    for (const [from, list] of byFrom) {
+      if (list.length > maxMsgs) maxMsgs = list.length;
+      const assigns = list.filter((m) => SWARM_ASSIGN_TYPES.has(m.type)).length;
+      rates[from] = Math.round((assigns / list.length) * 10000) / 10000;
+    }
+    const topNodes = [...byFrom.keys()].filter((from) => byFrom.get(from)!.length === maxMsgs);
+    let c3 = 0;
+    for (const from of topNodes) {
+      if (rates[from] > c3) c3 = rates[from];
+    }
+    return { c3, msgCount: this.msgs.length, topNodes, rates };
+  }
+
   /** 全量评估：扫描四信号，返回本轮新产生的告警（只告警，不阻断）。 */
   evaluate(): SwarmAlert[] {
     const out: SwarmAlert[] = [];

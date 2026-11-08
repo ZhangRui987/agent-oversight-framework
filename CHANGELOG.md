@@ -1,6 +1,16 @@
 # 变更日志
 
 
+## v2.78.0（2026-11-08）：C3 统计入口进入运行时参照实现（辅线二）
+
+- **`SwarmMonitor.commandConcentration()`**（`reference/runtimes/l2-runtime-oversight/index.ts`）：CALIB-007 / R1 §四的 C3 统计量从离线 adapter 进入运行时——定义逐字一致（top 节点并列全取 / 派发率 = 该节点 ASSIGN 数 / 该节点全部消息数 / 白名单不参与）；**仅统计、不告警、不阻断**，阈值判定留给读完 `APPLICABILITY-AOE-CALIB-007-R1.md` 的消费方（spec/07 四条限定与硬熔断禁用对消费方同样生效）。
+- **复现者一键入口 `c3-quickstart.mts`**：干净 clone 上一条命令可对内置合成流算 C3（零依赖零密钥零网络）——直接降第三方复现摩擦。
+- **demo [25] 组（+7 项断言，27 组 189 项）**：并列全取 / top 按消息数而非派发数（错误实现留测试对拍）/ k=5 时 4/5 = 0.80 台阶值显式可见 / 小节点派发率 1.0 不得入选 / 空消息流 c3 = null / 白名单不影响 C3 / 纯指挥同构 C3 = 1。
+- 文档同步：spec/07 双语「运行时统计入口」段、spec/13 #3 双语补运行时入口子句（#3 维持未解，硬熔断仍禁）。
+- **当前锚摘要串（每版重述；v2.77.0 起 RFC 3161 域外时间戳已覆盖，锚未变证明继续有效）**：
+  - `aof-anchor/v1:audit-panel/events-v1:1:9:27c2fe8fa384f7b9920cbd83da521fb567f795332501101e35b3d18ffdc82739:7d8a896bed4ce976`（TSA genTime 2026-11-08 06:16:02 GMT）
+  - `aof-anchor/v1:disposition/stage1-ledger:2:3:3f23031b0c77a0fce338a8e2feda30ee548cd2c262fdfb239aaa638f5a8b7ea4:b1aa3becb81e59cf`（TSA genTime 2026-11-08 06:16:08 GMT）
+
 ## v2.77.0（2026-11-08）：外锚 RFC 3161 域外可信时间戳（真域外锚）
 
 - **新增 `scripts/anchor_tsa.py`**（submit / verify / selftest / fingerprints）：把当前锚摘要串的 UTF-8 字节（与 Release 正文逐字同源）交 freetsa.org（RFC 3161）签署；回执入库 `tools/disposition/data/tsa/*.tsr`，证明按**唯一 digest** 登记（`proofs.jsonl`，键序冻结，预留 `tsa` 字段可平行第二家 TSA）。**证书链从回执自提取后 pin 入库**（`chain.pem`）——官网 `files/freetsa-certs.pem` 已 404，自提取不依赖外部文件路径。双证书 sha256 指纹（首次启用随本版记录，审计者请与 freetsa.org 官网 / 其 GitHub 独立对照，本步无法自证）：
