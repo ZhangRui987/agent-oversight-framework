@@ -16,6 +16,10 @@ SwarmMonitor 完成——检测器必须逐字复用（设计稿 §4.4），Pyth
   python collect.py --scenario benign-A --task T01 --out ./out
   python collect.py --scenario attack-concentrate --task T18 --out ./out
   python collect.py --scenario benign-B --task T21 --out ./out --repeat 1
+  # R2 多厂商（预注册 §七）：不传则与 R1 行为逐字节一致
+  python collect.py --scenario benign-A --task T01 --out ./out \
+      --model qwen-flash --base-url https://dashscope.aliyuncs.com/compatible-mode/v1 \
+      --key-var OVERSIGHT_QWEN_API_KEY
 """
 from __future__ import annotations
 
@@ -38,6 +42,7 @@ DEFAULT_ENV = REPO / "tools" / "audit-panel" / ".env"
 
 MODEL = "deepseek-chat"
 BASE_URL = "https://api.deepseek.com/v1"
+KEY_VAR = "OVERSIGHT_LLM_API_KEY"
 
 ASSIGN_MARK = re.compile(r"^\s*\[ASSIGN\]", re.IGNORECASE)
 REPORT_MARK = re.compile(r"^\s*\[REPORT\]", re.IGNORECASE)
@@ -46,19 +51,18 @@ NOTE_MARK = re.compile(r"^\s*\[NOTE\]", re.IGNORECASE)
 UNRESOLVED = "__unresolved__"
 
 
-# ── 密钥与客户端 ────────────────────────────────────────────────────────
-def load_key(env_file: Path | None = None) -> str:
-    key = os.environ.get("OVERSIGHT_LLM_API_KEY")
+def load_key(var: str = KEY_VAR, env_file: Path | None = None) -> str:
+    key = os.environ.get(var)
     if key:
         return key
     p = env_file or DEFAULT_ENV
     if not p.exists():
-        raise SystemExit(f"未找到 API key：环境变量 OVERSIGHT_LLM_API_KEY 未设置，且 {p} 不存在")
+        raise SystemExit(f"未找到 API key：环境变量 {var} 未设置，且 {p} 不存在")
     for line in p.read_text(encoding="utf-8").splitlines():
-        m = re.match(r"^\s*OVERSIGHT_LLM_API_KEY\s*=\s*(\S+)\s*$", line)
+        m = re.match(r"^\s*" + re.escape(var) + r"\s*=\s*(\S+)\s*$", line)
         if m:
             return m.group(1)
-    raise SystemExit(f"{p} 中未找到 OVERSIGHT_LLM_API_KEY")
+    raise SystemExit(f"{p} 中未找到 {var}")
 
 
 class CountingClient:
@@ -99,20 +103,24 @@ class CountingClient:
         self._record(usage)
 
 
-def make_clients(sink: dict):
+def make_clients(sink: dict, model: str = MODEL, base_url: str = BASE_URL,
+                  key_var: str = KEY_VAR):
     from autogen_core.models import ModelInfo
     from autogen_ext.models.openai import OpenAIChatCompletionClient
 
     def build():
+        # 温度口径（R2 预注册 §七勘误）：刻意不设 temperature——与 R1 实跑口径
+        # （厂商默认）一致，保证与 R1 对照臂分布可比；三厂商默认温度不同属
+        # 跨模型对比的固有混杂，随结果登记。不得在此顺手加 temperature/seed。
         return OpenAIChatCompletionClient(
-            model=MODEL,
-            api_key=load_key(),
-            base_url=BASE_URL,
+            model=model,
+            api_key=load_key(key_var),
+            base_url=base_url,
             model_info=ModelInfo(
                 vision=False,
                 function_calling=True,
                 json_output=True,
-                family="deepseek-chat",
+                family=model,
                 structured_output=False,
                 multiple_system_messages=False,
             ),
@@ -208,14 +216,16 @@ def snapshot_from(rows: list[dict], sandbox_of: dict) -> dict:
 
 
 # ── 单轨迹执行 ──────────────────────────────────────────────────────────
-async def run_track(scenario: str, task: dict, out_dir: Path, repeat_idx: int) -> dict:
+async def run_track(scenario: str, task: dict, out_dir: Path, repeat_idx: int,
+                    model: str = MODEL, base_url: str = BASE_URL,
+                    key_var: str = KEY_VAR) -> dict:
     from autogen_agentchat.base import TaskResult
     from autogen_agentchat.messages import SelectSpeakerEvent
 
     from build_attack import BUILDERS
 
     sink: dict = {}
-    agent_client, team_client = make_clients(sink)
+    agent_client, team_client = make_clients(sink, model, base_url, key_var)
     builder = BUILDERS[scenario]
     phases = builder(agent_client, team_client)
 
@@ -302,7 +312,8 @@ async def run_track(scenario: str, task: dict, out_dir: Path, repeat_idx: int) -
         "repeat_idx": repeat_idx,
         "framework": "autogen-agentchat",
         "framework_version": _autogen_version(),
-        "model": MODEL,
+        "model": model,
+        "base_url": base_url,
         "emit_team_events": True,
         "wall_ms": wall_ms,
         "phases": phase_meta,
@@ -394,6 +405,11 @@ def main() -> None:
     ap.add_argument("--task", required=True, help="task_id，如 T01")
     ap.add_argument("--out", required=True, help="输出根目录")
     ap.add_argument("--repeat", type=int, default=1, help="重复次数，目录名带 rN")
+    # R2 多厂商接线（预注册 §七）：默认值 = R1 行为，不传即完全复现 R1 路径
+    ap.add_argument("--model", default=MODEL, help="模型名（默认 deepseek-chat）")
+    ap.add_argument("--base-url", default=BASE_URL, help="OpenAI 兼容 base_url")
+    ap.add_argument("--key-var", default=KEY_VAR,
+                    help=".env / 环境变量中的 key 变量名（默认 OVERSIGHT_LLM_API_KEY）")
     args = ap.parse_args()
 
     task = load_task(args.task)
@@ -401,7 +417,8 @@ def main() -> None:
     results = []
     for i in range(1, args.repeat + 1):
         d = root / f"{args.scenario}__{args.task}__r{i}"
-        meta = asyncio.run(run_track(args.scenario, task, d, i))
+        meta = asyncio.run(run_track(args.scenario, task, d, i,
+                                     args.model, args.base_url, args.key_var))
         results.append(
             {
                 "dir": str(d),
