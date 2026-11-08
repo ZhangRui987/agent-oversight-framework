@@ -1,6 +1,18 @@
 # 变更日志
 
 
+## v2.77.0（2026-11-08）：外锚 RFC 3161 域外可信时间戳（真域外锚）
+
+- **新增 `scripts/anchor_tsa.py`**（submit / verify / selftest / fingerprints）：把当前锚摘要串的 UTF-8 字节（与 Release 正文逐字同源）交 freetsa.org（RFC 3161）签署；回执入库 `tools/disposition/data/tsa/*.tsr`，证明按**唯一 digest** 登记（`proofs.jsonl`，键序冻结，预留 `tsa` 字段可平行第二家 TSA）。**证书链从回执自提取后 pin 入库**（`chain.pem`）——官网 `files/freetsa-certs.pem` 已 404，自提取不依赖外部文件路径。双证书 sha256 指纹（首次启用随本版记录，审计者请与 freetsa.org 官网 / 其 GitHub 独立对照，本步无法自证）：
+  - 签名证书 `32:E8:41:A9:5C:C1:16:41:01:FF:DE:41:29:8E:F2:FC:75:C1:C4:37:2E:F0:95:E8:8A:6B:BD:47:DF:B1:91:FC`
+  - Root CA `A6:37:9E:7C:EC:C0:5F:AA:3C:BF:07:60:13:D7:45:E3:27:BB:BA:A3:8C:0B:9A:F2:24:69:D4:70:1D:18:AA:BC`
+- **门禁第 52 项折进 P6 时间戳子检查（不新增门禁编号）**：P6a 证明可溯、存在且离线 openssl 验签 OK；P6b 当前锚全覆盖（pending 显式 FAIL，不静默通过）；4 条 TSA 反测——digest 被改 / 证明文件缺失 / **回执改 1 字节**（密码学判别力）/ status=pending。验证**纯离线**：TSA 停服不影响历史证明，只在提交新锚时需要。
+- **当前锚摘要串（每版重述）**：
+  - `aof-anchor/v1:audit-panel/events-v1:1:9:27c2fe8fa384f7b9920cbd83da521fb567f795332501101e35b3d18ffdc82739:7d8a896bed4ce976`（TSA genTime 2026-11-08 06:16:02 GMT）
+  - `aof-anchor/v1:disposition/stage1-ledger:2:3:3f23031b0c77a0fce338a8e2feda30ee548cd2c262fdfb239aaa638f5a8b7ea4:b1aa3becb81e59cf`（TSA genTime 2026-11-08 06:16:08 GMT）
+- **诚实边界（与 spec/10 10-D11.7 同文，不得拆开引用）**：① 不主张防篡改——能改仓库者也能改 pin 的证书链；收窄的是「篡改后必须伪造时间更早的假回执或攻破 TSA」，而旧 (digest, genTime) 经任何第三方留存即可对照出同一 count 的两份不同 last_hash；② 根证书指纹无法自证，须独立对照；③ 验证纯离线，freetsa 无 SLA，提交失败显式 pending。回应 spec/13 #44 第二条结构性边界的域外部分；**#44 三条结构性边界不变，维持部分解**。
+- 文档同步：spec/10 10-D11.7 双语新增、10-D11 状态行与两条边界措辞更新；spec/13 #44 双语补记；`verify_consistency.py` 第 52 项描述与注释同步。
+
 ## v2.76.0（2026-11-07）：挂账清单第 4 步——#44「只登记不处置」显式声明为设计选择（只标注，不修）
 
 - **本版是四步挂账的最后一步，按清单 §4.4 执行「只标注」**：在 `spec/10` 10-D2 动作枚举表后新增双语设计声明——四动作刻意不含 `auto_block` / `auto_deduct` 是**设计选择而非缺口**（处置通道的语义是「每个信号必须被回答」，双人分离），升级为自动阻断的演化前置是 spec/13 #15（选型）与 #3（标定），**前置未满足前该表不得扩展**——用未标定的占位阈值自动处置真实信号比不处置更危险（制造「闸门已存在」的假象）。`spec/13` #44 状态行同步补记；**三条结构性边界本身不变，维持部分解**。

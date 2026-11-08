@@ -22,6 +22,9 @@ check_anchor_publish.py —— 外锚摘要串「发布」的机器校验（v2.7
                报 FAIL 而不是空集通过——否则「忘了 --publish-lines」时这一项没检查对象，
                预检会给出绿灯（10-D5「空集返回 null 不返回 0」同一条纪律）。
   P5 双向闭包 任何 Release 正文里的合法串都必须有对应记录——否则删掉记录即可绕过 P4。
+  P6 时间戳   RFC 3161 可信时间戳子检查（v2.77.0，实现在 scripts/anchor_tsa.py）：
+               P6a proofs.jsonl 每条证明可溯、存在且离线 openssl 验签 OK；
+               P6b 每条当前锚都有 status=ok 的 TSA 见证。纯离线，TSA 只在 submit 时需要。
 
 ── 四条设计约束 ─────────────────────────────────────────────────────────────
   1. **不读 anchor.jsonl**：锚格式与锚链规则只在 `check-anchor.mts` 里实现一份，
@@ -406,7 +409,14 @@ def selftest():
 
     total = len(cases) + 1
     print(f"\nselftest PASS={total - bad} FAIL={bad}（基线 {len(base)} 项 + 反测 {total} 项）")
-    return 0 if bad == 0 else 1
+    if bad:
+        return 1
+
+    # P6 时间戳子检查（v2.77.0 折进本项，不新增门禁编号）：anchor_tsa 自带
+    # 基线 + 4 条 TSA 反测（digest 被改 / 文件缺失 / 回执改 1 字节 / pending）。
+    import anchor_tsa
+    tsa_bad = anchor_tsa.selftest()
+    return 0 if tsa_bad == 0 else 1
 
 
 def main(argv):
@@ -441,7 +451,14 @@ def main(argv):
         bodies, scope = None, None
 
     text = CHANGELOG.read_text(encoding="utf-8")
-    return report(run_checks(anchors, published, text, version, bodies, scope))
+    checks = run_checks(anchors, published, text, version, bodies, scope)
+    try:
+        import anchor_tsa  # 同目录模块；懒加载避免循环 import
+        checks += anchor_tsa.tsa_checks(anchors)
+    except Exception as e:  # noqa: BLE001 —— 环境坏要报清楚，不能静默跳过
+        print(f"FAIL RFC 3161 时间戳子检查加载失败（{type(e).__name__}: {e}）")
+        return 2
+    return report(checks)
 
 
 if __name__ == "__main__":
