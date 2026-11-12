@@ -84,7 +84,14 @@ def main():
         produced = tmp / f"benign-A__{TASK}__r1"
         if produced.exists():
             if d.exists():
-                shutil.rmtree(d)
+                # 失败轨迹归档改名而非删除（2026-11-12：rmtree 触发沙箱批量删除
+                # 确认拦截；且失败样本保留 .invalid/ 下有审计价值，不物理删除）
+                bad_dir = out_root / ".invalid"
+                bad_dir.mkdir(parents=True, exist_ok=True)
+                bad = bad_dir / d.name
+                if bad.exists():
+                    shutil.rmtree(bad, ignore_errors=True)
+                d.rename(bad)
             produced.rename(d)
         shutil.rmtree(tmp, ignore_errors=True)
         if meta_p.exists():
