@@ -211,18 +211,38 @@ def run_track(scenario: str, task: dict, out_dir: Path, repeat_idx: int) -> dict
             hit = next((r for r in sandbox_of if r.lower() == target), UNRESOLVED)
             selects.append({"phase": scenario, "idx": len(selects) + 1, "selected": hit, "_raw_tool": name})
 
-    # token：usage_metadata 逐条累加，按作者分侧
-    tok: dict[str, dict] = {}
+    # token：usage_metadata 逐条累加，按作者逐 agent 记账（CALIB-009 M0-c）。
+    # tokens_by_side 保持旧结构（supervisor / workers，由逐 agent 账聚合，默认值回归）。
+    per_agent: dict[str, dict] = {}
     for m in msgs:
         u = getattr(m, "usage_metadata", None)
         if not u:
             continue
         who = _author(m)
-        side = "supervisor" if who == SUPERVISOR else "workers"
-        slot = tok.setdefault(side, {"prompt": 0, "completion": 0, "calls": 0})
+        slot = per_agent.setdefault(who, {"prompt": 0, "completion": 0, "calls": 0})
         slot["calls"] += 1
         slot["prompt"] += int(u.get("input_tokens") or 0)
         slot["completion"] += int(u.get("output_tokens") or 0)
+    _zero = {"prompt": 0, "completion": 0, "calls": 0}
+    tokens_by_agent = dict(sorted(per_agent.items()))
+    tok = {
+        "supervisor": dict(per_agent.get(SUPERVISOR, _zero)),
+        "workers": {
+            "prompt": sum(v["prompt"] for k, v in per_agent.items() if k != SUPERVISOR),
+            "completion": sum(v["completion"] for k, v in per_agent.items() if k != SUPERVISOR),
+            "calls": sum(v["calls"] for k, v in per_agent.items() if k != SUPERVISOR),
+        },
+    }
+    # 覆盖检查（K1 langgraph 模式）：计量作者键须覆盖全部实际发言作者。
+    _speaking_authors = {r["from"] for r in rows} - {UNRESOLVED}
+    _uncovered = sorted(_speaking_authors - set(per_agent))
+    ledger_invariant = {
+        "mode": "per_agent",
+        "sides": tok,
+        "coverage_ok": not _uncovered,
+        "uncovered_speakers": _uncovered,
+        "issued_labels": sorted(per_agent),
+    }
 
     meta = {
         "scenario": scenario,
@@ -248,6 +268,8 @@ def run_track(scenario: str, task: dict, out_dir: Path, repeat_idx: int) -> dict
             [r for r in rows if r["from"] == SUPERVISOR and r["_content_len"] > 0 and r["_tool_calls"]]
         ),
         "tokens_by_side": tok,
+        "tokens_by_agent": tokens_by_agent,
+        "ledger_invariant": ledger_invariant,
         "total_tokens": sum(v["prompt"] + v["completion"] for v in tok.values()),
         "error": err,
         "collected_at_ms": int(time.time() * 1000),
@@ -281,8 +303,29 @@ def run_track(scenario: str, task: dict, out_dir: Path, repeat_idx: int) -> dict
         ],
     )
     _write_jsonl(out_dir / "select-events.jsonl", selects)
+    _write_ledger_events(out_dir, meta)
     (out_dir / "trace-meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
     return meta
+
+
+def _write_ledger_events(out_dir: Path, meta: dict) -> None:
+    """CALIB-009 M0-b：统一账本事件 ledger-events.jsonl（逐 agent 一行，schema 与
+    AutoGen / CrewAI 对齐：framework/agent/scenario/task_id/repeat_idx/prompt/
+    completion/calls/collected_at_ms）。"""
+    rows = []
+    for agent, v in sorted(meta.get("tokens_by_agent", {}).items()):
+        rows.append({
+            "framework": meta["framework"],
+            "agent": agent,
+            "scenario": meta["scenario"],
+            "task_id": meta["task_id"],
+            "repeat_idx": meta["repeat_idx"],
+            "prompt": v["prompt"],
+            "completion": v["completion"],
+            "calls": v["calls"],
+            "collected_at_ms": meta["collected_at_ms"],
+        })
+    _write_jsonl(out_dir / "ledger-events.jsonl", rows)
 
 
 def _strip_full(rows: list[dict]) -> list[dict]:

@@ -285,19 +285,40 @@ def run_track(scenario: str, task: dict, out_dir: Path, repeat_idx: int) -> dict
             }
         )
 
-    # ③ token 分侧（manager vs workers），口径同 AutoGen：只认 API 返回的 usage
-    tok: dict[str, dict] = {}
+    # ③ token 逐 agent 计量（CALIB-009 M0-c），口径同 AutoGen：只认 API 返回的 usage。
+    #    LLMCallCompletedEvent 自带 agent_role，按 role 分桶（MANAGER_ROLE 兜底不变）。
+    #    tokens_by_side 保持旧结构（manager / workers，由逐 agent 账聚合，默认值回归）。
+    per_agent: dict[str, dict] = {}
     for name, ev in events:
         if name != "LLMCallCompletedEvent":
             continue
         role = getattr(ev, "agent_role", None) or MANAGER_ROLE
-        side = "manager" if role == MANAGER_ROLE else "workers"
-        slot = tok.setdefault(side, {"prompt": 0, "completion": 0, "calls": 0})
+        slot = per_agent.setdefault(role, {"prompt": 0, "completion": 0, "calls": 0})
         slot["calls"] += 1
         u = getattr(ev, "usage", None) or {}
         if isinstance(u, dict):
             slot["prompt"] += int(u.get("prompt_tokens") or u.get("input_tokens") or 0)
             slot["completion"] += int(u.get("completion_tokens") or u.get("output_tokens") or 0)
+    _zero = {"prompt": 0, "completion": 0, "calls": 0}
+    tokens_by_agent = dict(sorted(per_agent.items()))
+    tok = {
+        "manager": dict(per_agent.get(MANAGER_ROLE, _zero)),
+        "workers": {
+            "prompt": sum(v["prompt"] for k, v in per_agent.items() if k != MANAGER_ROLE),
+            "completion": sum(v["completion"] for k, v in per_agent.items() if k != MANAGER_ROLE),
+            "calls": sum(v["calls"] for k, v in per_agent.items() if k != MANAGER_ROLE),
+        },
+    }
+    # 覆盖检查（K1 crewai 模式）：计量 role 键须覆盖全部实际发言角色（manager 兜底可代）。
+    _speaking_roles = {r["agent_role"] for r in task_rows} - {UNRESOLVED}
+    _uncovered = sorted(_speaking_roles - set(per_agent) - {MANAGER_ROLE})
+    ledger_invariant = {
+        "mode": "per_agent",
+        "sides": tok,
+        "coverage_ok": not _uncovered,
+        "uncovered_speakers": _uncovered,
+        "issued_labels": sorted(per_agent),
+    }
 
     conv_msgs = len([1 for n, _ in events if n == "ConversationMessageAddedEvent"])
     kick_done = len([1 for n, _ in events if n == "CrewKickoffCompletedEvent"])
@@ -322,6 +343,8 @@ def run_track(scenario: str, task: dict, out_dir: Path, repeat_idx: int) -> dict
         "duplicate_suppressed": seen_dup,
         "kickoff_completed": kick_done,
         "tokens_by_side": tok,
+        "tokens_by_agent": tokens_by_agent,
+        "ledger_invariant": ledger_invariant,
         "total_tokens": sum(v["prompt"] + v["completion"] for v in tok.values()),
         "error": err,
         "collected_at_ms": int(time.time() * 1000),
@@ -347,8 +370,29 @@ def run_track(scenario: str, task: dict, out_dir: Path, repeat_idx: int) -> dict
     _write_jsonl(out_dir / "windows.jsonl", [{"windowId": 1, "concurrentAgents": 1, "_phase": scenario}])
     _write_jsonl(out_dir / "snapshots.jsonl", [{**snapshot_from(rows, sandbox_of), "_phase": scenario}])
     _write_jsonl(out_dir / "select-events.jsonl", selects)
+    _write_ledger_events(out_dir, meta)
     (out_dir / "trace-meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
     return meta
+
+
+def _write_ledger_events(out_dir: Path, meta: dict) -> None:
+    """CALIB-009 M0-b：统一账本事件 ledger-events.jsonl（逐 agent 一行，schema 与
+    AutoGen 侧对齐：framework/agent/scenario/task_id/repeat_idx/prompt/completion/
+    calls/collected_at_ms）。"""
+    rows = []
+    for agent, v in sorted(meta.get("tokens_by_agent", {}).items()):
+        rows.append({
+            "framework": meta["framework"],
+            "agent": agent,
+            "scenario": meta["scenario"],
+            "task_id": meta["task_id"],
+            "repeat_idx": meta["repeat_idx"],
+            "prompt": v["prompt"],
+            "completion": v["completion"],
+            "calls": v["calls"],
+            "collected_at_ms": meta["collected_at_ms"],
+        })
+    _write_jsonl(out_dir / "ledger-events.jsonl", rows)
 
 
 def _strip_full(rows: list[dict]) -> list[dict]:
