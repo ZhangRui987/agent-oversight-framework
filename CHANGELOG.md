@@ -1,6 +1,14 @@
 # 变更日志
 
 
+## v2.79.1（2026-11-12）：记录更正——R2 轨迹从未入库（表述失真，patch）
+
+- **更正 v2.79.0 条目及提交信息中的一处表述失真**：v2.79.0 写「R2 正式轨迹 `out/run-20261108-r2/` 同批入库」，实测 `git log --all --diff-filter=A -- ".../adapters/autogen/out/*"` 为空——**R2 轨迹从未入库**（`.gitignore` D-6 规则：`adapters/**/out/` 为真实 LLM 调用产物，不入库；验证结论以 `adapters/autogen/README.md` 记录为准）。轨迹本地留存（`run-20261108-r2/` + `run-20261112-c009-pilot/`），R2 结论的可复现性不受影响（分析脚本 `r2_analyze.py` 与冻结判据在库，轨迹按 `REPRODUCE.md` 通道重采可复核）。失真根因：v2.79.0 提交信息起草时把「轨迹本地产出」误写为「同批入库」，门禁对提交信息文字无校验面（第 24 项口径只覆盖入库产物计数）。处置：本条目更正，v2.79.0 条目按 append-only 不回改；CALIB-009 pilot 轨迹（`run-20261112-c009-pilot/`，193,030 token）同规则本地留存。
+- **同批声明 CALIB-009 线当前状态**（预注册 25baec9 / M0-a e6efbb6 / M0-c 1149945 / pilot 5e93d5f 四笔独立 commit，按 R2 先例不立版本、收尾时统一立条目）：预注册 `EXPERIMENT-DESIGN-AOE-CALIB-009.md`（spec/10 四信号逐 agent 粒度计量，含 R3 Phase 0 负结果 `PHASE0-R3-CANDIDATES-20261112.md`）；M0 三框架落码（`ClientBundle` 逐 agent 发放 + `tokens_by_agent` + `ledger_invariant` 覆盖检查 + 统一 `ledger-events.jsonl` 九字段 schema）；pilot 9/9 收齐（K1 PASS，K2 如实登记预注册内部矛盾——同题跨 repeat n≥2 要求与冻结规模 n=1 冲突，K3 静态 PASS/运行时缺额——本机无 crewai/langgraph 依赖记「未采」，K4 分布登记 27 点非阈值），详见 `results/RESULTS-AOE-CALIB-009-PILOT-20261112.md`。
+- **当前锚摘要串（每版重述；RFC 3161 时间戳覆盖不变）**：
+  - `aof-anchor/v1:audit-panel/events-v1:1:9:27c2fe8fa384f7b9920cbd83da521fb567f795332501101e35b3d18ffdc82739:7d8a896bed4ce976`（genTime 2026-11-08 06:16:02 GMT）
+  - `aof-anchor/v1:disposition/stage1-ledger:2:3:3f23031b0c77a0fce338a8e2feda30ee548cd2c262fdfb239aaa638f5a8b7ea4:b1aa3becb81e59cf`（genTime 2026-11-08 06:16:08 GMT）
+
 ## v2.79.0（2026-11-08）：R2 正式结果——C3 ≥ 0.80 不跨模型迁移（负结果入库）
 
 - **AOE-CALIB-007-R2 正式采样完成**（预注册 commit 7da420d 先于执行；3 模型臂 × HumanEval 公开题池 × 345 条轨迹，5,185,367 / 14,932,862 token，预算比 0.35）。结果：`results/RESULTS-AOE-CALIB-007-R2-20261108.md`。
