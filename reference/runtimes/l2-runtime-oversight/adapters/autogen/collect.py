@@ -103,30 +103,74 @@ class CountingClient:
         self._record(usage)
 
 
-def make_clients(sink: dict, model: str = MODEL, base_url: str = BASE_URL,
-                  key_var: str = KEY_VAR):
+def _build_inner(model: str = MODEL, base_url: str = BASE_URL, key_var: str = KEY_VAR):
     from autogen_core.models import ModelInfo
     from autogen_ext.models.openai import OpenAIChatCompletionClient
 
-    def build():
-        # 温度口径（R2 预注册 §七勘误）：刻意不设 temperature——与 R1 实跑口径
-        # （厂商默认）一致，保证与 R1 对照臂分布可比；三厂商默认温度不同属
-        # 跨模型对比的固有混杂，随结果登记。不得在此顺手加 temperature/seed。
-        return OpenAIChatCompletionClient(
-            model=model,
-            api_key=load_key(key_var),
-            base_url=base_url,
-            model_info=ModelInfo(
-                vision=False,
-                function_calling=True,
-                json_output=True,
-                family=model,
-                structured_output=False,
-                multiple_system_messages=False,
-            ),
-        )
+    # 温度口径（R2 预注册 §七勘误）：刻意不设 temperature——与 R1 实跑口径
+    # （厂商默认）一致，保证与 R1 对照臂分布可比；三厂商默认温度不同属
+    # 跨模型对比的固有混杂，随结果登记。不得在此顺手加 temperature/seed。
+    return OpenAIChatCompletionClient(
+        model=model,
+        api_key=load_key(key_var),
+        base_url=base_url,
+        model_info=ModelInfo(
+            vision=False,
+            function_calling=True,
+            json_output=True,
+            family=model,
+            structured_output=False,
+            multiple_system_messages=False,
+        ),
+    )
 
-    return CountingClient(build(), "agent", sink), CountingClient(build(), "selector", sink)
+
+def make_clients(sink: dict, model: str = MODEL, base_url: str = BASE_URL,
+                 key_var: str = KEY_VAR):
+    """旧接口（CALIB-009 M0 默认值回归基准）：共享单 agent client + selector。
+
+    保留原样：不传新参数时，返回的两个 client 行为与 v2.79.0 逐字节一致。
+    新代码请用 make_client_bundle（CALIB-009 M0-a 逐 agent 计量）。
+    """
+    return CountingClient(_build_inner(model, base_url, key_var), "agent", sink), \
+        CountingClient(_build_inner(model, base_url, key_var), "selector", sink)
+
+
+class ClientBundle:
+    """CALIB-009 M0-a：逐 agent 计量的客户端发放器。
+
+    每 agent 独立 CountingClient（label = agent 名），selector 独立 label。
+    不变量（K1，验收判据）：Σ(per-agent) ≡ 旧 agent 侧聚合。
+    """
+
+    def __init__(self, sink: dict, model: str = MODEL, base_url: str = BASE_URL,
+                 key_var: str = KEY_VAR):
+        self._sink = sink
+        self._args = (model, base_url, key_var)
+        self._created: list[CountingClient] = []
+
+    def for_agent(self, name: str) -> CountingClient:
+        c = CountingClient(_build_inner(*self._args), name, self._sink)
+        self._created.append(c)
+        return c
+
+    def selector(self) -> CountingClient:
+        c = CountingClient(_build_inner(*self._args), "selector", self._sink)
+        self._created.append(c)
+        return c
+
+    def issued_labels(self) -> list[str]:
+        """已发放的 client label（K1 覆盖检查用：须覆盖全部实际发言 agent）。"""
+        return [c._label for c in self._created]
+
+    async def close_all(self) -> None:
+        for c in self._created:
+            inner = getattr(c, "_inner", None)
+            if inner is not None:
+                try:
+                    await inner.close()
+                except Exception:  # noqa: BLE001
+                    pass
 
 
 # ── 映射：消息 → SwarmMsg ───────────────────────────────────────────────
@@ -225,7 +269,10 @@ async def run_track(scenario: str, task: dict, out_dir: Path, repeat_idx: int,
     from build_attack import BUILDERS
 
     sink: dict = {}
-    agent_client, team_client = make_clients(sink, model, base_url, key_var)
+    # CALIB-009 M0-a：逐 agent 计量。bundle 发放 per-agent client（label = agent 名），
+    # selector 独立。tokens_by_side 旧结构保持不变（默认值回归），tokens_by_agent 为新增明细。
+    bundle = ClientBundle(sink, model, base_url, key_var)
+    agent_client, team_client = bundle, bundle.selector()
     builder = BUILDERS[scenario]
     phases = builder(agent_client, team_client)
 
@@ -289,16 +336,53 @@ async def run_track(scenario: str, task: dict, out_dir: Path, repeat_idx: int,
     except Exception as exc:  # noqa: BLE001
         err = f"{type(exc).__name__}: {exc}"
     finally:
-        for c in (agent_client, team_client):
-            inner = getattr(c, "_inner", None)
-            if inner is not None:
-                try:
-                    await inner.close()
-                except Exception:  # noqa: BLE001
-                    pass
+        # CALIB-009 M0-a：bundle 统一关闭（含逐 agent 与 selector 全部 client）
+        if isinstance(agent_client, ClientBundle):
+            await agent_client.close_all()
+        else:
+            for c in (agent_client, team_client):
+                inner = getattr(c, "_inner", None)
+                if inner is not None:
+                    try:
+                        await inner.close()
+                    except Exception:  # noqa: BLE001
+                        pass
 
     wall_ms = int((time.time() - t_start) * 1000)
     total_tokens = sum(v["prompt"] + v["completion"] for v in sink.values())
+
+    # ── CALIB-009 M0-a：逐 agent 计量与不变量 ──────────────────────────
+    # bundle 模式下 sink = {agent 名: 账, "selector": 账}；tokens_by_side 保持旧
+    # 结构（默认值回归：agent 侧 = Σ per-agent，selector 原样）。K1 不变量在此
+    # 显式登记（聚合由明细求和构造，故 K1 的判别力在「覆盖检查」——
+    # 发放过 client 的 label 集必须覆盖全部实际发言 agent，防漏账）。
+    _zero = {"prompt": 0, "completion": 0, "calls": 0}
+    _sel = sink.get("selector", dict(_zero))
+    _per_agent = {k: v for k, v in sink.items() if k != "selector"}
+    _agg = {
+        "prompt": sum(v["prompt"] for v in _per_agent.values()),
+        "completion": sum(v["completion"] for v in _per_agent.values()),
+        "calls": sum(v["calls"] for v in _per_agent.values()),
+    }
+    tokens_by_agent = dict(sorted(_per_agent.items()))
+    if isinstance(agent_client, ClientBundle):
+        issued = set(agent_client.issued_labels())
+        speakers = {r["from"] for r in all_rows} | {r["to"] for r in all_rows}
+        speakers.discard(UNRESOLVED)
+        _uncovered = sorted(speakers - issued)
+        _invariant = {
+            "mode": "per_agent",
+            "agent_side": _agg,
+            "selector_side": _sel,
+            "sum_prompt_eq_agent_side": True,  # agent 侧即由明细求和构造（见上注）
+            "coverage_ok": not _uncovered,
+            "uncovered_speakers": _uncovered,
+            "issued_labels": sorted(issued),
+        }
+    else:
+        _invariant = {"mode": "legacy_side", "agent_side": sink.get("agent", dict(_zero)),
+                      "selector_side": _sel}
+    # ────────────────────────────────────────────────────────────────────
 
     # 强度自检（仅攻击场景）
     from build_attack import verify_strength
@@ -321,7 +405,9 @@ async def run_track(scenario: str, task: dict, out_dir: Path, repeat_idx: int,
         "chat_messages_total": chat_total,
         "swarm_msgs_total": len(all_rows),
         "select_events_total": len(selects),
-        "tokens_by_side": sink,
+        "tokens_by_side": {"agent": _agg, "selector": _sel},
+        "tokens_by_agent": tokens_by_agent,
+        "ledger_invariant": _invariant,
         "total_tokens": total_tokens,
         "stop_reasons": stop_reasons,
         "strength_check": strength,
@@ -349,8 +435,31 @@ async def run_track(scenario: str, task: dict, out_dir: Path, repeat_idx: int,
     _write_jsonl(out_dir / "windows.jsonl", windows)
     _write_jsonl(out_dir / "snapshots.jsonl", snapshots)
     _write_jsonl(out_dir / "select-events.jsonl", selects)
+    _write_ledger_events(out_dir, meta)
     (out_dir / "trace-meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
     return meta
+
+
+def _write_ledger_events(out_dir: Path, meta: dict) -> None:
+    """CALIB-009 M0-b：统一账本事件 ledger-events.jsonl（逐 agent 一行）。
+
+    schema（三框架对齐）：framework / agent / scenario / task_id / repeat_idx /
+    prompt / completion / calls / collected_at_ms。spec/10 四信号的采集面。
+    """
+    rows = []
+    for agent, v in sorted(meta.get("tokens_by_agent", {}).items()):
+        rows.append({
+            "framework": meta["framework"],
+            "agent": agent,
+            "scenario": meta["scenario"],
+            "task_id": meta["task_id"],
+            "repeat_idx": meta["repeat_idx"],
+            "prompt": v["prompt"],
+            "completion": v["completion"],
+            "calls": v["calls"],
+            "collected_at_ms": meta["collected_at_ms"],
+        })
+    _write_jsonl(out_dir / "ledger-events.jsonl", rows)
 
 
 def _strip_full(rows: list[dict]) -> list[dict]:

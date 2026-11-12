@@ -88,6 +88,11 @@ def _cycle_selector(pattern: list[str]):
 def _make_agents(cfg: dict, client):
     from autogen_agentchat.agents import AssistantAgent
 
+    # CALIB-009 M0-a：client 为 ClientBundle 时逐 agent 发放（label = agent 名，
+    # 每 agent 独立账目）；传单个 CountingClient 时保持 v2.79.0 旧行为（共享）。
+    if hasattr(client, "for_agent"):
+        return {n: AssistantAgent(name=n, model_client=client.for_agent(n), system_message=s)
+                for n, s in cfg.items()}
     return {n: AssistantAgent(name=n, model_client=client, system_message=s) for n, s in cfg.items()}
 
 
