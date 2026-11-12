@@ -37,3 +37,7 @@ reference/runtimes/l2-runtime-oversight/adapters/**/out/
 # （--out out/run-<stamp>/...），原规则只覆盖 adapters/**/out/ ⇒ 闸门批目录处于「未跟踪待提交」，
 # git add -A 会把含完整对话/token/wall-clock 的不可复现产物带进版本库。此处补齐。
 reference/runtimes/l2-runtime-oversight/out/
+
+# Python 编译缓存（2026-11-12：v2.79.1 误入 4 个 pyc，本规则防再犯）
+__pycache__/
+*.pyc
