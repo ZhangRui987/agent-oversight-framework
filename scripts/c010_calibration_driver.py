@@ -58,7 +58,10 @@ def main():
         meta_p = d / "trace-meta.json"
         if meta_p.exists():
             m = json.loads(meta_p.read_text(encoding="utf-8"))
-            if m.get("adapter_verdict") != "error" and not m.get("error"):
+            # 只跳过 verdict==ok 的轨迹：invalid_adapter（采集面失效）与 error
+            # 都必须重采（2026-11-12 缺陷修正——旧条件 verdict!='error' 会把
+            # invalid_adapter 跳过导致补采失效，qwen 18 条连接错误被漏掉）
+            if m.get("adapter_verdict") == "ok" and not m.get("error"):
                 skip += 1
                 tokens_total += m.get("total_tokens", 0)
                 continue
@@ -88,7 +91,12 @@ def main():
             m = json.loads(meta_p.read_text(encoding="utf-8"))
             tokens_total += m.get("total_tokens", 0)
             inv = m.get("ledger_invariant", {})
-            done += 1
+            if m.get("adapter_verdict") == "ok" and not m.get("error"):
+                done += 1
+            else:
+                fail += 1  # verdict 计数修正：invalid_adapter / error 不计 done
+                rec(event="trace_invalid", rep=rep, verdict=m.get("adapter_verdict"),
+                    error=str(m.get("error"))[:120])
             rec(event="trace", rep=rep, verdict=m.get("adapter_verdict"),
                 tokens=m.get("total_tokens"), msgs=m.get("swarm_msgs_total"),
                 coverage_ok=inv.get("coverage_ok"),
