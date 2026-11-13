@@ -29,7 +29,7 @@
  *   [20] ResourceLedger（G5 闭合：spec/10 资源账本——预算比超阈审计 + 影子比偏离 + 记忆写入最高级审计 + 周期型外联检测）
  *   [21] CreditEventStream（G7 事件流侧闭合：spec/04 信用分输入事件流——成功/失败/超时/违规四类投影 + 中性事件 + Overseer 集成）
  *   [22] SwarmMonitor（G8 告警侧闭合：交互图谱采集 + 涌现信号检测 + 熔断禁用）
- *   [23] StepGuard/RateGuard（spec/09 四类运行时上限之 ①执行步数 ②调用频次；③④任务级「只出信号不拦截」的实测依据）
+ *   [23] 四类运行时上限守卫（spec/09：①StepGuard ②RateGuard ③TaskDurationGuard ④TaskResourceGuard——v2.83.0 起 ③④ 任务级累计拦截落地，四类全部有闸门）
  *   [24] AbstentionGate（spec/04 信用回避 L1 消费端判定侧：O21/θ2 判定 + 窗口升级 + 操守/能力通道隔离）
  *   [25] SwarmMonitor.commandConcentration（C3 统计入口：并列全取 + top 按消息数 + 4/5 台阶边界，仅统计不告警）
  *
@@ -59,6 +59,8 @@ import {
   RuntimeOverseer,
   SqliteLeaseAuthority,
   StepGuard,
+  TaskDurationGuard,
+  TaskResourceGuard,
   AbstentionGate,
   type IntegrityViolationRecord,
   guardedToolCall,
@@ -1385,17 +1387,76 @@ function testRuntimeLimitGuards(): void {
   }
   check('now 省略时 fail-closed 抛错（时间基准不可隐式取 Date.now）', threwNow);
 
-  // —— ③④ 的任务级口径：实测「只出信号、不拦截」 ——
-  // 这两条不是为了证明 ③④ 可用，而是给 spec/09 状态表里「部分实现」提供实测依据：
-  // 任务级超预算/超时长的后果是「留痕」，不是「阻断」，所以状态列不能写「已实现」。
+  // —— ③④ 的信号层：ResourceLedger 的 budget-exceeded 继续产出（spec/10 ①「审计而非
+  // 拦截」语义不变——v2.83.0 新增的是任务级拦截层，不是替换信号层）——
   const logL = new AppendOnlyAuditLog();
   const ledgerL = new ResourceLedger(logL);
   const sigL = ledgerL.record('t-task', 'infer', { tokens: 12000, durationMs: 9000 },
     { taskId: 't-task', maxTokens: 1000, maxDurationMs: 5000 });
-  check('[四类上限:resource-consumption] 任务级超资源预算只产出 budget-exceeded 信号，不拦截（「部分实现」的实测依据，非疏漏）',
+  check('[四类上限:resource-consumption] 任务级 budget-exceeded 信号继续产出（spec/10 ①「审计而非拦截」语义保留——v2.83.0 拦截层是加层不是替换）',
     sigL.some((s) => s.kind === 'budget-exceeded' && s.detail.includes('tokens')) && sigL.length >= 2);
-  check('[四类上限:task-duration] 任务级累计时长超预算同样只出信号、继续执行（同上）',
+  check('[四类上限:task-duration] 信号层同上保留（时长信号与时长拦截两层并存）',
     sigL.some((s) => s.kind === 'budget-exceeded' && s.detail.includes('duration')));
+
+  // —— ③ task-duration：TaskDurationGuard 任务级累计时长拦截（v2.83.0）——
+  // 阈值消费 CALIB-012 按族表：F1 框架维护 159,000ms（来源显式记录，非占位）。
+  // 口径边界随断言同行：时长在单次调用执行前不可预扣，单次调用可把累计推过上限，
+  // 拦截发生在下一调用前——这是累计口径的固有边界，不是实现缺陷。
+  const logD = new AppendOnlyAuditLog();
+  const dg = new TaskDurationGuard(159_000, logD);  // CALIB-012 F1 框架维护族
+  dg.report('t-d', 100_000);
+  const d1 = dg.check('t-d');
+  check('[四类上限:task-duration] 累计低于上限放行（100,000 < 159,000 → allow）',
+    d1.kind === 'allow' && d1.observed === 100_000);
+  dg.report('t-d', 59_000);
+  const d2 = dg.check('t-d');
+  check('[四类上限:task-duration] 累计恰好等于上限即拦（预算耗尽语义：159,000 ≥ 159,000 → block；与步数类「第 N 步放行」的差异是口径固有的，随行登记）',
+    d2.kind === 'block' && d2.category === 'task-duration-over-limit' && d2.observed === 159_000);
+  dg.reset('t-d');
+  dg.report('t-d2', 200_000);
+  const d3 = dg.check('t-d2');
+  check('[四类上限:task-duration] 单次调用可把累计推过上限（200,000 一次入账 → 下一调用即拦——时长执行前不可预扣的结构性边界）',
+    d3.kind === 'block' && d3.observed === 200_000);
+  const dBlocks = eventsOf(logD).filter((e) => e.type === 'runtime_limit_block');
+  check('[四类上限:task-duration] 拦截写入审计事件 runtime_limit_block（category=task-duration-over-limit）',
+    dBlocks.length === 2 && (dBlocks[0].data as { category?: string }).category === 'task-duration-over-limit');
+  let threwD = false;
+  try {
+    new TaskDurationGuard(0, logD);
+  } catch {
+    threwD = true;
+  }
+  check('[四类上限:task-duration] maxDurationMs 非法值（0）fail-closed 抛错', threwD);
+
+  // —— ④ resource-consumption：TaskResourceGuard 任务级累计资源拦截（v2.83.0）——
+  // outputBytes 上限消费 CALIB-012 F1 族（21,580B）；token 任务级上限未标定
+  // （CALIB-008 n=6 / CALIB-012 为字节代理）→ 本组不使用 token cap，双指标能力由
+  // 「任一超限即拦」断言覆盖。
+  const logRes = new AppendOnlyAuditLog();
+  const rg = new TaskResourceGuard({ outputBytes: 21_580 }, logRes);  // CALIB-012 F1 族
+  rg.report('t-r', { outputBytes: 20_000 });
+  const r1g = rg.check('t-r');
+  check('[四类上限:resource-consumption] 累计低于上限放行（20,000 < 21,580 → allow）',
+    r1g.kind === 'allow');
+  rg.report('t-r', { outputBytes: 1_580 });
+  const r2g = rg.check('t-r');
+  check('[四类上限:resource-consumption] 累计恰好等于上限即拦（21,580 ≥ 21,580 → block，category=task-resource-over-limit）',
+    r2g.kind === 'block' && r2g.category === 'task-resource-over-limit');
+  const rgDual = new TaskResourceGuard({ tokens: 1_000, outputBytes: 10_000 }, logRes);
+  rgDual.report('t-rd', { tokens: 1_100 });
+  const rDual = rgDual.check('t-rd');
+  check('[四类上限:resource-consumption] 双指标任一超限即拦（tokens 超限触发，outputBytes 未超）',
+    rDual.kind === 'block' && (rDual as { reason?: string }).reason?.includes('tokens') === true);
+  rg.reset('t-r');
+  check('[四类上限:resource-consumption] reset 后恢复放行（任务级累计随任务生命周期清理）',
+    rg.check('t-r').kind === 'allow');
+  let threwR = false;
+  try {
+    new TaskResourceGuard({}, logRes);
+  } catch {
+    threwR = true;
+  }
+  check('[四类上限:resource-consumption] cap 缺全部指标 fail-closed 抛错（不静默降级为不设限）', threwR);
 }
 
 // ============================================================================

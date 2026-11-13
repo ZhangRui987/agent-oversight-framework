@@ -51,7 +51,7 @@ node --experimental-transform-types otel-adapter.ts --selftest
 node --experimental-transform-types otel-adapter.ts < audit-events.jsonl > otlp-export.json
 ```
 
-demo 覆盖 27 组、189 项断言（实测全绿；**组数/断言数由 demo 运行末行动态输出**，v2.44.1 起经根门禁第 40 项与 ci.yml 声明双向校验，任何增删组/断言后以实跑输出为准），含 9 组对抗性用例（[8]–[16]）：
+demo 覆盖 27 组、199 项断言（实测全绿；**组数/断言数由 demo 运行末行动态输出**，v2.44.1 起经根门禁第 40 项与 ci.yml 声明双向校验，任何增删组/断言后以实跑输出为准），含 9 组对抗性用例（[8]–[16]）：
 
 | 组 | 证明的机制 / 对抗目标 |
 |---|---|

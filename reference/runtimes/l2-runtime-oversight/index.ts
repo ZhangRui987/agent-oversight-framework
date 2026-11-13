@@ -1248,12 +1248,9 @@ export async function guardedToolCall(
 //   3. 阈值仍是**工程占位**，由 spec/13 #33 承接标定。本实现只保证「有闸门、可复现、留痕」，
 //      不声称阈值合宜——标定完成前任何基于这些阈值的拦截率统计都只能报分布。
 //
-// 任务级累计（③④ 的任务级口径）不在本组：把 ResourceLedger 的 budget-exceeded 从
-// 「信号」升级为「拦截」是改变运行时行为，需单独决策 + 版本说明，不随本组默认生效。
+// 任务级累计（③④ 的任务级口径）当时不在本组，已于 v2.83.0 落地为 §9c 的
+// TaskDurationGuard / TaskResourceGuard（单独决策 + 版本说明的承诺兑现）。
 // ============================================================================
-
-/** 四类上限中已实现为拦截的类别标识（与 spec/09 状态表的标记一一对应）。 */
-export type RuntimeLimitCategory = 'step-over-limit' | 'rate-over-limit';
 
 /** 执行前上限裁决。 */
 export type LimitVerdict =
@@ -1379,6 +1376,167 @@ export class RateGuard {
   /** 任务结束后清理窗口。 */
   reset(taskId: string): void {
     this.windows.delete(taskId);
+  }
+}
+
+// ============================================================================
+// 9c. TaskDurationGuard / TaskResourceGuard —— spec/09 四类中的 ③④ 任务级累计拦截
+//
+// v2.73.0 补 ①② 时把 ③④ 的任务级口径显式挂账（「把 budget-exceeded 从信号升级为
+// 拦截是改变运行时行为，需单独决策」）——本组即该决策的落地：
+//   ③ task-duration：任务级累计执行时长上限（TaskDurationGuard）
+//   ④ resource-consumption：任务级累计资源消耗上限（TaskResourceGuard）
+//
+// 设计取舍（四条，前三条沿 v2.73.0 先例）：
+//   1. 会计与裁决显式分离：report()（调用后记账）与 check()（下一调用前裁决）是两个
+//      显式动作，guard 不隐式截获 guardedToolCall 管道——时长与资源在**单次调用执行前
+//      不可知**，只能在调用后累计；这与 StepGuard/RateGuard 的纯执行前裁决互补。
+//   2. 结构性边界（与步数类的本质差异，随 demo 断言同行）：累计口径下单次调用可以把
+//      累计推过上限（时长在执行前无法预扣），拦截发生在**下一次**调用前——「恰好卡在
+//      上限内」对时长类做不到，这是口径的固有边界而非实现缺陷。
+//   3. 预算耗尽语义：累计 ≥ 上限即拦下一调用（与步数类「恰好等于上限仍放行」不同——
+//      步数在执行前已知故可闭区间到第 N 步；时长类耗尽即停，差异随 demo 断言登记）。
+//   4. 阈值消费 CALIB-012 按族表（F1 框架维护：时长 159,000ms / 输出 21,580B，demo
+//      显式记录来源）；token 任务级上限仍未标定（CALIB-008 n=6 / CALIB-012 为字节代理）
+//      ——TaskResourceGuard 支持 tokens 与 outputBytes 双指标，但未标定指标由调用方
+//      自行决定是否传入，本类不装作「已标定」。
+// ============================================================================
+
+/** 四类上限中已实现为拦截的类别标识（与 spec/09 状态表的标记一一对应）。 */
+export type RuntimeLimitCategory =
+  | 'step-over-limit'
+  | 'rate-over-limit'
+  | 'task-duration-over-limit'
+  | 'task-resource-over-limit';
+
+/** 任务级累计执行时长守卫（spec/09 四类之 ③）。 */
+export class TaskDurationGuard {
+  private readonly cum = new Map<string, number>();
+
+  constructor(
+    /** 任务级累计时长上限（毫秒，正数；非法值直接抛错，不静默降级）。 */
+    private readonly maxDurationMs: number,
+    /** 审计日志：每次拦截记一条。 */
+    private readonly audit: { append: (type: string, data: unknown) => unknown },
+  ) {
+    if (!Number.isFinite(maxDurationMs) || maxDurationMs <= 0) {
+      throw new Error(`TaskDurationGuard: maxDurationMs 必须为正数（fail-closed），收到 ${String(maxDurationMs)}`);
+    }
+  }
+
+  /** 调用后记账：把一次已完成调用的执行时长计入任务累计（负数/非有限值抛错）。 */
+  report(taskId: string, durationMs: number): void {
+    if (!Number.isFinite(durationMs) || durationMs < 0) {
+      throw new Error(`TaskDurationGuard: durationMs 必须为非负有限数，收到 ${String(durationMs)}`);
+    }
+    this.cum.set(taskId, (this.cum.get(taskId) ?? 0) + durationMs);
+  }
+
+  /** 下一调用前裁决：累计 ≥ 上限即拦（预算耗尽语义）。 */
+  check(taskId: string): LimitVerdict {
+    const observed = this.cum.get(taskId) ?? 0;
+    if (observed >= this.maxDurationMs) {
+      const reason = `cumulative duration ${observed}ms >= cap ${this.maxDurationMs}ms`;
+      this.audit.append('runtime_limit_block', {
+        category: 'task-duration-over-limit',
+        taskId,
+        observed,
+        limit: this.maxDurationMs,
+        reason,
+      });
+      return {
+        kind: 'block',
+        category: 'task-duration-over-limit',
+        reason,
+        observed,
+        limit: this.maxDurationMs,
+      };
+    }
+    return { kind: 'allow', observed, limit: this.maxDurationMs };
+  }
+
+  /** 当前累计时长（只读查询）。 */
+  observed(taskId: string): number {
+    return this.cum.get(taskId) ?? 0;
+  }
+
+  /** 任务结束后清理累计。 */
+  reset(taskId: string): void {
+    this.cum.delete(taskId);
+  }
+}
+
+/** 任务级累计资源消耗守卫（spec/09 四类之 ④）——tokens 与 outputBytes 双指标，任一超限即拦。 */
+export class TaskResourceGuard {
+  private readonly cum = new Map<string, { tokens: number; outputBytes: number }>();
+
+  constructor(
+    /** 各指标的任务级累计上限；至少给出一个指标，全部为正数（fail-closed）。 */
+    private readonly cap: { tokens?: number; outputBytes?: number },
+    /** 审计日志：每次拦截记一条。 */
+    private readonly audit: { append: (type: string, data: unknown) => unknown },
+  ) {
+    const given = Object.entries(cap).filter(([, v]) => v !== undefined);
+    if (given.length === 0) {
+      throw new Error('TaskResourceGuard: cap 至少需要 tokens 或 outputBytes 之一（fail-closed）');
+    }
+    for (const [k, v] of given) {
+      if (!Number.isFinite(v) || (v as number) <= 0) {
+        throw new Error(`TaskResourceGuard: cap.${k} 必须为正数（fail-closed），收到 ${String(v)}`);
+      }
+    }
+  }
+
+  /** 调用后记账：把一次已完成调用的资源消耗计入任务累计（负数/非有限值抛错）。 */
+  report(taskId: string, usage: { tokens?: number; outputBytes?: number }): void {
+    const cur = this.cum.get(taskId) ?? { tokens: 0, outputBytes: 0 };
+    for (const k of ['tokens', 'outputBytes'] as const) {
+      const v = usage[k];
+      if (v === undefined) continue;
+      if (!Number.isFinite(v) || v < 0) {
+        throw new Error(`TaskResourceGuard: usage.${k} 必须为非负有限数，收到 ${String(v)}`);
+      }
+      cur[k] += v;
+    }
+    this.cum.set(taskId, cur);
+  }
+
+  /** 下一调用前裁决：任一指标的累计 ≥ 其上限即拦。 */
+  check(taskId: string): LimitVerdict {
+    const cur = this.cum.get(taskId) ?? { tokens: 0, outputBytes: 0 };
+    for (const k of ['tokens', 'outputBytes'] as const) {
+      const limit = this.cap[k];
+      if (limit === undefined) continue;
+      if (cur[k] >= limit) {
+        const reason = `cumulative ${k} ${cur[k]} >= cap ${limit}`;
+        this.audit.append('runtime_limit_block', {
+          category: 'task-resource-over-limit',
+          taskId,
+          metric: k,
+          observed: cur[k],
+          limit,
+          reason,
+        });
+        return {
+          kind: 'block',
+          category: 'task-resource-over-limit',
+          reason,
+          observed: cur[k],
+          limit,
+        };
+      }
+    }
+    return { kind: 'allow', observed: cur.outputBytes, limit: this.cap.outputBytes ?? 0 };
+  }
+
+  /** 当前累计（只读查询）。 */
+  observed(taskId: string): { tokens: number; outputBytes: number } {
+    return this.cum.get(taskId) ?? { tokens: 0, outputBytes: 0 };
+  }
+
+  /** 任务结束后清理累计。 */
+  reset(taskId: string): void {
+    this.cum.delete(taskId);
   }
 }
 
