@@ -1,6 +1,19 @@
 # 变更日志
 
 
+## v2.80.0（2026-11-13）：CALIB-009 / CALIB-010 线收尾——三框架运行时验收闭环（minor）
+
+- **CALIB-009 M0 运行时验收补采闭环**（commit f31b291，先于本版入库）：独立 venv（工作区 `calib009-runtime`，Py 3.13.14，pin 与 CALIB-007 全同：`crewai==1.15.35 / langgraph==1.2.19 / langgraph-supervisor==0.0.31 / langchain-core==1.7.4 / langchain-openai==1.7.3`；**R2 解释器零变化实证**——安装前后 `pip freeze` 155 包快照 diff = ∅）各采 1 条 `benign-A × T01`：CrewAI 3,587 token（2 消息 1 委派）/ LangGraph 1,517 token（4 消息 1 transfer），**合计 5,104 token，pilot 预算 198,134 / 500,000（比 0.40）**。判定：**K1 两框架 PASS**（Σ(per-agent) ≡ 旧 side 聚合差 = 0，发言集与账本键独立复核一致——防「假覆盖」）；**K3 运行时闭环**（三框架 11 份 `ledger-events.jsonl` 九字段集 diff = ∅）；**③ 默认值回归**两框架旧分侧结构（manager/workers、supervisor/workers）逐字节不变。`RESULTS-AOE-CALIB-009-PILOT-20261112.md` §六 登记；usage 语义查证随录（crewai「近似计数」警告只进上下文管理启发式 `base_llm.py:497`，事件 usage 取 `response.usage` 为 API 原生，账本语义无须降级）。
+- **spec/10 双语 ① 段订正**：实现状态分级由「AutoGen 运行时通过 / CrewAI、LangGraph 仅静态对齐未采」更新为「**三框架运行时验证均通过**」——v2.79.2 的分级自本版起过时；边界随行（两框架采集 task-pool-v1 的 T01 与 AutoGen 臂 HE 题不同源、跨框架分布不可横比；各 1 条为工程验收规格非统计结论）。
+- **spec/11 双语**：AOE-CALIB-009 CAE 行限定语同步订正（「运行时未采」解除日期 + commit 指针；「静态 diff = ∅」更新为「运行时 11/11」）。
+- **REFERENCES**：【键: AOE-CALIB-009】严格支撑范围 ② 带日期订正（条目其余内容与计数不变，**A 仍 16 / 合计仍 217**）。
+- **spec/13 #33 双语行补 v2.80.0 进展**：per-agent 数据源面齐备（CALIB-009 验收闭环 + CALIB-010 九组基线），四类运行时阈值标定仍缺，**状态维持未解**。
+- **兑现 v2.79.1 承诺**：CALIB-009 线（25baec9 预注册 / e6efbb6 M0-a / 1149945 M0-c / 5e93d5f pilot / f31b291 验收补采）与 CALIB-010 线（53f501d 预注册 / 0289968 两臂 / 0f66562 三臂完整版）在本条目统一立账。
+- **版本联动**：`VERSION` / `CITATION.cff` / `README.md` / `README.en.md` 至 2.80.0；V1 `events.jsonl` 确定性重生成（`export-events.mts`）；V2 `realagent-events.jsonl` 只重标并 append `relabel_history`（事件行一字未动，`data_generated_at_version` 保持 2.68.1）。
+- **当前锚摘要串（每版重述；RFC 3161 时间戳覆盖不变）**：
+  - `aof-anchor/v1:audit-panel/events-v1:1:9:27c2fe8fa384f7b9920cbd83da521fb567f795332501101e35b3d18ffdc82739:7d8a896bed4ce976`（genTime 2026-11-08 06:16:02 GMT）
+  - `aof-anchor/v1:disposition/stage1-ledger:2:3:3f23031b0c77a0fce338a8e2feda30ee548cd2c262fdfb239aaa638f5a8b7ea4:b1aa3becb81e59cf`（genTime 2026-11-08 06:16:08 GMT）
+
 ## v2.79.3（2026-11-13）：CALIB-009 / CALIB-010 证据补登记（A 14→16，patch）
 
 - **补登记两条 A 级证据**（此前 spec/10 已引用其结论与数字，但 REFERENCES 无条目——属「事实可查而等级未标」）：
