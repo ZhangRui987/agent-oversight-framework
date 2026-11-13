@@ -66,6 +66,34 @@ The shadow-ratio section above explicitly states "thresholds to be calibrated." 
 
 ⚠️ **Strictly supported scope**: this experiment supports the "shadow-ratio threshold calibration method" and the four per-model calibrated values, **not** that any single threshold applies to all agent tasks or all LLMs — the v2.16.0 cross-model extension explicitly refutes single-value universality. **Not** that shadow ratio effectively detects agent anomalies (no real-anomaly-scenario detection-rate validation). **Not** that reasoning and non-reasoning models can share the same threshold (Kimi k2.6 data shows reasoning_tokens cause inherently high variance). Full raw data, methodology, and reproduction scripts at `reference/runtimes/l2-runtime-oversight/CALIBRATION-REPORT.md` §4–§9 and `calibrate-shadow-ratio.mts` / `calibrate-shadow-ratio-llm.mts` / `calibrate-shadow-ratio-multi-model.mts`.
 
+## Per-agent granularity applicability note for shadow ratio (v2.79.2, CALIB-009 / CALIB-010)
+
+The calibrations above (CALIB-001 and the v2.16.0 cross-model extension) are **task-level**: one task, one total consumption, one shadow ratio. In multi-agent collaboration the task-level measure folds role differences into a single distribution (this framework's own measurement: completion shares on deepseek are Coder 26% / Critic 45% / Planner 28%), so the applicability of per-agent granularity is registered here. This section answers only "how far this granularity is usable"; it changes neither the four signal definitions nor the default threshold.
+
+**① Measurement precondition (implemented, CALIB-009)**. A per-agent shadow ratio presupposes that the ledger accounts per agent. The three collectors are unified to per-agent accounting + a single `ledger-events.jsonl` nine-field schema + a coverage invariant (the issued label set must cover every speaking agent, catching missed accounting). Implementation status is graded per framework and must not be merged: **AutoGen is runtime-validated** (coverage checks passed on pilot 9/9 and on all 87 CALIB-010 traces); **CrewAI / LangGraph pass static schema alignment only, not runtime** (both dependencies absent on the test host — recorded as "not collected", not as "passed").
+
+**② First per-agent distribution baseline (CALIB-010, completion dimension, MAD + 1.4826 × k = 3)**. Reference value = k3 / median, the same measure as CALIB-001's 1.36:
+
+| Role | deepseek (n=27) | qwen (n=30) | glm (n=30) | Cross-model span |
+|---|---|---|---|---|
+| Coder | 3.17 | 1.79 | 2.36 | 1.38 |
+| Critic | 1.65 | 2.53 | 2.08 | 0.88 |
+| Planner | 2.31 | 3.27 | 2.66 | 0.96 |
+
+All nine bootstrap 95% CIs converged (10,000 resamples).
+
+**③ What the baseline does support**. Reference values spread across 1.65–3.27 by model × role; the cross-model span for all three roles (0.88–1.38) **exceeds CALIB-001's 0.15 consistency criterion** ⇒ **per-agent shadow-ratio thresholds must be calibrated per model × role; no cross-model multiplier exists**. This extends the v2.16.0 "per-provider calibration" conclusion to the role dimension, one level finer. Side observation: which role is most stable is itself model-dependent (most stable on deepseek is Critic 1.65, on qwen Coder 1.79, on glm the three are close at 2.08–2.66) — the same family as CALIB-007-R2's "marking habit is model-dependent".
+
+**④ What the baseline does NOT support (all three must accompany any citation)**:
+
+- **A reference value is not a threshold** — it describes the distribution of normal collaboration, not an alarm line. The default threshold **2.0 is unchanged**: this section provides no per-agent replacement and does not authorise any consumer to configure the table above as alarm thresholds;
+- **No detection-efficacy claim** — whether shadow ratio detects agent-level anomalies has no new evidence; this batch is benign-side only, with no attack samples;
+- **Scope is one task, one scenario, one framework** — benign-A homogeneous three-agent × one task × vendor default temperature × AutoGen; no extrapolation to other tasks, scenarios, temperatures or frameworks. Formal threshold calibration requires a separate pre-registration.
+
+**⑤ The truncation warning applies at this granularity too**. `max_tokens` truncation drives completion variance to zero and defeats the shadow-ratio signal (path B above). All nine CALIB-010 groups have non-zero MAD (no degeneration), but that only means this configuration did not truncate — **it does not mean production will not**.
+
+⚠️ **This note does not change the status of spec/13 #33** (the four runtime thresholds remain uncalibrated): the per-agent baseline is a data-source registration, not a completed calibration. Any citation of numbers in this section must cite `results/RESULTS-AOE-CALIB-010-20261112.md` §7 in full with its boundaries (single task and scenario / deepseek n=27 / no detection-efficacy claim / reference values are not thresholds / sampling numbers stay out of publication material).
+
 ## Periodic-egress variance threshold calibration (v2.15.0, grade-A evidence AOE-CALIB-002)
 
 The periodic-egress detection above specifies "autocorrelation and spectral analysis." v2.13.0's interval-variance check (variance ≤ threshold → periodic) is a placeholder, with threshold 1ms² uncalibrated. v2.15.0 performs the first calibration using synthetic interval sequences:

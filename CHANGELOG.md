@@ -1,6 +1,17 @@
 # 变更日志
 
 
+## v2.79.2（2026-11-13）：spec/10 影子比补 per-agent 粒度适用注记（patch）
+
+- **spec/10 双语新增章节「影子比的 per-agent 粒度适用注记（v2.79.2，CALIB-009 / CALIB-010）」**，位置在影子比标定章之后、周期检测标定章之前。内容分五段：① 计量前提（三框架采集器统一为逐 agent 记账 + 统一 `ledger-events.jsonl` 九字段 schema + 覆盖不变量；实现状态分级——AutoGen 运行时验证通过，CrewAI / LangGraph 仅静态 schema 对齐、运行时记「未采」）；② CALIB-010 首份 per-agent 分布基线（3 模型 × 3 角色 九组参考值 + bootstrap CI 全部收敛）；③ 可从基线读出的结论——三角色跨模型跨度 0.88–1.38 全部超过 CALIB-001 的 0.15 一致性判据，**per-agent 影子比阈值必须按「模型 × 角色」独立标定，不存在跨模型统一乘数**（v2.16.0「per-provider」结论在角色维度的延伸）；④ 不可读出的三条（参考值不是阈值、无检测效能断言、范围限于单题单场景单框架），**默认阈值 2.0 不变**；⑤ CALIB-001 的 `max_tokens` 截断警告在本粒度同样适用，九组 MAD 非零不等于生产不触发。
+- **本条不改变 spec/13 #33 状态**（运行时四类阈值仍未标定）：per-agent 基线是数据源登记而非标定完成；引用本节数字须连同 `results/RESULTS-AOE-CALIB-010-20261112.md` §七 全部边界。
+- **门禁第 46 项扩结构面**（折入既有项，项数仍 54）：原项只校验 `meta.framework.version == VERSION`，对「重标留痕」无守卫。新增三条断言——① 重标键（`relabel_reason` / `data_generated_at_version` / `relabel_history`）不得出现在产物首行顶层；② 必须有 `framework.relabel_history`；③ 其末条 `to` 必须等于 VERSION（本版重标未 append 即 FAIL）。
+- **产物重标结构规范化（发现并修复一次留痕断档）**：v2.79.1 的版本联动把 `data_generated_at_version` / `relabel_reason` 写到 `realagent-events.jsonl` 首行**顶层**，且未向 `framework.relabel_history` append——版本号对得上、门禁全绿，留痕链却自 2.76.0 起断档三版（2.79.0 / 2.79.1 两轮重标无记录）。本版：删除顶层漂移键、补录两轮缺失条目（标注「于 v2.79.2 补录」）、追加本版一条，`framework.data_generated_at_version` 保持 2.68.1（真实生成版本）。**事件行一字未动**。教训与第 40/42/44/45 项同构：声明靠手工续写、无守卫。
+- **版本联动**：`VERSION` / `CITATION.cff` / `README.md` / `README.en.md` sed 至 2.79.2；V1 `events.jsonl` 确定性重生成（`export-events.mts`）；V2 `realagent-events.jsonl` 只重标（LLM-in-the-loop 不可复现）。
+- **当前锚摘要串（每版重述；RFC 3161 时间戳覆盖不变）**：
+  - `aof-anchor/v1:audit-panel/events-v1:1:9:27c2fe8fa384f7b9920cbd83da521fb567f795332501101e35b3d18ffdc82739:7d8a896bed4ce976`（genTime 2026-11-08 06:16:02 GMT）
+  - `aof-anchor/v1:disposition/stage1-ledger:2:3:3f23031b0c77a0fce338a8e2feda30ee548cd2c262fdfb239aaa638f5a8b7ea4:b1aa3becb81e59cf`（genTime 2026-11-08 06:16:08 GMT）
+
 ## v2.79.1（2026-11-12）：记录更正——R2 轨迹从未入库（表述失真，patch）
 
 - **更正 v2.79.0 条目及提交信息中的一处表述失真**：v2.79.0 写「R2 正式轨迹 `out/run-20261108-r2/` 同批入库」，实测 `git log --all --diff-filter=A -- ".../adapters/autogen/out/*"` 为空——**R2 轨迹从未入库**（`.gitignore` D-6 规则：`adapters/**/out/` 为真实 LLM 调用产物，不入库；验证结论以 `adapters/autogen/README.md` 记录为准）。轨迹本地留存（`run-20261108-r2/` + `run-20261112-c009-pilot/`），R2 结论的可复现性不受影响（分析脚本 `r2_analyze.py` 与冻结判据在库，轨迹按 `REPRODUCE.md` 通道重采可复核）。失真根因：v2.79.0 提交信息起草时把「轨迹本地产出」误写为「同批入库」，门禁对提交信息文字无校验面（第 24 项口径只覆盖入库产物计数）。处置：本条目更正，v2.79.0 条目按 append-only 不回改；CALIB-009 pilot 轨迹（`run-20261112-c009-pilot/`，193,030 token）同规则本地留存。
