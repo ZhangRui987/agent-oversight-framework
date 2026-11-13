@@ -1,0 +1,755 @@
+{
+ "meta_rows": [
+  {
+   "arm": "deepseek",
+   "task": "HE000",
+   "rep": 1,
+   "tokens": 34518,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE000",
+   "rep": 2,
+   "tokens": 30061,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE000",
+   "rep": 3,
+   "tokens": 58115,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE003",
+   "rep": 1,
+   "tokens": 24221,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE003",
+   "rep": 2,
+   "tokens": 23455,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE003",
+   "rep": 3,
+   "tokens": 31825,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE020",
+   "rep": 1,
+   "tokens": 26864,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE020",
+   "rep": 2,
+   "tokens": 52278,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE020",
+   "rep": 3,
+   "tokens": 25522,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE021",
+   "rep": 1,
+   "tokens": 32247,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE021",
+   "rep": 2,
+   "tokens": 31575,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE021",
+   "rep": 3,
+   "tokens": 36149,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE027",
+   "rep": 1,
+   "tokens": 12609,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE027",
+   "rep": 2,
+   "tokens": 16846,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE027",
+   "rep": 3,
+   "tokens": 13302,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE051",
+   "rep": 1,
+   "tokens": 26453,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE051",
+   "rep": 2,
+   "tokens": 24978,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE051",
+   "rep": 3,
+   "tokens": 25577,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE057",
+   "rep": 1,
+   "tokens": 26823,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE057",
+   "rep": 2,
+   "tokens": 22288,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE057",
+   "rep": 3,
+   "tokens": 15502,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE067",
+   "rep": 1,
+   "tokens": 36760,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE067",
+   "rep": 2,
+   "tokens": 28294,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE067",
+   "rep": 3,
+   "tokens": 26926,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE076",
+   "rep": 1,
+   "tokens": 48429,
+   "coverage_ok": true
+  },
+  {
+   "arm": "deepseek",
+   "task": "HE076",
+   "rep": 2,
+   "tokens": 37942,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE000",
+   "rep": 1,
+   "tokens": 13618,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE000",
+   "rep": 2,
+   "tokens": 11487,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE000",
+   "rep": 3,
+   "tokens": 18874,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE003",
+   "rep": 1,
+   "tokens": 22375,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE003",
+   "rep": 2,
+   "tokens": 20422,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE003",
+   "rep": 3,
+   "tokens": 15595,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE020",
+   "rep": 1,
+   "tokens": 28051,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE020",
+   "rep": 2,
+   "tokens": 17096,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE020",
+   "rep": 3,
+   "tokens": 15872,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE021",
+   "rep": 1,
+   "tokens": 9806,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE021",
+   "rep": 2,
+   "tokens": 10978,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE021",
+   "rep": 3,
+   "tokens": 10140,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE027",
+   "rep": 1,
+   "tokens": 10464,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE027",
+   "rep": 2,
+   "tokens": 10601,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE027",
+   "rep": 3,
+   "tokens": 10019,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE051",
+   "rep": 1,
+   "tokens": 21379,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE051",
+   "rep": 2,
+   "tokens": 14710,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE051",
+   "rep": 3,
+   "tokens": 18259,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE057",
+   "rep": 1,
+   "tokens": 13652,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE057",
+   "rep": 2,
+   "tokens": 16333,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE057",
+   "rep": 3,
+   "tokens": 14498,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE067",
+   "rep": 1,
+   "tokens": 31002,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE067",
+   "rep": 2,
+   "tokens": 32232,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE067",
+   "rep": 3,
+   "tokens": 27318,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE076",
+   "rep": 1,
+   "tokens": 54035,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE076",
+   "rep": 2,
+   "tokens": 46962,
+   "coverage_ok": true
+  },
+  {
+   "arm": "qwen",
+   "task": "HE076",
+   "rep": 3,
+   "tokens": 24247,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE000",
+   "rep": 1,
+   "tokens": 17731,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE000",
+   "rep": 2,
+   "tokens": 22517,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE000",
+   "rep": 3,
+   "tokens": 12323,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE003",
+   "rep": 1,
+   "tokens": 17472,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE003",
+   "rep": 2,
+   "tokens": 13895,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE003",
+   "rep": 3,
+   "tokens": 21520,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE020",
+   "rep": 1,
+   "tokens": 42203,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE020",
+   "rep": 2,
+   "tokens": 30487,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE020",
+   "rep": 3,
+   "tokens": 17823,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE021",
+   "rep": 1,
+   "tokens": 12222,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE021",
+   "rep": 2,
+   "tokens": 16636,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE021",
+   "rep": 3,
+   "tokens": 15855,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE027",
+   "rep": 1,
+   "tokens": 13043,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE027",
+   "rep": 2,
+   "tokens": 10859,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE027",
+   "rep": 3,
+   "tokens": 9778,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE051",
+   "rep": 1,
+   "tokens": 18830,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE051",
+   "rep": 2,
+   "tokens": 18777,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE051",
+   "rep": 3,
+   "tokens": 18400,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE057",
+   "rep": 1,
+   "tokens": 12825,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE057",
+   "rep": 2,
+   "tokens": 28665,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE057",
+   "rep": 3,
+   "tokens": 22608,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE067",
+   "rep": 1,
+   "tokens": 34392,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE067",
+   "rep": 2,
+   "tokens": 24879,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE067",
+   "rep": 3,
+   "tokens": 28805,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE076",
+   "rep": 1,
+   "tokens": 20896,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE076",
+   "rep": 2,
+   "tokens": 19347,
+   "coverage_ok": true
+  },
+  {
+   "arm": "glm",
+   "task": "HE076",
+   "rep": 3,
+   "tokens": 19628,
+   "coverage_ok": true
+  }
+ ],
+ "accounts": [
+  {
+   "arm": "deepseek",
+   "agent": "Coder",
+   "tasks": 9,
+   "within_mad_rep": 111,
+   "between_mad": 119,
+   "rho": 1.072,
+   "band": "同量级(开放)",
+   "n": 26,
+   "median": 450.5,
+   "mad": 237.0,
+   "k3": 1504.6286,
+   "k3_ref": 3.34,
+   "k3_ci": [
+    735,
+    2194
+   ],
+   "p10": 174.8,
+   "p90": 1431.4,
+   "cross_task_ratio": 7.53
+  },
+  {
+   "arm": "deepseek",
+   "agent": "Critic",
+   "tasks": 9,
+   "within_mad_rep": 181,
+   "between_mad": 260,
+   "rho": 1.436,
+   "band": "同量级(开放)",
+   "n": 26,
+   "median": 994.5,
+   "mad": 313.5,
+   "k3": 2388.8853,
+   "k3_ref": 2.4,
+   "k3_ci": [
+    1599,
+    2938
+   ],
+   "p10": 503.3,
+   "p90": 1766.5,
+   "cross_task_ratio": 2.52
+  },
+  {
+   "arm": "deepseek",
+   "agent": "Planner",
+   "tasks": 9,
+   "within_mad_rep": 126,
+   "between_mad": 61.5,
+   "rho": 0.488,
+   "band": "运行间主导",
+   "n": 26,
+   "median": 604.5,
+   "mad": 185.5,
+   "k3": 1429.5669,
+   "k3_ref": 2.36,
+   "k3_ci": [
+    1020,
+    1719
+   ],
+   "p10": 251.9,
+   "p90": 1012.0,
+   "cross_task_ratio": 2.58
+  },
+  {
+   "arm": "qwen",
+   "agent": "Coder",
+   "tasks": 9,
+   "within_mad_rep": 15,
+   "between_mad": 153,
+   "rho": 10.2,
+   "band": "题间主导",
+   "n": 27,
+   "median": 411,
+   "mad": 181,
+   "k3": 1216.0518,
+   "k3_ref": 2.96,
+   "k3_ci": [
+    585,
+    1643
+   ],
+   "p10": 182.8,
+   "p90": 1202.6,
+   "cross_task_ratio": 5.62
+  },
+  {
+   "arm": "qwen",
+   "agent": "Critic",
+   "tasks": 9,
+   "within_mad_rep": 56,
+   "between_mad": 189,
+   "rho": 3.375,
+   "band": "题间主导",
+   "n": 27,
+   "median": 400,
+   "mad": 187,
+   "k3": 1231.7386000000001,
+   "k3_ref": 3.08,
+   "k3_ci": [
+    773,
+    2346
+   ],
+   "p10": 146.8,
+   "p90": 1348.0,
+   "cross_task_ratio": 9.88
+  },
+  {
+   "arm": "qwen",
+   "agent": "Planner",
+   "tasks": 9,
+   "within_mad_rep": 37,
+   "between_mad": 209,
+   "rho": 5.649,
+   "band": "题间主导",
+   "n": 27,
+   "median": 236,
+   "mad": 133,
+   "k3": 827.5574,
+   "k3_ref": 3.51,
+   "k3_ci": [
+    390,
+    1964
+   ],
+   "p10": 105.4,
+   "p90": 1093.6,
+   "cross_task_ratio": 8.9
+  },
+  {
+   "arm": "glm",
+   "agent": "Coder",
+   "tasks": 9,
+   "within_mad_rep": 174,
+   "between_mad": 278,
+   "rho": 1.598,
+   "band": "同量级(开放)",
+   "n": 27,
+   "median": 659,
+   "mad": 325,
+   "k3": 2104.535,
+   "k3_ref": 3.19,
+   "k3_ci": [
+    1222,
+    2883
+   ],
+   "p10": 258.2,
+   "p90": 1594.4,
+   "cross_task_ratio": 5.2
+  },
+  {
+   "arm": "glm",
+   "agent": "Critic",
+   "tasks": 9,
+   "within_mad_rep": 118,
+   "between_mad": 145,
+   "rho": 1.229,
+   "band": "同量级(开放)",
+   "n": 27,
+   "median": 391,
+   "mad": 168,
+   "k3": 1138.2304,
+   "k3_ref": 2.91,
+   "k3_ci": [
+    708,
+    1686
+   ],
+   "p10": 134.6,
+   "p90": 855.0,
+   "cross_task_ratio": 4.95
+  },
+  {
+   "arm": "glm",
+   "agent": "Planner",
+   "tasks": 9,
+   "within_mad_rep": 69,
+   "between_mad": 246,
+   "rho": 3.565,
+   "band": "题间主导",
+   "n": 27,
+   "median": 419,
+   "mad": 307,
+   "k3": 1784.4746,
+   "k3_ref": 4.26,
+   "k3_ci": [
+    589,
+    2724
+   ],
+   "p10": 78.6,
+   "p90": 1165.6,
+   "cross_task_ratio": 12.7
+  }
+ ]
+}
