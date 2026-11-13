@@ -1,0 +1,374 @@
+{
+ "n_project_dirs": 61,
+ "n_sessions": 347,
+ "n_unreadable": 0,
+ "unreadable": [],
+ "dirs": [
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-07-22-18-26-48",
+   "blocks": 38,
+   "selected": true
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-07-22-19-06-45",
+   "blocks": 9,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-07-22-19-34-32",
+   "blocks": 7,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-07-25-01-31-56",
+   "blocks": 23,
+   "selected": true
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-07-26-02-23-52",
+   "blocks": 5,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-07-28-01-10-57",
+   "blocks": 1,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-07-28-01-14-21",
+   "blocks": 1,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-07-28-01-43-26",
+   "blocks": 2,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-07-28-01-55-06",
+   "blocks": 5,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-07-28-19-36-25",
+   "blocks": 3,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-08-03-13-44-56",
+   "blocks": 1,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-08-12-19-51-15",
+   "blocks": 1,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-08-18-22-07-08",
+   "blocks": 17,
+   "selected": true
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-08-19-14-46-43",
+   "blocks": 1,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-09-01-02-23-00",
+   "blocks": 1,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-09-04-23-21-56",
+   "blocks": 1,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-09-07-01-18-27",
+   "blocks": 16,
+   "selected": true
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-09-09-19-14-06",
+   "blocks": 4,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-09-10-18-16-02",
+   "blocks": 0,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-09-14-14-33-23",
+   "blocks": 4,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-09-19-00-16-07",
+   "blocks": 6,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-09-19-02-19-51",
+   "blocks": 52,
+   "selected": true
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-09-20-20-30-52",
+   "blocks": 55,
+   "selected": true
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-09-22-15-30-55",
+   "blocks": 1,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-09-23-13-56-32",
+   "blocks": 3,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-09-24-23-39-49",
+   "blocks": 13,
+   "selected": true
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-09-25-01-50-09",
+   "blocks": 53,
+   "selected": true
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-09-28-15-29-41",
+   "blocks": 3,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-09-29-14-52-13",
+   "blocks": 0,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-10-07-13-38-29",
+   "blocks": 26,
+   "selected": true
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-10-17-15-18-11",
+   "blocks": 1,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-10-18-16-30-22",
+   "blocks": 43,
+   "selected": true
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-10-27-17-53-17",
+   "blocks": 4,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-11-03-01-16-53",
+   "blocks": 2,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-11-03-23-27-08",
+   "blocks": 5,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-11-05-16-14-40",
+   "blocks": 1,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-11-05-16-16-03",
+   "blocks": 1,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-11-06-21-10-44",
+   "blocks": 3,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-11-07-15-26-37",
+   "blocks": 1,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-2026-11-07-21-54-08",
+   "blocks": 32,
+   "selected": true
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-Claw",
+   "blocks": 27,
+   "selected": true
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-HTML转ppt",
+   "blocks": 1,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-Huabti",
+   "blocks": 33,
+   "selected": true
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-Offer鹅",
+   "blocks": 141,
+   "selected": true
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-OpenMAIC",
+   "blocks": 11,
+   "selected": true
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-Trip_buddy",
+   "blocks": 20,
+   "selected": true
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-WB开放平台",
+   "blocks": 46,
+   "selected": true
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-牛客求职Agent",
+   "blocks": 5,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-美商skill",
+   "blocks": 1,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-花少2—红薯vibe coding",
+   "blocks": 190,
+   "selected": true
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-邮箱整理",
+   "blocks": 5,
+   "selected": false
+  },
+  {
+   "family": "F0-other",
+   "dir": "d-Data-workbuddy-面试VB",
+   "blocks": 45,
+   "selected": true
+  },
+  {
+   "family": "F0-other",
+   "dir": "e-Zhuanye_app",
+   "blocks": 1523,
+   "selected": true
+  },
+  {
+   "family": "F0-other",
+   "dir": "e-Zhuanye_app-backend",
+   "blocks": 22,
+   "selected": true
+  },
+  {
+   "family": "F1-framework",
+   "dir": "d-Data-workbuddy-AI执行与监察体系设计",
+   "blocks": 944,
+   "selected": true
+  },
+  {
+   "family": "F1-framework",
+   "dir": "d-Data-workbuddy-AI执行与监察体系设计-dp-audit-repo",
+   "blocks": 9,
+   "selected": false
+  },
+  {
+   "family": "F2-jobhunt",
+   "dir": "d-Data-workbuddy-秋招",
+   "blocks": 780,
+   "selected": true
+  },
+  {
+   "family": "F2-jobhunt",
+   "dir": "e-OneDrive-桌面-求职-秋招-张金瑞的作品集",
+   "blocks": 1,
+   "selected": false
+  },
+  {
+   "family": "F3-appdev",
+   "dir": "e-OneDrive-桌面-专业方向探索助手",
+   "blocks": 12,
+   "selected": true
+  },
+  {
+   "family": "F3-appdev",
+   "dir": "e-OneDrive-桌面-专业方向探索助手-03_原型设计",
+   "blocks": 82,
+   "selected": true
+  },
+  {
+   "family": "F4-paper",
+   "dir": "e-OneDrive-桌面-学年论文-work Buddy",
+   "blocks": 109,
+   "selected": true
+  }
+ ]
+}

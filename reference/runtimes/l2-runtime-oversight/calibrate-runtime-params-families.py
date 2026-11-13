@@ -203,7 +203,7 @@ def main():
     report = {"families": {}, "calib008_note":
               "F1 包含 CALIB-008 S0 会话（6ac8f41c…，89 块）作为子集——来源双登记，非独立重采"}
     for fam, g in sorted(fam_data.items()):
-        n_blocks = len(block_stats(g["steps"])[0])
+        n_blocks = len(g["steps"])
         report["families"][fam] = {
             "n_blocks": n_blocks, "n_sessions": len(g["sessions"]),
             "n_dirs": len(g["dirs"]),

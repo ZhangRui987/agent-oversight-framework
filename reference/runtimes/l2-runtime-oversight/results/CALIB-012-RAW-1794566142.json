@@ -1,0 +1,196 @@
+{
+ "families": {
+  "F1-framework": {
+   "n_blocks": 944,
+   "n_sessions": 50,
+   "n_dirs": 1,
+   "steps": {
+    "n": 944,
+    "p50": 11,
+    "p90": 55,
+    "p99": 118,
+    "max": 149,
+    "suggested_cap": 120
+   },
+   "freq": {
+    "n": 944,
+    "p50": 4,
+    "p90": 9,
+    "p99": 14,
+    "max": 25,
+    "suggested_cap": 20
+   },
+   "dur_ms": {
+    "n": 19192,
+    "p50": 783,
+    "p90": 7299,
+    "p99": 158996,
+    "max": 7972314,
+    "suggested_cap": 159000
+   },
+   "out_bytes": {
+    "n": 19192,
+    "p50": 497,
+    "p90": 3467,
+    "p99": 21575,
+    "max": 51780,
+    "suggested_cap": 21580
+   }
+  },
+  "F2-jobhunt": {
+   "n_blocks": 780,
+   "n_sessions": 28,
+   "n_dirs": 1,
+   "steps": {
+    "n": 780,
+    "p50": 7,
+    "p90": 23,
+    "p99": 60,
+    "max": 125,
+    "suggested_cap": 60
+   },
+   "freq": {
+    "n": 780,
+    "p50": 3,
+    "p90": 7,
+    "p99": 15,
+    "max": 23,
+    "suggested_cap": 20
+   },
+   "dur_ms": {
+    "n": 8107,
+    "p50": 1026,
+    "p90": 17167,
+    "p99": 111805,
+    "max": 877265048,
+    "suggested_cap": 111810
+   },
+   "out_bytes": {
+    "n": 8107,
+    "p50": 672,
+    "p90": 3417,
+    "p99": 12764,
+    "max": 46247,
+    "suggested_cap": 12770
+   }
+  },
+  "F3-appdev": {
+   "n_blocks": 94,
+   "n_sessions": 2,
+   "n_dirs": 2,
+   "steps": {
+    "n": 94,
+    "p50": 12,
+    "p90": 30,
+    "p99": 50,
+    "max": 51,
+    "suggested_cap": 50
+   },
+   "freq": {
+    "n": 94,
+    "p50": 8,
+    "p90": 11,
+    "p99": 16,
+    "max": 20,
+    "suggested_cap": 40
+   },
+   "dur_ms": {
+    "n": 1360,
+    "p50": 69,
+    "p90": 1475,
+    "p99": 6232,
+    "max": 410846,
+    "suggested_cap": 6240
+   },
+   "out_bytes": {
+    "n": 1360,
+    "p50": 380,
+    "p90": 2947,
+    "p99": 21416,
+    "max": 45735,
+    "suggested_cap": 21420
+   }
+  },
+  "F4-paper": {
+   "n_blocks": 109,
+   "n_sessions": 5,
+   "n_dirs": 1,
+   "steps": {
+    "n": 109,
+    "p50": 12,
+    "p90": 48,
+    "p99": 81,
+    "max": 85,
+    "suggested_cap": 90
+   },
+   "freq": {
+    "n": 109,
+    "p50": 5,
+    "p90": 10,
+    "p99": 20,
+    "max": 21,
+    "suggested_cap": 20
+   },
+   "dur_ms": {
+    "n": 2122,
+    "p50": 548,
+    "p90": 6063,
+    "p99": 125888,
+    "max": 8669955,
+    "suggested_cap": 125890
+   },
+   "out_bytes": {
+    "n": 2122,
+    "p50": 552,
+    "p90": 3855,
+    "p99": 18101,
+    "max": 36458,
+    "suggested_cap": 18110
+   }
+  }
+ },
+ "calib008_note": "F1 包含 CALIB-008 S0 会话（6ac8f41c…，89 块）作为子集——来源双登记，非独立重采",
+ "H1_family_differentiation": {
+  "steps": {
+   "p99_by_family": {
+    "F1-framework": 118,
+    "F2-jobhunt": 60,
+    "F3-appdev": 50,
+    "F4-paper": 81
+   },
+   "ratio": 2.36,
+   "differentiated": true
+  },
+  "freq": {
+   "p99_by_family": {
+    "F1-framework": 14,
+    "F2-jobhunt": 15,
+    "F3-appdev": 16,
+    "F4-paper": 20
+   },
+   "ratio": 1.43,
+   "differentiated": false
+  },
+  "dur_ms": {
+   "p99_by_family": {
+    "F1-framework": 158996,
+    "F2-jobhunt": 111805,
+    "F3-appdev": 6232,
+    "F4-paper": 125888
+   },
+   "ratio": 25.51,
+   "differentiated": true
+  },
+  "out_bytes": {
+   "p99_by_family": {
+    "F1-framework": 21575,
+    "F2-jobhunt": 12764,
+    "F3-appdev": 21416,
+    "F4-paper": 18101
+   },
+   "ratio": 1.69,
+   "differentiated": false
+  }
+ },
+ "H1_conclusion": "分化成立"
+}
