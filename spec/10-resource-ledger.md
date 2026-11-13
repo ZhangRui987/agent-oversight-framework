@@ -70,9 +70,9 @@
 
 上节 CALIB-001 与 v2.16.0 跨模型扩展的标定都是**任务级**口径：一条任务一次总消耗，对应一个影子比。多 agent 协作场景下任务级口径会把角色差异折叠进同一分布（本体系自身实测：deepseek 的 completion 占比为 Coder 26% / Critic 45% / Planner 28%），故登记 per-agent 粒度的适用性。本节只回答「这个粒度可用到什么程度」，不改四信号定义、不改默认阈值。
 
-**① 计量前提（已实现，CALIB-009）**。per-agent 影子比可计算的前提是账本能按 agent 记账。三个采集器已统一为逐 agent 计量 + 统一 `ledger-events.jsonl` 九字段 schema + 覆盖不变量（发放的 label 集须覆盖全部发言 agent，防漏账）。实现状态按框架分级，不得合并表述：**AutoGen 运行时验证通过**（pilot 9/9 与 CALIB-010 的 87 条轨迹覆盖检查全过），**CrewAI / LangGraph 仅静态 schema 对齐通过，运行时未验证**（本机两框架依赖缺失，记「未采」，不记「通过」）。
+**① 计量前提（已实现，CALIB-009，证据【键: AOE-CALIB-009】）**。per-agent 影子比可计算的前提是账本能按 agent 记账。三个采集器已统一为逐 agent 计量 + 统一 `ledger-events.jsonl` 九字段 schema + 覆盖不变量（发放的 label 集须覆盖全部发言 agent，防漏账）。实现状态按框架分级，不得合并表述：**AutoGen 运行时验证通过**（pilot 9/9 与 CALIB-010 的 87 条轨迹覆盖检查全过），**CrewAI / LangGraph 仅静态 schema 对齐通过，运行时未验证**（本机两框架依赖缺失，记「未采」，不记「通过」）。
 
-**② 首份 per-agent 分布基线（CALIB-010，completion 维度，MAD + 1.4826 × k = 3）**。参考值 = k3 / 中位，与 CALIB-001 的 1.36 同口径：
+**② 首份 per-agent 分布基线（CALIB-010，证据【键: AOE-CALIB-010】，completion 维度，MAD + 1.4826 × k = 3）**。参考值 = k3 / 中位，与 CALIB-001 的 1.36 同口径：
 
 | 角色 | deepseek（n=27） | qwen（n=30） | glm（n=30） | 跨模型跨度 |
 |---|---|---|---|---|

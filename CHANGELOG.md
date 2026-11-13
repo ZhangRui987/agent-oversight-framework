@@ -1,6 +1,21 @@
 # 变更日志
 
 
+## v2.79.3（2026-11-13）：CALIB-009 / CALIB-010 证据补登记（A 14→16，patch）
+
+- **补登记两条 A 级证据**（此前 spec/10 已引用其结论与数字，但 REFERENCES 无条目——属「事实可查而等级未标」）：
+  - `【键: AOE-CALIB-009】`四信号逐 agent 粒度计量仪器升级 + pilot 验收：M0 三步（`ClientBundle` 逐 agent 发放 + 统一 `ledger-events.jsonl` 九字段 schema + 三框架接线）、pilot 9/9（193,030 / 500,000 token，预算比 0.39）、K1 覆盖与不变量复算全过、K2 pilot 内不可判定（预注册内部矛盾如实登记）、K3 静态 PASS / CrewAI 与 LangGraph 运行时「未采」、K4 27 点分布登记。
+  - `【键: AOE-CALIB-010】`per-agent 影子比基线：3 臂 × HE000 × 30 repeat，87/90 有效（1,766,221 / 2,500,000，预算比 0.71），九组参考值 1.65–3.27 且 CI 全收敛，三角色跨模型跨度 0.88–1.38 全部超过 0.15 判据 ⇒ per-agent 阈值须按模型 × 角色独立标定。
+  - 两条均带五条「严格支撑范围」与数值同行（仪器可用性 ≠ 检测效能 / 两框架运行时未采 / 单题单场景单框架 / 参考值非阈值 / 负结果不外推）。
+- **计数联动**：REFERENCES A 14→16、合计 215→217；README 双语（顶部行、分布行、偏置声明、结构表、badge 与 alt）与 REPRODUCE 双语、REFERENCES 注脚计数口径链同步；**spec/11 双语主表各 +2 行 CAE 溯源**（主张/论证/证据齐备），行数声明 95→97；VERIFICATION-LOG 新增「v2.79.3 新增 A 类条目核验登记（2 条）」节，头部覆盖声明 215→217、数据行 214→216。
+- **spec/10 双语**：per-agent 注记 ①② 段补显式证据键（`【键: AOE-CALIB-009】` / `【键: AOE-CALIB-010】`），使「REFERENCES 无悬空引用」检查从「文件名子串命中」变为真实键命中。
+- **顺带发现并订正一处英文版记录失真**：`README.en.md` 分布行长期停在 `A:13` 且漏列 `AOE-SWARM-002`、`AOE-CALIB-008`（实测 A=14 时即错），中文版正确、英文版错误而门禁全绿——根因是该项校验只读 `README.md`。处置：订正为 `A:16` 并补齐四条键；**门禁第 12 项扩为「README 双语分布行 == 实测」**（折入既有项，项数仍 54），反向测试实测 exit 1 且同时打印 zh / en 两侧取值。教训与第 40/42/44/46 项同构：同一句声明的另一语言版本不在校验面内，等于给漂移留了第二入口。
+- **本条不改变 spec/13 #33 状态**（四类运行时阈值仍未标定）：per-agent 基线是数据源登记，两框架运行时验收仍缺。
+- **版本联动**：`VERSION` / `CITATION.cff` / `README.md` / `README.en.md` 至 2.79.3；V1 `events.jsonl` 确定性重生成；V2 `realagent-events.jsonl` 只重标并 append `relabel_history`（事件行一字未动）。
+- **当前锚摘要串（每版重述；RFC 3161 时间戳覆盖不变）**：
+  - `aof-anchor/v1:audit-panel/events-v1:1:9:27c2fe8fa384f7b9920cbd83da521fb567f795332501101e35b3d18ffdc82739:7d8a896bed4ce976`（genTime 2026-11-08 06:16:02 GMT）
+  - `aof-anchor/v1:disposition/stage1-ledger:2:3:3f23031b0c77a0fce338a8e2feda30ee548cd2c262fdfb239aaa638f5a8b7ea4:b1aa3becb81e59cf`（genTime 2026-11-08 06:16:08 GMT）
+
 ## v2.79.2（2026-11-13）：spec/10 影子比补 per-agent 粒度适用注记（patch）
 
 - **spec/10 双语新增章节「影子比的 per-agent 粒度适用注记（v2.79.2，CALIB-009 / CALIB-010）」**，位置在影子比标定章之后、周期检测标定章之前。内容分五段：① 计量前提（三框架采集器统一为逐 agent 记账 + 统一 `ledger-events.jsonl` 九字段 schema + 覆盖不变量；实现状态分级——AutoGen 运行时验证通过，CrewAI / LangGraph 仅静态 schema 对齐、运行时记「未采」）；② CALIB-010 首份 per-agent 分布基线（3 模型 × 3 角色 九组参考值 + bootstrap CI 全部收敛）；③ 可从基线读出的结论——三角色跨模型跨度 0.88–1.38 全部超过 CALIB-001 的 0.15 一致性判据，**per-agent 影子比阈值必须按「模型 × 角色」独立标定，不存在跨模型统一乘数**（v2.16.0「per-provider」结论在角色维度的延伸）；④ 不可读出的三条（参考值不是阈值、无检测效能断言、范围限于单题单场景单框架），**默认阈值 2.0 不变**；⑤ CALIB-001 的 `max_tokens` 截断警告在本粒度同样适用，九组 MAD 非零不等于生产不触发。

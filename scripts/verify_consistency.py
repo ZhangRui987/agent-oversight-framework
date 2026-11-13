@@ -15,7 +15,8 @@
   9. REFERENCES 实测 G == 声明（实测派生）
   10. REFERENCES 实测合计 == 注脚声明（实测派生）
   11. README 顶部声明（合计 & B 级）== 实测（实测派生）
-  12. README 分布行（A/B/C/D/G）== 实测（实测派生）
+  12. README 双语分布行（A/B/C/D/G）== 实测（实测派生；v2.79.3 起英文版同受校验）
+      —— 教训：英文分布行曾停在 A:13 且漏列两条 A 级键，中文正确、英文错误而门禁全绿
   13. CHANGELOG 声明「新增 1 条 G 级」（v2.11.0，历史锚点防回退）
   14. README 双语全文「证据总数」一致（所有出现的总数 == 实测合计，含 badge 的 alt 文本与 REPRODUCE 双语声明；动态）
   15. README 双语全文「B 级数」一致（所有出现的 B 级数 == 实测 B，含 badge 的 alt 文本；动态）
@@ -324,6 +325,14 @@ _m_dist = re.search(
 _m_note = re.search(
     r"(\d{1,3})\s*条 A 级、(\d{2,3})\s*条 B 级、(\d{1,3})\s*条 C 级、(\d{1,3})\s*条 D 级、(\d{1,3})\s*条 G 级（合计 (\d{2,3})\s*条来源）",
     refs)
+# v2.79.3 新增：英文版分布行同受本项校验。
+# 教训来源：README.en.md 的分布行长期停在「A:13」且漏列 AOE-SWARM-002 / AOE-CALIB-008
+# （实测 A=14），中文版正确、英文版错误，门禁却全绿——因为 _m_dist 只读 README.md。
+# 同一句声明的译本不在校验面内 = 声明漂移的第二入口。
+_m_dist_en = re.search(
+    r"Current distribution: A:(\d{1,3})\s*(?:\([^)]*\))?\s*/\s*B:(\d{1,3})\s*/\s*C:(\d{1,3})"
+    r"\s*/\s*D:(\d{1,3})(?:\s*/\s*G:(\d{1,3}))?",
+    read(os.path.join(ROOT, "README.en.md")))
 check("分级声明三方可提取（README 顶部 / 分布行 / 注脚；任一缺失即 FAIL）",
       _m_top is not None and _m_dist is not None and _m_note is not None,
       f"顶部={_m_top is not None} 分布={_m_dist is not None} 注脚={_m_note is not None}")
@@ -344,11 +353,15 @@ check(f"REFERENCES 合计 == 声明（{_m_note.group(6) if _m_note else '?'} 条
 check(f"README 顶部声明 == 实测（合计={total} / B={b}）",
       _m_top is not None and int(_m_top.group(1)) == total and int(_m_top.group(2)) == b,
       f"顶部声明 total={_m_top.group(1) if _m_top else '?'} B={_m_top.group(2) if _m_top else '?'}")
-check(f"README 分布行 == 实测（A={a} / B={b} / C={c} / D={d}"
+check(f"README 双语分布行 == 实测（A={a} / B={b} / C={c} / D={d}"
       + (f" / G={g_count}）" if _m_dist and _m_dist.group(5) else "）"),
       _m_dist is not None and [int(x) for x in _m_dist.group(1, 2, 3, 4)] == [a, b, c, d]
-      and (_m_dist.group(5) is None or int(_m_dist.group(5)) == g_count),
-      f"分布声明={_m_dist.groups() if _m_dist else '?'}")
+      and (_m_dist.group(5) is None or int(_m_dist.group(5)) == g_count)
+      and _m_dist_en is not None
+      and [int(x) for x in _m_dist_en.group(1, 2, 3, 4)] == [a, b, c, d]
+      and (_m_dist_en.group(5) is None or int(_m_dist_en.group(5)) == g_count),
+      f"分布声明 zh={_m_dist.groups() if _m_dist else '?'} "
+      f"en={_m_dist_en.groups() if _m_dist_en else '?'}")
 # CHANGELOG 取最近版本声明——门禁只校验字符串存在，数值一致性由第 14-15 项覆盖
 # v2.11.0 条目含「新增 1 条 G 级」字样
 check("CHANGELOG 声明「新增 1 条 G 级」（v2.11.0）",
