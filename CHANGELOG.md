@@ -1,6 +1,19 @@
 # 变更日志
 
 
+## v2.81.0（2026-11-13）：CALIB-011 跨题正式标定入库——方差源结构模型相关（minor）
+
+- **AOE-CALIB-011 正式结果**（预注册 4598990 先于执行 + 结果 01ac0c8，本版补登记证据）：3 臂 × R2 良性题池题序前 9 题 × 3 repeat = 81 条计划，**80/81 有效**（deepseek 26/27——单臂熔断 769,559 > 750K 在 HE076 r3 前触发，按预注册翻车分支如实登记「未采完」；qwen / glm 27/27；error 0 / invalid 0 / coverage_ok 80/80），总消耗 **1,852,000 / 2,200,000 token（预算比 0.84）**。M1 方差分离（ρ 判读带预注册冻结）：**方差源主导结构本身是模型相关的**——qwen 三账 3.38 / 5.65 / 10.20 题间全面主导、deepseek 1.07 / 1.44 / 0.49 基本同量级、glm 1.23 / 1.60 / 3.57 混合 ⇒ 「基线按题标定还是按任务族合并」没有单一答案；M2 跨题合并参考（27 点/账，k3 CI 全部收敛）**九账中八账高于 CALIB-010 单题值**（最大漂移 +65%）且无一账下移 ⇒ **单题基线系统性低估跨题不确定性是结构性规律**；M3 跨题 max/min 2.52–12.70×（量级登记）；M4 无退化。这是标记习惯（R2）/ 角色稳定性（CALIB-010）/ 方差源结构（本条）**第三次同构复现「模型指纹」**。
+- **REFERENCES +1 条 A 级**：【键: AOE-CALIB-011】（五条严格支撑范围与数值同行）；A 16→17、合计 217→218；注脚计数口径链追加一行。
+- **计数联动**：README 双语（badge / 概述行 / 分布行 / 偏置声明 / 结构表）+ REPRODUCE 双语 + VERIFICATION-LOG（头部覆盖声明 217→218、数据行 216→217、新增 v2.81.0 登记节 1 条）。
+- **spec/10 双语**：per-agent 注记增补 **⑥ 方差源结构与跨题参考**段（三层分化结论 + 单题基线下限性质），标题扩 CALIB-011；#33 警示段补 RESULTS-AOE-CALIB-011 §六 边界引用。
+- **spec/11 双语**：主表 +1 行 CAE 溯源（方差源结构与跨题参考），行数声明 97→98。
+- **spec/13 #33 状态不变**（维持未解）：本条标定的是 spec/10 影子比分布面，不触碰四类运行时阈值。
+- **版本联动**：`VERSION` / `CITATION.cff` / `README.md` / `README.en.md` 至 2.81.0；V1 `events.jsonl` 确定性重生成；V2 `realagent-events.jsonl` 只重标并 append `relabel_history`（事件行一字未动，`data_generated_at_version` 保持 2.68.1）。
+- **当前锚摘要串（每版重述；RFC 3161 时间戳覆盖不变）**：
+  - `aof-anchor/v1:audit-panel/events-v1:1:9:27c2fe8fa384f7b9920cbd83da521fb567f795332501101e35b3d18ffdc82739:7d8a896bed4ce976`（genTime 2026-11-08 06:16:02 GMT）
+  - `aof-anchor/v1:disposition/stage1-ledger:2:3:3f23031b0c77a0fce338a8e2feda30ee548cd2c262fdfb239aaa638f5a8b7ea4:b1aa3becb81e59cf`（genTime 2026-11-08 06:16:08 GMT）
+
 ## v2.80.0（2026-11-13）：CALIB-009 / CALIB-010 线收尾——三框架运行时验收闭环（minor）
 
 - **CALIB-009 M0 运行时验收补采闭环**（commit f31b291，先于本版入库）：独立 venv（工作区 `calib009-runtime`，Py 3.13.14，pin 与 CALIB-007 全同：`crewai==1.15.35 / langgraph==1.2.19 / langgraph-supervisor==0.0.31 / langchain-core==1.7.4 / langchain-openai==1.7.3`；**R2 解释器零变化实证**——安装前后 `pip freeze` 155 包快照 diff = ∅）各采 1 条 `benign-A × T01`：CrewAI 3,587 token（2 消息 1 委派）/ LangGraph 1,517 token（4 消息 1 transfer），**合计 5,104 token，pilot 预算 198,134 / 500,000（比 0.40）**。判定：**K1 两框架 PASS**（Σ(per-agent) ≡ 旧 side 聚合差 = 0，发言集与账本键独立复核一致——防「假覆盖」）；**K3 运行时闭环**（三框架 11 份 `ledger-events.jsonl` 九字段集 diff = ∅）；**③ 默认值回归**两框架旧分侧结构（manager/workers、supervisor/workers）逐字节不变。`RESULTS-AOE-CALIB-009-PILOT-20261112.md` §六 登记；usage 语义查证随录（crewai「近似计数」警告只进上下文管理启发式 `base_llm.py:497`，事件 usage 取 `response.usage` 为 API 原生，账本语义无须降级）。
